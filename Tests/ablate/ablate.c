@@ -33,6 +33,14 @@
 
 #include "safetensors.h"
 
+/* Precisao do KV, escolhida por `--kv-prec`.
+ *
+ * Global de arquivo porque atravessa todas as configuracoes medidas e nao e
+ * parametro de nenhuma delas: e o ambiente da medicao.  Existe aqui porque a
+ * decisao "int8 no KV degrada?" so pode ser respondida por esta ferramenta, e
+ * ate agora ela nem sabia pedir. */
+static tt_kv_prec g_kv_prec = TT_KV_F32;
+
 /* ------------------------------------------------------ substituicao */
 
 /* Reescreve, no indice ja carregado, os tensores cujo nome contem `pattern`,
@@ -138,7 +146,7 @@ static int run_config(config *cfg, const char *model_path, const st_file *st,
     const double t0 = tt_now();
 
     tt_model m;
-    if (tt_model_open(&m, model_path, ctx, TT_ATTN_ABSORBED, TT_KV_F32) != 0)
+    if (tt_model_open(&m, model_path, ctx, TT_ATTN_ABSORBED, g_kv_prec) != 0)
         return -1;
 
     if (cfg->pattern &&
@@ -238,6 +246,9 @@ int main(int argc, char **argv)
         else if (!strcmp(a, "--corpus") && has)    corpus = argv[++i];
         else if (!strcmp(a, "--tokens") && has)    tokens = atoll(argv[++i]);
         else if (!strcmp(a, "--chunks") && has)    chunks = atoi(argv[++i]);
+        else if (!strcmp(a, "--kv-prec") && has) {
+            if (tt_kv_prec_parse(argv[++i], &g_kv_prec) != 0) return 1;
+        }
         else if (!strcmp(a, "--threads") && has)   threads = atoi(argv[++i]);
         else if (!strcmp(a, "--no-ablate"))        full_only = 1;
         else if (!strcmp(a, "-v"))                 tt_verbose(1);
@@ -293,8 +304,12 @@ int main(int argc, char **argv)
     printf("\\ncorpus  %s -- %d janelas de %lld tokens, %lld previsoes\\n",
            corpus, chunks, (long long)tokens,
            (long long)(chunks * (tokens - 1)));
-    printf("engine  %s, %d threads, build %s\n\n", tt_kernels_impl_name(),
-           tt_pool_threads(pool), tt_build_id());
+    /* A precisao do KV entra no cabecalho porque ela MUDA o numero medido.
+     * Duas rodadas com nll diferente e sem dizer o que mudou entre elas nao
+     * sao comparaveis depois -- a licao de docs/17 e que numero sem a
+     * configuracao ao lado nao significa nada. */
+    printf("engine  %s, %d threads, kv %s, build %s\n\n", tt_kernels_impl_name(),
+           tt_pool_threads(pool), tt_kv_prec_name(g_kv_prec), tt_build_id());
 
     /* Os grupos da tabela de precisao de docs/04, um por vez.  `""` casa com
      * todo nome e portanto restaura o modelo inteiro. */
@@ -369,8 +384,13 @@ int main(int argc, char **argv)
     {
         FILE *f = fopen("ablate_raw.json", "w");
         if (f) {
-            fprintf(f, "{\"chunks\":%d,\"tokens\":%lld,\"configs\":[", chunks,
-                    (long long)tokens);
+            /* `kv` e `corpus` no arquivo pela mesma razao do cabecalho: a
+             * segunda rodada sobrescreve a primeira, e sem a configuracao
+             * dentro nao da para saber qual das duas ficou. */
+            fprintf(f, "{\"chunks\":%d,\"tokens\":%lld,\"kv\":\"%s\","
+                       "\"corpus\":\"%s\",\"build\":\"%s\",\"configs\":[",
+                    chunks, (long long)tokens, tt_kv_prec_name(g_kv_prec),
+                    corpus, tt_build_id());
             for (int i = 0; i < n_cfg; i++) {
                 fprintf(f, "%s{\"label\":\"%s\",\"tensors\":%d,\"nll\":[",
                         i ? "," : "", configs[i].label, configs[i].tensors);

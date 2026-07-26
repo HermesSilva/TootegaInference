@@ -94,6 +94,10 @@ typedef enum {
 
 int tt_kv_prec_parse(const char *s, tt_kv_prec *out);
 
+/* "f32" | "bf16" | "int8".  Existe para o cabecalho das medicoes: numero sem a
+ * configuracao ao lado nao e comparavel depois (docs/17). */
+const char *tt_kv_prec_name(tt_kv_prec p);
+
 typedef struct {
     tt_container c;
     tt_config    cfg;

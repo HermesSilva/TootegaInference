@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #define REQ_MAX     (1u << 20)     /* 1 MB de requisicao: prompt grande cabe */
 #define OUT_CHUNK   4096
@@ -54,6 +55,24 @@ static void vlog(const char *fmt, ...)
     fputc('\n', stderr);
     va_end(ap);
     fflush(stderr);
+}
+
+/* Data e hora de parede, para casar com o log do cliente.
+ *
+ * `tt_now()` e monotonico -- serve para medir duracao e nao diz nada sobre
+ * QUANDO.  Correlacionar o console do servidor com o Output do Cockpit exige
+ * relogio de parede nos dois. */
+static const char *stamp(char *buf, size_t cap)
+{
+    const time_t t = time(NULL);
+    struct tm tmv;
+#if defined(_WIN32)
+    localtime_s(&tmv, &t);
+#else
+    localtime_r(&t, &tmv);
+#endif
+    strftime(buf, cap, "%Y-%m-%d %H:%M:%S", &tmv);
+    return buf;
 }
 
 /* Um trecho de texto numa linha: sem quebras, cortado, com as reticencias
@@ -673,7 +692,6 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
             else if (tt_json_str_eq(role, "system"))    n_sys++;
         }
 
-        vlog("");
         vlog("--- pedido -----------------------------------------------");
         vlog("  conversa    %llu mensagens: %d sistema, %d usuario, "
              "%d assistente, %d ferramenta",
@@ -750,7 +768,7 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
     if (full) full[0] = '\0';
 
     int64_t made = 0;
-    int hit_eos = 0, in_call = 0, done_call = 0;
+    int hit_eos = 0, in_call = 0, done_call = 0, streamed = 0;
     const double t1 = tt_now();
 
     while (made < max_new && s->n_conv < s->ctx) {
@@ -776,6 +794,7 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
                     "data: {\"choices\":[{\"delta\":{\"content\":\"%s\"},"
                     "\"index\":0}]}\n\n", esc);
                 if (tt_send_all(c, frame, (size_t)n) < 0) break;  /* aba fechou */
+                streamed++;
             }
         }
 
@@ -915,6 +934,14 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
                 calls ? "\"tool_calls\":" : "", calls ? calls : "",
                 calls ? "" : "", reason, usage);
             tt_send_all(c, tail, (size_t)n);
+            /* O que o cliente REALMENTE recebe.  As linhas acima contam o que
+             * o modelo produziu; esta conta o que saiu pelo fio -- e quando um
+             * cliente nao renderiza, a diferenca entre as duas e a pista. */
+            if (g_verbose) {
+                char buf[400];
+                vlog("  devolvido   %d quadros de conteudo + %s",
+                     streamed, snippet(tail, (size_t)n, buf, sizeof(buf)));
+            }
             free(tail);
         }
     } else if (full) {
@@ -940,6 +967,11 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
                     calls ? ",\"tool_calls\":" : "", calls ? calls : "",
                     reason, usage);
                 send_status(c, 200, "OK", "application/json", body, (size_t)n);
+                if (g_verbose) {
+                    char sb2[400];
+                    vlog("  devolvido   %d bytes: %s", n,
+                         snippet(body, (size_t)n, sb2, sizeof(sb2)));
+                }
                 free(body);
             }
             free(big);
@@ -986,8 +1018,12 @@ static void handle(server *s, const tt_socket *c, const char *peer)
 
     /* Rota de tudo o que chega -- `/stats` fica de fora porque a UI web o
      * consulta a cada 3 s e afogaria o console. */
-    if (g_verbose && strcmp(r.path, "/stats") != 0)
-        vlog("[%s] %s %s  (%zu bytes)", peer, r.method, r.path, r.body_len);
+    if (g_verbose && strcmp(r.path, "/stats") != 0) {
+        char ts[32];
+        vlog("");
+        vlog("[%s] %s  %s %s  (%zu bytes)", stamp(ts, sizeof(ts)), peer,
+             r.method, r.path, r.body_len);
+    }
 
     if (!strcmp(r.method, "OPTIONS")) {
         send_status(c, 204, "No Content", "text/plain", "", 0);
@@ -1046,6 +1082,10 @@ int tt_cmd_serve(int argc, char **argv)
     int port = 8080, threads = 20, no_warm = 0;
     int64_t ctx = 8192;
     double ram_gb = 0, vram_gb = 0;
+    /* A precisao do KV era fixa em f32 aqui: a opcao existia no engine e nao
+     * chegava ao servidor, que e justamente onde o contexto e grande.  int8
+     * cabe 202.752 posicoes -- o teto do modelo -- em 5,7 GB. */
+    tt_kv_prec kv_prec = TT_KV_F32;
     const char *gpu_dll = NULL;
     tt_offload_mode gpu_mode = TT_OFFLOAD_MOE;
 
@@ -1061,6 +1101,9 @@ int tt_cmd_serve(int argc, char **argv)
         else if (!strcmp(a, "--ram-gb") && has)    ram_gb = atof(argv[++i]);
         else if (!strcmp(a, "--no-warm"))          no_warm = 1;
         else if (!strcmp(a, "--verbose") || !strcmp(a, "-v")) g_verbose = 1;
+        else if (!strcmp(a, "--kv-prec") && has) {
+            if (tt_kv_prec_parse(argv[++i], &kv_prec) != 0) return -1;
+        }
         else if (!strcmp(a, "--vram-gb") && has)   vram_gb = atof(argv[++i]);
         else if (!strcmp(a, "--gpu"))
             /* `--gpu` sozinho usa o nome padrao; com argumento, o caminho da
@@ -1082,7 +1125,8 @@ int tt_cmd_serve(int argc, char **argv)
     if (!path || !tok_path)
         return tt_fail("uso: tootega serve <modelo.tootega> --tokenizer "
                        "<tokenizer.json> [--port 8080] [--ctx 8192] "
-                       "[--verbose] [--gpu] [--no-warm]");
+                       "[--kv-prec f32|bf16|int8] [--verbose] [--gpu] "
+                       "[--no-warm]");
 
     /* Expor na rede exige as duas coisas.  Um servidor de inferencia aberto e
      * acesso remoto ao modelo e ao disco desta maquina; recusar aqui custa uma
@@ -1097,7 +1141,7 @@ int tt_cmd_serve(int argc, char **argv)
     if (tt_tokenizer_load(&tok, tok_path, 154880) != 0) return -1;
 
     tt_model model;
-    if (tt_model_open(&model, path, ctx, TT_ATTN_ABSORBED, TT_KV_F32) != 0) {
+    if (tt_model_open(&model, path, ctx, TT_ATTN_ABSORBED, kv_prec) != 0) {
         tt_tokenizer_free(&tok);
         return -1;
     }

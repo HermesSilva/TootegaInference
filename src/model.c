@@ -239,6 +239,15 @@ int tt_kv_prec_parse(const char *s, tt_kv_prec *out)
     return tt_fail("--kv '%s' desconhecido (f32 | int8 | bf16)", s);
 }
 
+const char *tt_kv_prec_name(tt_kv_prec p)
+{
+    switch (p) {
+    case TT_KV_BF16: return "bf16";
+    case TT_KV_INT8: return "int8";
+    default:         return "f32";
+    }
+}
+
 int tt_attn_parse(const char *s, tt_attn_mode *out)
 {
     if (!s || !*s || !strcmp(s, "absorbed")) { *out = TT_ATTN_ABSORBED; return 0; }

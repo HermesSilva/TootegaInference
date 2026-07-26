@@ -910,6 +910,79 @@ static int run_command(const char *cmd, int timeout_ms, sb *out)
 #endif
 }
 
+/* --------------------------------------------------- fim de linha */
+
+/* Tira os `\r` de um buffer, no lugar.  Devolve 1 se havia algum.
+ *
+ * O modelo escreve `\n`; um arquivo do Windows tem `\r\n`.  Sem isto, qualquer
+ * `old_string` com mais de uma linha nunca casa -- e a falha e invisivel,
+ * porque o `\r` nao aparece em lugar nenhum da tela.  Foi o motivo de dois
+ * `Edit` seguidos darem "trecho nao encontrado" num arquivo .cs. */
+static int strip_cr(char *s, size_t *len)
+{
+    char *w = s;
+    int had = 0;
+    for (char *r = s; *r; r++) {
+        if (*r == '\r' && r[1] == '\n') { had = 1; continue; }
+        *w++ = *r;
+    }
+    *w = '\0';
+    if (len) *len = (size_t)(w - s);
+    return had;
+}
+
+/* Grava, repondo o fim de linha original.  Um `Edit` nao pode converter o
+ * arquivo inteiro para LF de brinde: o diff seguinte mostraria o arquivo todo
+ * como alterado. */
+static int write_text(const char *path, const char *text, size_t n, int crlf)
+{
+    FILE *f = fopen(path, "wb");
+    if (!f) return -1;
+    if (!crlf) {
+        fwrite(text, 1, n, f);
+    } else {
+        for (size_t i = 0; i < n; i++) {
+            if (text[i] == '\n') fputc('\r', f);
+            fputc(text[i], f);
+        }
+    }
+    fclose(f);
+    return 0;
+}
+
+/* O modelo as vezes devolve o trecho COM a numeracao que o `Read` imprimiu
+ * (`%6d\t`).  Se TODAS as linhas tiverem esse formato, a numeracao sai -- e
+ * so nesse caso, para nao mutilar codigo que legitimamente comeca com numero
+ * e tabulacao. */
+static void strip_line_numbers(char *s)
+{
+    for (const char *p = s; *p; ) {
+        const char *q = p;
+        while (*q == ' ') q++;
+        if (*q < '0' || *q > '9') return;             /* uma linha sem: desiste */
+        while (*q >= '0' && *q <= '9') q++;
+        if (*q != '\t') return;
+        const char *nl = strchr(q, '\n');
+        if (!nl) break;
+        p = nl + 1;
+    }
+
+    char *w = s;
+    for (const char *p = s; *p; ) {
+        const char *q = p;
+        while (*q == ' ') q++;
+        while (*q >= '0' && *q <= '9') q++;
+        if (*q == '\t') q++;
+        const char *nl = strchr(q, '\n');
+        const size_t n = nl ? (size_t)(nl - q) + 1 : strlen(q);
+        memmove(w, q, n);
+        w += n;
+        if (!nl) break;
+        p = nl + 1;
+    }
+    *w = '\0';
+}
+
 /* Executa uma ferramenta.  `args` e o objeto ja parseado.  Devolve 0 em
  * sucesso; a saida (ou a mensagem de erro) vai em `out`. */
 static int tool_run(const agent *a, const char *name, const tt_json *args,
@@ -926,6 +999,11 @@ static int tool_run(const agent *a, const char *name, const tt_json *args,
         size_t n = 0;
         char *txt = read_all(abs, &n);
         if (!txt) { sb_str(out, "nao consegui ler o arquivo"); return -1; }
+
+        /* Sem `\r`: o modelo nao o ve na tela, mas o copiaria para o
+         * `old_string` de um Edit -- ou deixaria de copiar, que da no mesmo
+         * erro. Aqui o texto passa a ser o mesmo dos dois lados. */
+        strip_cr(txt, &n);
 
         const int64_t off = tt_json_int(tt_json_get(args, "offset"), 1);
         const int64_t lim = tt_json_int(tt_json_get(args, "limit"), 2000);
@@ -985,17 +1063,53 @@ static int tool_run(const agent *a, const char *name, const tt_json *args,
         char *txt = read_all(abs, &n);
         if (!txt) { sb_str(out, "nao consegui ler o arquivo"); return -1; }
 
+        /* Tudo em LF para casar, e o arquivo volta como estava.  O modelo
+         * escreve `\n`; o arquivo pode ter `\r\n`, e nenhum dos dois lados
+         * consegue ver a diferenca na tela. */
+        const int crlf = strip_cr(txt, &n);
+
+        char *want = (char *)malloc(on + 1);
+        char *repl = (char *)malloc(nn + 1);
+        if (!want || !repl) { free(txt); free(want); free(repl); return -1; }
+        memcpy(want, olds, on);       want[on] = '\0';
+        memcpy(repl, news ? news : "", nn); repl[nn] = '\0';
+        strip_cr(want, NULL);
+        strip_cr(repl, NULL);
+        strip_line_numbers(want);     /* veio com a numeracao do Read? */
+        strip_line_numbers(repl);
+        olds = want;
+        news = repl;
+        on = strlen(want);
+        nn = strlen(repl);
+
         /* Trecho ambiguo e recusado: aplicar na primeira ocorrencia e o modo
          * silencioso de editar a linha errada. */
         const int all = tt_json_bool(tt_json_get(args, "replace_all"), 0);
         int count = 0;
         for (const char *p = strstr(txt, olds); p; p = strstr(p + on, olds)) count++;
-        if (!count) { free(txt); sb_str(out, "trecho nao encontrado"); return -1; }
+        if (!count) {
+            /* Diz POR QUE nao achou.  "trecho nao encontrado" sozinho manda o
+             * modelo tentar o mesmo de novo -- foi o que aconteceu. */
+            char first[160] = "";
+            size_t fl = 0;
+            while (fl < on && olds[fl] != '\n' && fl < sizeof(first) - 1)
+                { first[fl] = olds[fl]; fl++; }
+            first[fl] = '\0';
+            const int has_line = fl && strstr(txt, first) != NULL;
+            free(txt); free(want); free(repl);
+            sb_str(out, has_line
+                ? "trecho nao encontrado: a PRIMEIRA linha existe no arquivo, "
+                  "mas o restante nao bate. Releia com Read e copie o trecho "
+                  "exatamente como ele aparece, sem a numeracao das linhas."
+                : "trecho nao encontrado: nem a primeira linha existe no "
+                  "arquivo. Confira o caminho e releia com Read.");
+            return -1;
+        }
         if (count > 1 && !all) {
-            free(txt);
+            free(txt); free(want); free(repl);
             char h[160];
-            snprintf(h, sizeof(h), "trecho aparece %d vezes -- torne-o unico "
-                     "ou use replace_all", count);
+            snprintf(h, sizeof(h), "trecho aparece %d vezes -- inclua as linhas "
+                     "vizinhas para torna-lo unico, ou use replace_all", count);
             sb_str(out, h);
             return -1;
         }
@@ -1010,17 +1124,18 @@ static int tool_run(const agent *a, const char *name, const tt_json *args,
             p = hit + on;
             if (!all) { sb_str(&nw, p); break; }
         }
-        free(txt);
+        free(txt); free(want); free(repl);
 
-        FILE *f = fopen(abs, "wb");
-        if (!f) { sb_free(&nw); sb_str(out, "nao consegui gravar"); return -1; }
-        fwrite(nw.p, 1, nw.len, f);
-        fclose(f);
+        if (write_text(abs, nw.p, nw.len, crlf) != 0) {
+            sb_free(&nw);
+            sb_str(out, "nao consegui gravar");
+            return -1;
+        }
         sb_free(&nw);
 
         char h[256];
-        snprintf(h, sizeof(h), "editado: %s (%d ocorrencia%s)", path, count,
-                 count > 1 ? "s" : "");
+        snprintf(h, sizeof(h), "editado: %s (%d ocorrencia%s, fim de linha %s)",
+                 path, count, count > 1 ? "s" : "", crlf ? "CRLF" : "LF");
         sb_str(out, h);
         return 0;
     }
@@ -1138,8 +1253,10 @@ static void add_system(agent *a)
         "- Prefira Grep e Glob a ler arquivos inteiros: cada arquivo lido "
         "entra no contexto e custa caro.\n"
         "- Use Read com offset e limit quando so precisar de um trecho.\n"
-        "- Antes de Edit, leia o trecho: o texto de old_string precisa bater "
-        "byte a byte e ser unico no arquivo.\n"
+        "- Antes de Edit, leia o trecho com Read. O old_string precisa bater "
+        "byte a byte e ser unico no arquivo -- copie o texto SEM a numeracao "
+        "das linhas que o Read mostra, e inclua linhas vizinhas se o trecho "
+        "se repetir.\n"
         "- Termine dizendo o que foi feito, em uma ou duas frases. Nao repita "
         "a saida das ferramentas.");
 

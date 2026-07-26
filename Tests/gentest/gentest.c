@@ -47,6 +47,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Precisao do KV, escolhida por `--kv-prec`.  Global de arquivo: e o ambiente
+ * da medicao, nao parametro de um prompt. */
+static tt_kv_prec g_kv_prec = TT_KV_F32;
+
 #define MAX_MODELS   6
 #define MAX_PROMPTS  24
 #define MAX_GEN      512
@@ -145,7 +149,7 @@ static int generate_all(run *r, const char *model_path, const st_file *bf16,
     (void)threads;
 
     tt_model m;
-    if (tt_model_open(&m, model_path, ctx, TT_ATTN_ABSORBED, TT_KV_F32) != 0)
+    if (tt_model_open(&m, model_path, ctx, TT_ATTN_ABSORBED, g_kv_prec) != 0)
         return -1;
 
     if (bf16) {
@@ -241,6 +245,9 @@ int main(int argc, char **argv)
         else if (!strcmp(a, "--tokenizer") && has) tok_path = argv[++i];
         else if (!strcmp(a, "-n") && has)          n_new = atoi(argv[++i]);
         else if (!strcmp(a, "--threads") && has)   threads = atoi(argv[++i]);
+        else if (!strcmp(a, "--kv-prec") && has) {
+            if (tt_kv_prec_parse(argv[++i], &g_kv_prec) != 0) return 1;
+        }
         else if (!strcmp(a, "--temp") && has)     temp = (float)atof(argv[++i]);
         else if (!strcmp(a, "--seed") && has)     seed = strtoull(argv[++i], NULL, 10);
         else if (!strcmp(a, "--show"))             show = 1;
@@ -278,8 +285,8 @@ int main(int argc, char **argv)
 
     printf("\n%d prompts, ate %d tokens cada, %s\n", N_PROMPTS, n_new,
            temp > 0.0f ? "com temperatura" : "amostragem gulosa");
-    printf("engine %s, %d threads, build %s\n\n", tt_kernels_impl_name(),
-           tt_pool_threads(pool), tt_build_id());
+    printf("engine %s, %d threads, kv %s, build %s\n\n", tt_kernels_impl_name(),
+           tt_pool_threads(pool), tt_kv_prec_name(g_kv_prec), tt_build_id());
 
     run *runs = (run *)calloc(MAX_MODELS + 1, sizeof(run));
     if (!runs) return 1;

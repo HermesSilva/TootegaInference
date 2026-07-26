@@ -1,0 +1,3427 @@
+{
+  "note": "Fonte unica dos termos do glossario ForDummies (PT/EN).",
+  "categories": {
+    "armadilha": {
+      "pt": "Outro sentido",
+      "en": "Other meaning"
+    },
+    "projeto": {
+      "pt": "Do projeto",
+      "en": "Project"
+    },
+    "modelo": {
+      "pt": "Modelo",
+      "en": "Model"
+    },
+    "execucao": {
+      "pt": "Execução",
+      "en": "Execution"
+    },
+    "maquina": {
+      "pt": "Máquina",
+      "en": "Machine"
+    },
+    "numerica": {
+      "pt": "Numérica",
+      "en": "Numerics"
+    },
+    "medicao": {
+      "pt": "Medição",
+      "en": "Measurement"
+    },
+    "software": {
+      "pt": "Software",
+      "en": "Software"
+    },
+    "matematica": {
+      "pt": "Matemática",
+      "en": "Math"
+    }
+  },
+  "terms": [
+    {
+      "id": "modelo",
+      "category": "armadilha",
+      "pt": {
+        "term": "modelo",
+        "definition": "Um arquivo de números. Aqui é literalmente <code>model.tootega</code>, 19,65 GB de pesos. Não é um programa nem um serviço.",
+        "usual": "o \"cérebro\", algo abstrato",
+        "aliases": [
+          "modelos"
+        ]
+      },
+      "en": {
+        "term": "model",
+        "definition": "A file of numbers. Here it is literally <code>model.tootega</code>, 19.65 GB of weights. Not a program and not a service.",
+        "usual": "the \"brain\", something abstract",
+        "aliases": [
+          "models"
+        ]
+      }
+    },
+    {
+      "id": "expert",
+      "category": "armadilha",
+      "pt": {
+        "term": "expert",
+        "definition": "Um par de matrizes escolhido por uma nota, por token e por camada. Não tem assunto: não existe \"o expert de matemática\".",
+        "usual": "um especialista em um assunto",
+        "aliases": [
+          "experts"
+        ]
+      },
+      "en": {
+        "term": "expert",
+        "definition": "A pair of matrices picked by a score, per token and per layer. It has no subject: there is no \"math expert\".",
+        "usual": "a specialist in some subject",
+        "aliases": [
+          "experts"
+        ]
+      }
+    },
+    {
+      "id": "cache",
+      "category": "armadilha",
+      "pt": {
+        "term": "cache",
+        "definition": "Aqui são três coisas diferentes com donos diferentes: cache de pesos, cache de KV e cache de prefixo. Misturá-las é a origem da maior parte da confusão de projeto.",
+        "usual": "uma coisa só, memória rápida genérica",
+        "aliases": [
+          "caches"
+        ]
+      },
+      "en": {
+        "term": "cache",
+        "definition": "Here it means three different things with different owners: the weight cache, the KV cache and the prefix cache. Conflating them is the origin of most design confusion.",
+        "usual": "one single thing, generic fast memory",
+        "aliases": [
+          "caches"
+        ]
+      }
+    },
+    {
+      "id": "banda",
+      "category": "armadilha",
+      "pt": {
+        "term": "banda",
+        "definition": "Quantos gigabytes por segundo a memória entrega. Nada a ver com internet, e diferente de latência.",
+        "usual": "banda de internet, medida em Mbps",
+        "aliases": [
+          "banda de memória",
+          "bandas"
+        ]
+      },
+      "en": {
+        "term": "bandwidth",
+        "definition": "How many gigabytes per second memory delivers. Nothing to do with internet, and different from latency.",
+        "usual": "internet bandwidth, measured in Mbps",
+        "aliases": [
+          "memory bandwidth"
+        ]
+      }
+    },
+    {
+      "id": "residente",
+      "category": "armadilha",
+      "pt": {
+        "term": "residente",
+        "definition": "Que está inteiro na RAM e não sai de lá durante a execução. Não é o mesmo que \"instalado\" nem que \"carregado\".",
+        "usual": "que está instalado na máquina",
+        "aliases": [
+          "residentes",
+          "residência"
+        ]
+      },
+      "en": {
+        "term": "resident",
+        "definition": "Living entirely in RAM and never leaving during the run. Not the same as \"installed\" or \"loaded\".",
+        "usual": "installed on the machine",
+        "aliases": [
+          "residency"
+        ]
+      }
+    },
+    {
+      "id": "quantizacao",
+      "category": "armadilha",
+      "pt": {
+        "term": "quantização",
+        "definition": "Guardar cada peso em 4 ou 8 bits em vez de 16. Só os pesos: as contas continuam em 32 bits.",
+        "usual": "discretizar qualquer sinal",
+        "aliases": [
+          "quantizar",
+          "quantizado",
+          "quantizada"
+        ]
+      },
+      "en": {
+        "term": "quantization",
+        "definition": "Storing each weight in 4 or 8 bits instead of 16. Weights only: the arithmetic stays in 32 bits.",
+        "usual": "discretizing any signal",
+        "aliases": [
+          "quantize",
+          "quantized"
+        ]
+      }
+    },
+    {
+      "id": "lora",
+      "category": "armadilha",
+      "pt": {
+        "term": "LoRA",
+        "definition": "Aqui (<code>q_lora_rank</code>, <code>kv_lora_rank</code>) é só projeção de posto baixo, parte da arquitetura original. Não tem relação com a técnica de ajuste fino de mesmo nome.",
+        "usual": "técnica de ajuste fino de modelos",
+        "aliases": []
+      },
+      "en": {
+        "term": "LoRA",
+        "definition": "Here (<code>q_lora_rank</code>, <code>kv_lora_rank</code>) it is just low-rank projection, part of the original architecture. No relation to the fine-tuning technique of the same name.",
+        "usual": "a model fine-tuning technique",
+        "aliases": []
+      }
+    },
+    {
+      "id": "token",
+      "category": "armadilha",
+      "pt": {
+        "term": "token",
+        "definition": "Um pedaço de texto, ~4 caracteres em média. O modelo só enxerga o número inteiro que representa esse pedaço.",
+        "usual": "um símbolo, ou uma credencial de acesso",
+        "aliases": [
+          "tokens"
+        ]
+      },
+      "en": {
+        "term": "token",
+        "definition": "A piece of text, ~4 characters on average. The model only ever sees the integer that stands for that piece.",
+        "usual": "a symbol, or an access credential",
+        "aliases": [
+          "tokens"
+        ]
+      }
+    },
+    {
+      "id": "contexto",
+      "category": "armadilha",
+      "pt": {
+        "term": "contexto",
+        "definition": "O número máximo de tokens que cabem na janela da conversa. Custa memória: 52,9 KB por token.",
+        "usual": "o assunto de que se está falando",
+        "aliases": []
+      },
+      "en": {
+        "term": "context",
+        "definition": "The maximum number of tokens that fit in the conversation window. It costs memory: 52.9 KB per token.",
+        "usual": "the topic being discussed",
+        "aliases": []
+      }
+    },
+    {
+      "id": "grupo",
+      "category": "armadilha",
+      "pt": {
+        "term": "grupo",
+        "definition": "Dois homônimos independentes: <code>group=64</code> (quantos pesos compartilham uma escala) e <code>n_group</code> (limite de roteamento entre experts).",
+        "usual": "agrupamento genérico",
+        "aliases": [
+          "grupos"
+        ]
+      },
+      "en": {
+        "term": "group",
+        "definition": "Two unrelated homonyms: <code>group=64</code> (how many weights share one scale) and <code>n_group</code> (a routing restriction across experts).",
+        "usual": "generic grouping",
+        "aliases": [
+          "groups"
+        ]
+      }
+    },
+    {
+      "id": "pagina",
+      "category": "armadilha",
+      "pt": {
+        "term": "página",
+        "definition": "Bloco de 4 KB (ou 2 MB) com que o sistema operacional gerencia memória. Nada de páginas de documento.",
+        "usual": "página de um documento ou da web",
+        "aliases": [
+          "páginas"
+        ]
+      },
+      "en": {
+        "term": "page",
+        "definition": "A 4 KB (or 2 MB) block the operating system manages memory with. Nothing to do with document pages.",
+        "usual": "a document or web page",
+        "aliases": [
+          "pages"
+        ]
+      }
+    },
+    {
+      "id": "plano",
+      "category": "armadilha",
+      "pt": {
+        "term": "plano",
+        "definition": "A decisão de onde cada peso vai morar (RAM ou VRAM), calculada na inicialização a partir das bandas medidas.",
+        "usual": "uma intenção ou um cronograma",
+        "aliases": [
+          "planner"
+        ]
+      },
+      "en": {
+        "term": "plan",
+        "definition": "The decision of where each weight will live (RAM or VRAM), computed at startup from the measured bandwidths.",
+        "usual": "an intention or a schedule",
+        "aliases": [
+          "planner"
+        ]
+      }
+    },
+    {
+      "id": "oraculo",
+      "category": "armadilha",
+      "pt": {
+        "term": "oráculo",
+        "definition": "A implementação de referência em Python contra a qual o engine é comparado token a token.",
+        "usual": "um adivinho, ou um banco de dados",
+        "aliases": []
+      },
+      "en": {
+        "term": "oracle",
+        "definition": "The Python reference implementation the engine is compared against, token by token.",
+        "usual": "a fortune teller, or a database vendor",
+        "aliases": []
+      }
+    },
+    {
+      "id": "ablacao",
+      "category": "armadilha",
+      "pt": {
+        "term": "ablação",
+        "definition": "Desligar (ou restaurar) uma parte de cada vez para medir quanto ela contribui para o resultado.",
+        "usual": "um procedimento médico",
+        "aliases": []
+      },
+      "en": {
+        "term": "ablation",
+        "definition": "Switching off (or restoring) one part at a time to measure how much it contributes to the result.",
+        "usual": "a medical procedure",
+        "aliases": []
+      }
+    },
+    {
+      "id": "slot",
+      "category": "armadilha",
+      "pt": {
+        "term": "slot",
+        "definition": "Um contexto de conversa independente dentro do engine. Cada slot tem seu próprio KV.",
+        "usual": "um encaixe físico, um horário na agenda",
+        "aliases": [
+          "slots"
+        ]
+      },
+      "en": {
+        "term": "slot",
+        "definition": "One independent conversation context inside the engine. Each slot has its own KV.",
+        "usual": "a physical socket, a calendar opening",
+        "aliases": [
+          "slots"
+        ]
+      }
+    },
+    {
+      "id": "shard",
+      "category": "armadilha",
+      "pt": {
+        "term": "shard",
+        "definition": "Um dos 48 arquivos em que o modelo original vem partido, por limite de tamanho.",
+        "usual": "fragmento genérico, partição de banco de dados",
+        "aliases": [
+          "shards"
+        ]
+      },
+      "en": {
+        "term": "shard",
+        "definition": "One of the 48 files the original model comes split into, because of size limits.",
+        "usual": "a generic fragment, a database partition",
+        "aliases": [
+          "shards"
+        ]
+      }
+    },
+    {
+      "id": "kernel",
+      "category": "armadilha",
+      "pt": {
+        "term": "kernel",
+        "definition": "A rotina que faz a conta pesada — <code>matmul_int4_g</code>, por exemplo. Não é o núcleo do sistema operacional.",
+        "usual": "o núcleo do sistema operacional",
+        "aliases": [
+          "kernels"
+        ]
+      },
+      "en": {
+        "term": "kernel",
+        "definition": "The routine doing the heavy arithmetic - <code>matmul_int4_g</code>, for instance. Not the operating system kernel.",
+        "usual": "the operating system core",
+        "aliases": [
+          "kernels"
+        ]
+      }
+    },
+    {
+      "id": "draft",
+      "category": "armadilha",
+      "pt": {
+        "term": "draft",
+        "definition": "Um palpite barato de token, gerado para ser confirmado ou descartado em bloco (especulação).",
+        "usual": "rascunho de um texto",
+        "aliases": []
+      },
+      "en": {
+        "term": "draft",
+        "definition": "A cheap guess at a token, produced to be confirmed or discarded in bulk (speculation).",
+        "usual": "a rough version of a text",
+        "aliases": []
+      }
+    },
+    {
+      "id": "temperatura",
+      "category": "armadilha",
+      "pt": {
+        "term": "temperatura",
+        "definition": "Um número que controla o quanto a escolha do próximo token é aleatória. 0 = sempre o mais provável.",
+        "usual": "calor",
+        "aliases": []
+      },
+      "en": {
+        "term": "temperature",
+        "definition": "A number controlling how random the next-token choice is. 0 = always the most likely one.",
+        "usual": "heat",
+        "aliases": []
+      }
+    },
+    {
+      "id": "engine",
+      "category": "armadilha",
+      "pt": {
+        "term": "engine",
+        "definition": "O programa que executa o modelo: carrega os pesos, faz as contas, gerencia o cache. Não é o modelo, e não é a interface.",
+        "usual": "motor de carro, ou motor de jogo",
+        "aliases": []
+      },
+      "en": {
+        "term": "engine",
+        "definition": "The program that runs the model: loads the weights, does the arithmetic, manages the cache. It is not the model, and not the interface.",
+        "usual": "a car engine, or a game engine",
+        "aliases": []
+      }
+    },
+    {
+      "id": "agente",
+      "category": "armadilha",
+      "pt": {
+        "term": "agente",
+        "definition": "Um programa que usa o modelo em ciclo: pergunta, recebe uma resposta, executa ferramentas, realimenta o resultado.",
+        "usual": "uma pessoa que representa outra",
+        "aliases": [
+          "agêntico",
+          "agentes"
+        ]
+      },
+      "en": {
+        "term": "agent",
+        "definition": "A program that uses the model in a loop: asks, gets an answer, runs tools, feeds the result back.",
+        "usual": "a person acting on someone's behalf",
+        "aliases": [
+          "agentic",
+          "agents"
+        ]
+      }
+    },
+    {
+      "id": "ferramenta",
+      "category": "armadilha",
+      "pt": {
+        "term": "ferramenta",
+        "definition": "No sentido de agente: uma função que o modelo pode pedir para executar (ler arquivo, rodar comando). O esquema dela entra no prompt.",
+        "usual": "utensílio, ou programa de linha de comando",
+        "aliases": [
+          "ferramentas"
+        ]
+      },
+      "en": {
+        "term": "tool",
+        "definition": "In the agent sense: a function the model can ask to run (read a file, run a command). Its schema goes into the prompt.",
+        "usual": "a utensil, or a command-line program",
+        "aliases": [
+          "tools"
+        ]
+      }
+    },
+    {
+      "id": "a-inversao",
+      "category": "projeto",
+      "pt": {
+        "term": "a inversão",
+        "definition": "A descoberta de que o PCIe desta máquina (12 GB/s) é mais lento que o disco (18,4 GB/s), invertendo a hierarquia que quase todo engine assume.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "the inversion",
+        "definition": "The discovery that this machine's PCIe (12 GB/s) is slower than its disk (18.4 GB/s), inverting the hierarchy nearly every engine assumes.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "lei-de-colocacao",
+      "category": "projeto",
+      "pt": {
+        "term": "lei de colocação",
+        "definition": "\"Coloque na GPU apenas o que couber lá permanentemente; nunca transmita pesos por um link mais lento que o tier de origem.\"",
+        "usual": null,
+        "aliases": [
+          "colocação"
+        ]
+      },
+      "en": {
+        "term": "placement law",
+        "definition": "\"Put on the GPU only what fits there permanently; never stream weights over a link slower than the source tier.\"",
+        "usual": null,
+        "aliases": [
+          "placement"
+        ]
+      }
+    },
+    {
+      "id": "particao-por-camada",
+      "category": "projeto",
+      "pt": {
+        "term": "partição por camada",
+        "definition": "Dividir o modelo entre GPU e CPU por camadas, não por tensores. Os pesos ficam fixos onde a camada é calculada; entre camadas cruzam só 8 KB.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "layer partition",
+        "definition": "Splitting the model between GPU and CPU by layers, not by tensors. Weights stay pinned where the layer is computed; only 8 KB crosses between layers.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "fracao-de-residencia",
+      "category": "projeto",
+      "pt": {
+        "term": "fração de residência",
+        "definition": "Que porcentagem do modelo está na memória rápida. É a variável que governa a velocidade, mais que qualquer especificação de hardware.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "residency fraction",
+        "definition": "What percentage of the model sits in fast memory. It is the variable that governs speed, more than any hardware spec.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "armadilha-desta-maquina",
+      "category": "projeto",
+      "pt": {
+        "term": "a armadilha desta máquina",
+        "definition": "A configuração <code>CUDA_DENSE=1</code> do colibrì, que não recusou o impossível e degradou 13× em silêncio: 0,684 → 0,054 tok/s.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "this machine's trap",
+        "definition": "colibrì's <code>CUDA_DENSE=1</code> setting, which did not refuse the impossible and degraded 13x silently: 0.684 → 0.054 tok/s.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "recusar-em-vez-de-degradar",
+      "category": "projeto",
+      "pt": {
+        "term": "recusar em vez de degradar",
+        "definition": "Se o plano não cabe no orçamento declarado, o engine sai com erro dizendo o que reduzir. Nunca aceita e fica lento.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "refuse instead of degrade",
+        "definition": "If the plan does not fit the declared budget, the engine exits with an error naming what to reduce. It never accepts and gets slow.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "trinta-e-dois",
+      "category": "projeto",
+      "pt": {
+        "term": "32/32",
+        "definition": "O critério de aceitação: 32 posições de teste, todas com o mesmo token da referência. Binário, e bloqueia merge.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "32/32",
+        "definition": "The acceptance criterion: 32 test positions, all matching the reference token. Binary, and it blocks merges.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "medicao-pareada",
+      "category": "projeto",
+      "pt": {
+        "term": "medição pareada",
+        "definition": "Comparar duas configurações janela a janela sobre o mesmo texto, nunca por média global. A média global já produziu um número invertido.",
+        "usual": null,
+        "aliases": [
+          "pareada",
+          "pareado"
+        ]
+      },
+      "en": {
+        "term": "paired measurement",
+        "definition": "Comparing two configurations window by window over the same text, never by global mean. The global mean already produced a sign-flipped number.",
+        "usual": null,
+        "aliases": [
+          "paired"
+        ]
+      }
+    },
+    {
+      "id": "determinismo-por-estado",
+      "category": "projeto",
+      "pt": {
+        "term": "determinismo por estado",
+        "definition": "Duas execuções no mesmo estado dão bytes idênticos; estados diferentes podem divergir legitimamente. Não se assume que \"greedy basta\".",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "determinism by state",
+        "definition": "Two runs in the same state produce identical bytes; different states may legitimately diverge. \"Greedy is enough\" is not assumed.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "absorcao",
+      "category": "projeto",
+      "pt": {
+        "term": "absorção",
+        "definition": "Reescrever a atenção para operar no espaço comprimido, projetando a query uma vez em vez de expandir cada posição do cache.",
+        "usual": null,
+        "aliases": [
+          "absorvida",
+          "absorbed"
+        ]
+      },
+      "en": {
+        "term": "absorption",
+        "definition": "Rewriting attention to operate in the compressed space, projecting the query once instead of expanding every cached position.",
+        "usual": null,
+        "aliases": [
+          "absorbed"
+        ]
+      }
+    },
+    {
+      "id": "desabsorvida",
+      "category": "projeto",
+      "pt": {
+        "term": "desabsorvida",
+        "definition": "A formulação original da atenção, que expande o cache antes de usá-lo. É a que o oráculo usa.",
+        "usual": null,
+        "aliases": [
+          "expandida"
+        ]
+      },
+      "en": {
+        "term": "unabsorbed",
+        "definition": "The original attention formulation, which expands the cache before using it. It is the one the oracle uses.",
+        "usual": null,
+        "aliases": [
+          "expanded"
+        ]
+      }
+    },
+    {
+      "id": "metade-metade",
+      "category": "projeto",
+      "pt": {
+        "term": "metade/metade",
+        "definition": "A convenção de empacotamento dos nibbles: o byte <code>j</code> guarda os pesos <code>j</code> e <code>j+32</code>, não <code>2j</code> e <code>2j+1</code>.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "half/half",
+        "definition": "The nibble packing convention: byte <code>j</code> holds weights <code>j</code> and <code>j+32</code>, not <code>2j</code> and <code>2j+1</code>.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "arena",
+      "category": "projeto",
+      "pt": {
+        "term": "arena de scratch",
+        "definition": "Um bloco de memória alocado uma vez na inicialização e fatiado para todos os buffers temporários. Zero <code>malloc</code> no laço de token.",
+        "usual": null,
+        "aliases": [
+          "arena"
+        ]
+      },
+      "en": {
+        "term": "scratch arena",
+        "definition": "One block of memory allocated once at startup and sliced for every temporary buffer. Zero <code>malloc</code> in the token loop.",
+        "usual": null,
+        "aliases": [
+          "arena"
+        ]
+      }
+    },
+    {
+      "id": "estavel-primeiro",
+      "category": "projeto",
+      "pt": {
+        "term": "estável primeiro, volátil por último",
+        "definition": "A regra de ordenação do prompt que faz o cache funcionar: system → ferramentas → contexto longo → histórico → turno atual.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "stable first, volatile last",
+        "definition": "The prompt ordering rule that makes the cache work: system → tools → long context → history → current turn.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "criterio-de-saida",
+      "category": "projeto",
+      "pt": {
+        "term": "critério de saída",
+        "definition": "O número que fecha um marco do roadmap. Sem número, o marco não fecha.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "exit criterion",
+        "definition": "The number that closes a roadmap milestone. No number, no sign-off.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "criterio-de-corte",
+      "category": "projeto",
+      "pt": {
+        "term": "critério de corte",
+        "definition": "O número abaixo do qual a funcionalidade é cancelada, não adiada. O M2 tem um: ganho abaixo de 20% mata a partição GPU/CPU.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "kill criterion",
+        "definition": "The number below which the feature is cancelled, not postponed. M2 has one: a gain below 20% kills the GPU/CPU partition.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "file-backed",
+      "category": "projeto",
+      "pt": {
+        "term": "file-backed",
+        "definition": "Memória que veio de um arquivo mapeado: o sistema operacional pode descartá-la e reler do disco. Por isso não conta no orçamento de RAM.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "file-backed",
+        "definition": "Memory that came from a mapped file: the operating system can drop it and reread from disk. That is why it does not count against the RAM budget.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "anonima",
+      "category": "projeto",
+      "pt": {
+        "term": "memória anônima",
+        "definition": "Memória que só existe na RAM, sem arquivo por trás. Se for despejada, o conteúdo se perde — por isso conta no orçamento.",
+        "usual": null,
+        "aliases": [
+          "anônimas",
+          "anônima"
+        ]
+      },
+      "en": {
+        "term": "anonymous memory",
+        "definition": "Memory that exists only in RAM, with no file behind it. If evicted, the content is lost - hence it counts against the budget.",
+        "usual": null,
+        "aliases": [
+          "anonymous"
+        ]
+      }
+    },
+    {
+      "id": "publica-se-o-medido",
+      "category": "projeto",
+      "pt": {
+        "term": "publica-se o que foi medido",
+        "definition": "Quando a intuição diz uma coisa e a medição diz outra, publica-se a medição — mesmo que a alternativa pareça mais segura.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "publish what was measured",
+        "definition": "When intuition says one thing and measurement says another, the measurement is published - even if the alternative looks safer.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "teto",
+      "category": "projeto",
+      "pt": {
+        "term": "teto",
+        "definition": "O limite superior de velocidade obtido dividindo bytes por banda, ignorando compute e overhead. Também chamado de roofline.",
+        "usual": null,
+        "aliases": [
+          "roofline"
+        ]
+      },
+      "en": {
+        "term": "ceiling",
+        "definition": "The upper speed bound obtained by dividing bytes by bandwidth, ignoring compute and overhead. Also called the roofline.",
+        "usual": null,
+        "aliases": [
+          "roofline"
+        ]
+      }
+    },
+    {
+      "id": "colibri",
+      "category": "projeto",
+      "pt": {
+        "term": "colibrì",
+        "definition": "O projeto anterior, de outro repositório, que resolve o problema oposto: modelos grandes demais, lidos do disco. Aqui é referência histórica — nada de código dele entra.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "colibrì",
+        "definition": "The previous project, from another repository, solving the opposite problem: models too big, streamed from disk. Here it is a historical reference - none of its code enters.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "tootega",
+      "category": "projeto",
+      "pt": {
+        "term": "container .tootega",
+        "definition": "O formato de arquivo do projeto: cabeçalho de 128 bytes, blobs alinhados a 64 bytes, índice JSON no fim. É lido direto, sem conversão.",
+        "usual": null,
+        "aliases": [
+          "container"
+        ]
+      },
+      "en": {
+        "term": ".tootega container",
+        "definition": "The project's file format: a 128-byte header, blobs aligned to 64 bytes, a JSON index at the end. Read directly, with no conversion step.",
+        "usual": null,
+        "aliases": [
+          "container"
+        ]
+      }
+    },
+    {
+      "id": "llm",
+      "category": "modelo",
+      "pt": {
+        "term": "LLM",
+        "definition": "Large Language Model, modelo de linguagem grande: um programa que prevê o próximo token de um texto.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "LLM",
+        "definition": "Large Language Model: a program that predicts the next token of a text.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "transformer",
+      "category": "modelo",
+      "pt": {
+        "term": "transformer",
+        "definition": "A arquitetura que praticamente todos os LLMs usam: uma pilha de camadas iguais, cada uma com atenção e um bloco de multiplicações.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "transformer",
+        "definition": "The architecture practically every LLM uses: a stack of identical layers, each with attention and a multiplication block.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "camada",
+      "category": "modelo",
+      "pt": {
+        "term": "camada",
+        "definition": "Um bloco da pilha do transformer. Aqui são 47, executados em sequência — a saída de uma é a entrada da seguinte.",
+        "usual": null,
+        "aliases": [
+          "camadas"
+        ]
+      },
+      "en": {
+        "term": "layer",
+        "definition": "One block of the transformer stack. Here there are 47, run in sequence - each one's output is the next one's input.",
+        "usual": null,
+        "aliases": [
+          "layers"
+        ]
+      }
+    },
+    {
+      "id": "peso",
+      "category": "modelo",
+      "pt": {
+        "term": "peso",
+        "definition": "Um dos números aprendidos durante o treino. Aqui são 31,2 bilhões deles, e são eles que ocupam os 19,65 GB.",
+        "usual": null,
+        "aliases": [
+          "pesos"
+        ]
+      },
+      "en": {
+        "term": "weight",
+        "definition": "One of the numbers learned during training. Here there are 31.2 billion of them, and they are what fills the 19.65 GB.",
+        "usual": null,
+        "aliases": [
+          "weights"
+        ]
+      }
+    },
+    {
+      "id": "parametro",
+      "category": "modelo",
+      "pt": {
+        "term": "parâmetro",
+        "definition": "Sinônimo de peso quando se fala do tamanho do modelo. \"31,2 bilhões de parâmetros\" = 31,2 bilhões de números aprendidos.",
+        "usual": null,
+        "aliases": [
+          "parâmetros"
+        ]
+      },
+      "en": {
+        "term": "parameter",
+        "definition": "A synonym for weight when talking about model size. \"31.2 billion parameters\" = 31.2 billion learned numbers.",
+        "usual": null,
+        "aliases": [
+          "parameters"
+        ]
+      }
+    },
+    {
+      "id": "parametro-ativo",
+      "category": "modelo",
+      "pt": {
+        "term": "parâmetro ativo",
+        "definition": "Quantos pesos são realmente lidos para gerar um token. Aqui são 3,57 bilhões de 31,2 — e é esse número que determina a velocidade.",
+        "usual": null,
+        "aliases": [
+          "parâmetros ativos",
+          "ativo por token"
+        ]
+      },
+      "en": {
+        "term": "active parameter",
+        "definition": "How many weights are actually read to produce one token. Here 3.57 billion out of 31.2 - and that is the number that sets the speed.",
+        "usual": null,
+        "aliases": [
+          "active parameters"
+        ]
+      }
+    },
+    {
+      "id": "tensor",
+      "category": "modelo",
+      "pt": {
+        "term": "tensor",
+        "definition": "Um array multidimensional de pesos, com nome. O container tem 9.703 deles, e o índice diz onde cada um começa.",
+        "usual": null,
+        "aliases": [
+          "tensores"
+        ]
+      },
+      "en": {
+        "term": "tensor",
+        "definition": "A named multidimensional array of weights. The container has 9,703 of them, and the index says where each one starts.",
+        "usual": null,
+        "aliases": [
+          "tensors"
+        ]
+      }
+    },
+    {
+      "id": "hidden",
+      "category": "modelo",
+      "pt": {
+        "term": "hidden",
+        "definition": "O vetor que atravessa a pilha de camadas. Aqui tem 2048 números — 8 KB. Também chamado de estado residual.",
+        "usual": null,
+        "aliases": [
+          "hidden_size",
+          "estado residual"
+        ]
+      },
+      "en": {
+        "term": "hidden",
+        "definition": "The vector travelling through the layer stack. Here it holds 2048 numbers - 8 KB. Also called the residual stream.",
+        "usual": null,
+        "aliases": [
+          "hidden_size",
+          "residual stream"
+        ]
+      }
+    },
+    {
+      "id": "embedding",
+      "category": "modelo",
+      "pt": {
+        "term": "embedding",
+        "definition": "A tabela que converte um id de token no vetor inicial de 2048 números. Aqui tem 154.880 linhas e lê-se uma por token.",
+        "usual": null,
+        "aliases": [
+          "embeddings",
+          "embed_tokens"
+        ]
+      },
+      "en": {
+        "term": "embedding",
+        "definition": "The table converting a token id into the initial 2048-number vector. Here it has 154,880 rows and one is read per token.",
+        "usual": null,
+        "aliases": [
+          "embeddings",
+          "embed_tokens"
+        ]
+      }
+    },
+    {
+      "id": "logits",
+      "category": "modelo",
+      "pt": {
+        "term": "logits",
+        "definition": "As 154.880 notas de saída, uma por peça do vocabulário, antes de virarem probabilidades. Nota alta = candidato provável.",
+        "usual": null,
+        "aliases": [
+          "logit"
+        ]
+      },
+      "en": {
+        "term": "logits",
+        "definition": "The 154,880 output scores, one per vocabulary piece, before they become probabilities. High score = likely candidate.",
+        "usual": null,
+        "aliases": [
+          "logit"
+        ]
+      }
+    },
+    {
+      "id": "softmax",
+      "category": "modelo",
+      "pt": {
+        "term": "softmax",
+        "definition": "A função que transforma notas em probabilidades que somam 1. Subtrai-se o máximo antes, para não estourar o expoente.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "softmax",
+        "definition": "The function turning scores into probabilities that sum to 1. The maximum is subtracted first, to avoid exponent overflow.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "rmsnorm",
+      "category": "modelo",
+      "pt": {
+        "term": "RMSNorm",
+        "definition": "Normalização que reescala o vetor para uma magnitude previsível antes de cada bloco. Sem ela, 47 camadas empilhadas explodem ou somem.",
+        "usual": null,
+        "aliases": [
+          "normalização"
+        ]
+      },
+      "en": {
+        "term": "RMSNorm",
+        "definition": "Normalization that rescales the vector to a predictable magnitude before each block. Without it, 47 stacked layers blow up or vanish.",
+        "usual": null,
+        "aliases": [
+          "normalization"
+        ]
+      }
+    },
+    {
+      "id": "residual",
+      "category": "modelo",
+      "pt": {
+        "term": "resíduo",
+        "definition": "Somar a entrada de volta na saída do bloco. Faz a camada corrigir o vetor em vez de substituí-lo, e é o que permite empilhar 47.",
+        "usual": null,
+        "aliases": [
+          "residual",
+          "resíduos"
+        ]
+      },
+      "en": {
+        "term": "residual",
+        "definition": "Adding the input back into the block's output. It makes a layer correct the vector rather than replace it, which is what allows stacking 47.",
+        "usual": null,
+        "aliases": [
+          "residuals"
+        ]
+      }
+    },
+    {
+      "id": "atencao",
+      "category": "modelo",
+      "pt": {
+        "term": "atenção",
+        "definition": "O mecanismo pelo qual o token atual olha para todos os anteriores e decide de quais copiar informação.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "attention",
+        "definition": "The mechanism by which the current token looks at all previous ones and decides which to copy information from.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "cabeca",
+      "category": "modelo",
+      "pt": {
+        "term": "cabeça",
+        "definition": "Uma das 20 vistas paralelas dentro da atenção. Cada uma pode se especializar em um tipo de relação entre tokens.",
+        "usual": null,
+        "aliases": [
+          "cabeças"
+        ]
+      },
+      "en": {
+        "term": "head",
+        "definition": "One of the 20 parallel views inside attention. Each can specialize in a different kind of relation between tokens.",
+        "usual": null,
+        "aliases": [
+          "heads"
+        ]
+      }
+    },
+    {
+      "id": "qkv",
+      "category": "modelo",
+      "pt": {
+        "term": "Q, K, V",
+        "definition": "Query, key e value: o que eu procuro, o que eu ofereço, o que eu entrego. A atenção compara Q com todos os K e mistura os V.",
+        "usual": null,
+        "aliases": [
+          "query",
+          "key",
+          "value"
+        ]
+      },
+      "en": {
+        "term": "Q, K, V",
+        "definition": "Query, key and value: what I look for, what I offer, what I hand over. Attention compares Q against every K and mixes the Vs.",
+        "usual": null,
+        "aliases": [
+          "query",
+          "key",
+          "value"
+        ]
+      }
+    },
+    {
+      "id": "rope",
+      "category": "modelo",
+      "pt": {
+        "term": "RoPE",
+        "definition": "Codificação de posição por rotação do vetor. Aqui é parcial: só 64 das 256 dimensões de cada cabeça giram.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "RoPE",
+        "definition": "Positional encoding by rotating the vector. Here it is partial: only 64 of each head's 256 dimensions rotate.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "mlp",
+      "category": "modelo",
+      "pt": {
+        "term": "MLP",
+        "definition": "O bloco de duas multiplicações que vem depois da atenção. Também chamado de FFN, feed-forward network.",
+        "usual": null,
+        "aliases": [
+          "FFN"
+        ]
+      },
+      "en": {
+        "term": "MLP",
+        "definition": "The two-multiplication block that follows attention. Also called FFN, feed-forward network.",
+        "usual": null,
+        "aliases": [
+          "FFN"
+        ]
+      }
+    },
+    {
+      "id": "moe",
+      "category": "modelo",
+      "pt": {
+        "term": "MoE",
+        "definition": "Mixture-of-Experts: em vez de um MLP por camada, muitos — e só alguns rodam por token. É o que torna 31,2 B de pesos custarem 3,57 B por token.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "MoE",
+        "definition": "Mixture-of-Experts: instead of one MLP per layer, many - and only a few run per token. It is what makes 31.2 B of weights cost 3.57 B per token.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "roteador",
+      "category": "modelo",
+      "pt": {
+        "term": "roteador",
+        "definition": "A pequena matriz que dá uma nota a cada expert e decide quais rodam. No código e na configuração aparece como <code>gate</code>.",
+        "usual": null,
+        "aliases": [
+          "gate"
+        ]
+      },
+      "en": {
+        "term": "router",
+        "definition": "The small matrix that scores every expert and decides which ones run. In code and config it appears as <code>gate</code>.",
+        "usual": null,
+        "aliases": [
+          "gate"
+        ]
+      }
+    },
+    {
+      "id": "topk",
+      "category": "modelo",
+      "pt": {
+        "term": "top-k",
+        "definition": "\"Pegue os k maiores\". No roteador é top-4 de 64; na amostragem é escolher entre os k tokens de maior nota.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "top-k",
+        "definition": "\"Take the k largest\". In the router it is top-4 of 64; in sampling it means choosing among the k highest-scoring tokens.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "expert-compartilhado",
+      "category": "modelo",
+      "pt": {
+        "term": "expert compartilhado",
+        "definition": "Um expert que roda sempre, além dos escolhidos pelo roteador. Guarda o que é útil para qualquer token.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "shared expert",
+        "definition": "An expert that always runs, on top of the ones the router picks. It holds what is useful for any token.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "mla",
+      "category": "modelo",
+      "pt": {
+        "term": "MLA",
+        "definition": "Multi-head Latent Attention: atenção que guarda o cache comprimido, 576 números por token por camada em vez de 10.240.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "MLA",
+        "definition": "Multi-head Latent Attention: attention that keeps the cache compressed, 576 numbers per token per layer instead of 10,240.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "gqa",
+      "category": "modelo",
+      "pt": {
+        "term": "GQA / MHA",
+        "definition": "As variantes mais comuns de atenção. Funcionam, mas o cache delas é muito maior — por isso o modelo alvo usa MLA.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "GQA / MHA",
+        "definition": "The more common attention variants. They work, but their cache is much larger - hence the target model uses MLA.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "mtp",
+      "category": "modelo",
+      "pt": {
+        "term": "MTP",
+        "definition": "Multi-Token Prediction: uma cabeça extra que chuta o token seguinte quase de graça, para acelerar por especulação.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "MTP",
+        "definition": "Multi-Token Prediction: an extra head that guesses the following token almost for free, to speed things up by speculation.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "lm-head",
+      "category": "modelo",
+      "pt": {
+        "term": "lm_head",
+        "definition": "A matriz final, 2048 × 154.880, que converte o vetor da última camada nas notas de saída. É lida inteira a cada token.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "lm_head",
+        "definition": "The final matrix, 2048 × 154,880, turning the last layer's vector into output scores. It is read in full every token.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "vocabulario",
+      "category": "modelo",
+      "pt": {
+        "term": "vocabulário",
+        "definition": "As 154.880 peças de texto que o modelo conhece. Só 154.856 existem de fato; o resto é preenchimento.",
+        "usual": null,
+        "aliases": [
+          "vocab_size"
+        ]
+      },
+      "en": {
+        "term": "vocabulary",
+        "definition": "The 154,880 text pieces the model knows. Only 154,856 actually exist; the rest is padding.",
+        "usual": null,
+        "aliases": [
+          "vocab_size"
+        ]
+      }
+    },
+    {
+      "id": "camada-densa",
+      "category": "modelo",
+      "pt": {
+        "term": "camada densa",
+        "definition": "Uma camada sem MoE, com um MLP comum. Aqui só a camada 0 é assim, com tamanho interno 10.240.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "dense layer",
+        "definition": "A layer with no MoE, holding a plain MLP. Here only layer 0 is like that, with internal size 10,240.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "arquitetura",
+      "category": "modelo",
+      "pt": {
+        "term": "arquitetura",
+        "definition": "O desenho do modelo: quantas camadas, de que tipo, com que tamanhos. Vem do <code>config.json</code>, que o container guarda inteiro.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "architecture",
+        "definition": "The model's blueprint: how many layers, of what kind, with what sizes. It comes from <code>config.json</code>, which the container stores whole.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "checkpoint",
+      "category": "modelo",
+      "pt": {
+        "term": "checkpoint",
+        "definition": "O conjunto de arquivos publicado com os pesos treinados. Aqui vem em 48 shards no formato safetensors.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "checkpoint",
+        "definition": "The published set of files holding the trained weights. Here it arrives as 48 shards in the safetensors format.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "safetensors",
+      "category": "modelo",
+      "pt": {
+        "term": "safetensors",
+        "definition": "O formato em que os pesos são publicados: um cabeçalho JSON dizendo nome, forma e offset, e os números crus em seguida.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "safetensors",
+        "definition": "The format weights are published in: a JSON header giving name, shape and offset, then the raw numbers.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "hugging-face",
+      "category": "modelo",
+      "pt": {
+        "term": "Hugging Face",
+        "definition": "O repositório público de onde o modelo e o tokenizer são baixados, e de onde vem a biblioteca usada como referência.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "Hugging Face",
+        "definition": "The public repository the model and tokenizer are downloaded from, and the source of the library used as reference.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "inferencia",
+      "category": "execucao",
+      "pt": {
+        "term": "inferência",
+        "definition": "Executar um modelo já treinado para obter uma resposta. É tudo o que este projeto faz — não há treino em lugar nenhum.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "inference",
+        "definition": "Running an already trained model to get an answer. It is all this project does - there is no training anywhere.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "treino",
+      "category": "execucao",
+      "pt": {
+        "term": "treino",
+        "definition": "O processo, caríssimo, que produziu os pesos. Acontece uma vez, em outro lugar, e não se repete aqui.",
+        "usual": null,
+        "aliases": [
+          "treinamento"
+        ]
+      },
+      "en": {
+        "term": "training",
+        "definition": "The very expensive process that produced the weights. It happens once, elsewhere, and is never repeated here.",
+        "usual": null,
+        "aliases": [
+          "training"
+        ]
+      }
+    },
+    {
+      "id": "fine-tuning",
+      "category": "execucao",
+      "pt": {
+        "term": "fine-tuning",
+        "definition": "Ajustar um modelo já treinado para uma tarefa específica. Declarado fora de escopo neste projeto.",
+        "usual": null,
+        "aliases": [
+          "ajuste fino"
+        ]
+      },
+      "en": {
+        "term": "fine-tuning",
+        "definition": "Adjusting an already trained model for a specific task. Declared out of scope in this project.",
+        "usual": null,
+        "aliases": [
+          "fine tuning"
+        ]
+      }
+    },
+    {
+      "id": "forward",
+      "category": "execucao",
+      "pt": {
+        "term": "forward",
+        "definition": "Uma passagem completa pela pilha de camadas, da entrada até os logits. Também é o nome do subcomando que faz isso sobre ids fixos.",
+        "usual": null,
+        "aliases": [
+          "passe"
+        ]
+      },
+      "en": {
+        "term": "forward",
+        "definition": "One complete pass through the layer stack, from input to logits. It is also the name of the subcommand that does it over fixed ids.",
+        "usual": null,
+        "aliases": [
+          "pass"
+        ]
+      }
+    },
+    {
+      "id": "prefill",
+      "category": "execucao",
+      "pt": {
+        "term": "prefill",
+        "definition": "Processar o prompt inteiro de uma vez, antes de gerar. Todos os tokens passam juntos, então os pesos são lidos uma vez para muitos tokens.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "prefill",
+        "definition": "Processing the whole prompt at once, before generating. All tokens go through together, so weights are read once for many tokens.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "decode",
+      "category": "execucao",
+      "pt": {
+        "term": "decode",
+        "definition": "Gerar um token de cada vez, em cadeia. Cada token relê os 2,01 GB de peso inteiros — é aqui que a banda manda.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "decode",
+        "definition": "Generating one token at a time, in a chain. Each token rereads the full 2.01 GB of weights - this is where bandwidth rules.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "ttft",
+      "category": "execucao",
+      "pt": {
+        "term": "TTFT",
+        "definition": "Time to first token: quanto tempo até a primeira palavra aparecer na tela. Não é meta deste projeto até o marco M3.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "TTFT",
+        "definition": "Time to first token: how long until the first word shows up. Not a goal in this project until milestone M3.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "toks",
+      "category": "execucao",
+      "pt": {
+        "term": "tok/s",
+        "definition": "Tokens por segundo. A métrica principal do projeto. Sempre acompanhada do contexto em que foi medida.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "tok/s",
+        "definition": "Tokens per second. The project's headline metric. Always reported together with the context it was measured at.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "kv-cache",
+      "category": "execucao",
+      "pt": {
+        "term": "cache KV",
+        "definition": "O estado de atenção já calculado para os tokens anteriores. Guardá-lo evita refazer o prompt inteiro a cada palavra.",
+        "usual": null,
+        "aliases": [
+          "KV",
+          "cache de KV"
+        ]
+      },
+      "en": {
+        "term": "KV cache",
+        "definition": "The attention state already computed for previous tokens. Keeping it avoids redoing the whole prompt for every word.",
+        "usual": null,
+        "aliases": [
+          "KV"
+        ]
+      }
+    },
+    {
+      "id": "cache-de-prefixo",
+      "category": "execucao",
+      "pt": {
+        "term": "cache de prefixo",
+        "definition": "Reaproveitar o KV do começo da conversa entre turnos. Vale até o primeiro token diferente; dali em diante tudo é refeito.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "prefix cache",
+        "definition": "Reusing the KV of the conversation's beginning across turns. It holds up to the first differing token; from there on everything is redone.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "teacher-forcing",
+      "category": "execucao",
+      "pt": {
+        "term": "teacher forcing",
+        "definition": "Rodar o modelo sobre um texto conhecido, forçando cada palavra correta, para comparar previsão a previsão com a referência.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "teacher forcing",
+        "definition": "Running the model over a known text, forcing each correct word, to compare prediction by prediction against the reference.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "greedy",
+      "category": "execucao",
+      "pt": {
+        "term": "greedy",
+        "definition": "Escolher sempre o token de maior nota. É determinístico e é o modo usado em toda medição.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "greedy",
+        "definition": "Always picking the highest-scoring token. Deterministic, and the mode used in every measurement.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "topp",
+      "category": "execucao",
+      "pt": {
+        "term": "top-p",
+        "definition": "Sortear entre os tokens de maior nota que, somados, atingem a probabilidade p. Também chamado de nucleus sampling.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "top-p",
+        "definition": "Drawing among the highest-scoring tokens whose probabilities together reach p. Also called nucleus sampling.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "amostragem",
+      "category": "execucao",
+      "pt": {
+        "term": "amostragem",
+        "definition": "A etapa que escolhe um token entre os 154.880 candidatos, a partir das notas. Greedy, temperatura, top-k e top-p são modos dela.",
+        "usual": null,
+        "aliases": [
+          "sampler"
+        ]
+      },
+      "en": {
+        "term": "sampling",
+        "definition": "The step that picks one token out of the 154,880 candidates, from the scores. Greedy, temperature, top-k and top-p are its modes.",
+        "usual": null,
+        "aliases": [
+          "sampler"
+        ]
+      }
+    },
+    {
+      "id": "batching",
+      "category": "execucao",
+      "pt": {
+        "term": "batching contínuo",
+        "definition": "Atender várias conversas ao mesmo tempo, aproveitando a mesma leitura de peso para todas. É onde mora a segunda meta do projeto.",
+        "usual": null,
+        "aliases": [
+          "batch"
+        ]
+      },
+      "en": {
+        "term": "continuous batching",
+        "definition": "Serving several conversations at once, amortizing the same weight read across all of them. It is where the project's second goal lives.",
+        "usual": null,
+        "aliases": [
+          "batch"
+        ]
+      }
+    },
+    {
+      "id": "especulacao",
+      "category": "execucao",
+      "pt": {
+        "term": "especulação",
+        "definition": "Chutar vários tokens de uma vez com um mecanismo barato e verificar todos em bloco. Paga quando o modelo é residente.",
+        "usual": null,
+        "aliases": [
+          "especulativo"
+        ]
+      },
+      "en": {
+        "term": "speculation",
+        "definition": "Guessing several tokens at once with a cheap mechanism and verifying them in bulk. It pays off when the model is resident.",
+        "usual": null,
+        "aliases": [
+          "speculative decoding"
+        ]
+      }
+    },
+    {
+      "id": "prompt",
+      "category": "execucao",
+      "pt": {
+        "term": "prompt",
+        "definition": "O texto de entrada completo: instruções, ferramentas, histórico e a pergunta atual. É ele que o cache de prefixo tenta reaproveitar.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "prompt",
+        "definition": "The complete input text: instructions, tools, history and the current question. It is what the prefix cache tries to reuse.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "system-prompt",
+      "category": "execucao",
+      "pt": {
+        "term": "system prompt",
+        "definition": "A parte fixa do prompt, com as instruções permanentes. Vai primeiro justamente para nunca invalidar o cache.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "system prompt",
+        "definition": "The fixed part of the prompt, holding permanent instructions. It goes first precisely so it never invalidates the cache.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "chat-template",
+      "category": "execucao",
+      "pt": {
+        "term": "chat template",
+        "definition": "As regras de como montar o texto de uma conversa a partir dos turnos, com os marcadores de quem fala. Vem junto com o modelo.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "chat template",
+        "definition": "The rules for assembling a conversation's text out of turns, with the speaker markers. It ships with the model.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "turno",
+      "category": "execucao",
+      "pt": {
+        "term": "turno",
+        "definition": "Uma rodada da conversa: o que o usuário disse mais o que o assistente respondeu.",
+        "usual": null,
+        "aliases": [
+          "turnos",
+          "multi-turno"
+        ]
+      },
+      "en": {
+        "term": "turn",
+        "definition": "One round of the conversation: what the user said plus what the assistant answered.",
+        "usual": null,
+        "aliases": [
+          "turns",
+          "multi-turn"
+        ]
+      }
+    },
+    {
+      "id": "tokenizer",
+      "category": "execucao",
+      "pt": {
+        "term": "tokenizer",
+        "definition": "O componente que converte texto em ids e de volta. Erro nele não estoura: produz ids ligeiramente diferentes e resposta plausível e errada.",
+        "usual": null,
+        "aliases": [
+          "tokenizador",
+          "tokenização"
+        ]
+      },
+      "en": {
+        "term": "tokenizer",
+        "definition": "The component converting text into ids and back. An error here does not crash: it yields slightly different ids and a plausible, wrong answer.",
+        "usual": null,
+        "aliases": [
+          "tokenization"
+        ]
+      }
+    },
+    {
+      "id": "bpe",
+      "category": "execucao",
+      "pt": {
+        "term": "BPE",
+        "definition": "Byte Pair Encoding: junta repetidamente os dois pedaços vizinhos mais baratos, segundo uma tabela de 321.649 regras.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "BPE",
+        "definition": "Byte Pair Encoding: repeatedly merges the two cheapest adjacent pieces, according to a table of 321,649 rules.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "token-especial",
+      "category": "execucao",
+      "pt": {
+        "term": "token especial",
+        "definition": "Um dos 36 marcadores como <code>&lt;|user|&gt;</code>, reconhecidos por texto exato antes do BPE. Delimitam quem fala.",
+        "usual": null,
+        "aliases": [
+          "tokens especiais"
+        ]
+      },
+      "en": {
+        "term": "special token",
+        "definition": "One of the 36 markers such as <code>&lt;|user|&gt;</code>, matched by exact text before BPE. They delimit who is speaking.",
+        "usual": null,
+        "aliases": [
+          "special tokens"
+        ]
+      }
+    },
+    {
+      "id": "cpu",
+      "category": "maquina",
+      "pt": {
+        "term": "CPU",
+        "definition": "O processador principal. Aqui, um i9-14900K com 8 núcleos rápidos, 16 econômicos e 32 threads no total.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "CPU",
+        "definition": "The main processor. Here, an i9-14900K with 8 fast cores, 16 efficient ones and 32 threads in total.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "gpu",
+      "category": "maquina",
+      "pt": {
+        "term": "GPU",
+        "definition": "A placa de vídeo, usada como acelerador de contas. Aqui é uma RTX 2060 SUPER de 8 GB — rápida por dentro, mal conectada por fora.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "GPU",
+        "definition": "The graphics card, used as an arithmetic accelerator. Here it is an 8 GB RTX 2060 SUPER - fast inside, poorly connected outside.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "ram",
+      "category": "maquina",
+      "pt": {
+        "term": "RAM",
+        "definition": "A memória principal do computador. Aqui, 64 GB entregando ~60 GB/s. É onde o modelo inteiro precisa caber.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "RAM",
+        "definition": "The computer's main memory. Here, 64 GB delivering ~60 GB/s. It is where the whole model needs to fit.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "vram",
+      "category": "maquina",
+      "pt": {
+        "term": "VRAM",
+        "definition": "A memória da placa de vídeo. Rápida (448 GB/s) e pequena (8 GB), e só alcançável pelo PCIe.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "VRAM",
+        "definition": "The graphics card's memory. Fast (448 GB/s) and small (8 GB), and only reachable through PCIe.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "pcie",
+      "category": "maquina",
+      "pt": {
+        "term": "PCIe",
+        "definition": "O barramento que liga a GPU ao resto do computador. Aqui é gen 3: ~12 GB/s, o elo mais lento da máquina.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "PCIe",
+        "definition": "The bus connecting the GPU to the rest of the computer. Here it is gen 3: ~12 GB/s, the machine's slowest link.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "nvme",
+      "category": "maquina",
+      "pt": {
+        "term": "NVMe",
+        "definition": "O padrão dos SSDs rápidos ligados direto ao barramento. Aqui, dois em RAID0 entregando 18,4 GB/s sequenciais.",
+        "usual": null,
+        "aliases": [
+          "SSD",
+          "RAID0"
+        ]
+      },
+      "en": {
+        "term": "NVMe",
+        "definition": "The standard for fast SSDs wired straight to the bus. Here, two in RAID0 delivering 18.4 GB/s sequential.",
+        "usual": null,
+        "aliases": [
+          "SSD",
+          "RAID0"
+        ]
+      }
+    },
+    {
+      "id": "tier",
+      "category": "maquina",
+      "pt": {
+        "term": "tier",
+        "definition": "Um nível da hierarquia de memória: VRAM, RAM, disco. Cada tier tem sua banda, sua capacidade e seu link de acesso.",
+        "usual": null,
+        "aliases": [
+          "tiers"
+        ]
+      },
+      "en": {
+        "term": "tier",
+        "definition": "One level of the memory hierarchy: VRAM, RAM, disk. Each tier has its bandwidth, its capacity and its access link.",
+        "usual": null,
+        "aliases": [
+          "tiers"
+        ]
+      }
+    },
+    {
+      "id": "memory-bound",
+      "category": "maquina",
+      "pt": {
+        "term": "memory-bound",
+        "definition": "Quando o tempo é dominado por esperar a memória, não por fazer contas. É o regime do decode: ~33 ms de leitura contra 4–7 ms de conta.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "memory-bound",
+        "definition": "When time is dominated by waiting on memory rather than doing arithmetic. It is decode's regime: ~33 ms of reads against 4-7 ms of compute.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "compute-bound",
+      "category": "maquina",
+      "pt": {
+        "term": "compute-bound",
+        "definition": "Quando o tempo é dominado pela aritmética. É o regime do prefill, e é por isso que otimizá-lo é outro problema.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "compute-bound",
+        "definition": "When time is dominated by arithmetic. It is prefill's regime, which is why optimizing it is a different problem.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "nucleo",
+      "category": "maquina",
+      "pt": {
+        "term": "núcleo",
+        "definition": "Uma unidade de execução independente dentro da CPU. Este processador é híbrido: 8 P-cores rápidos e 16 E-cores econômicos.",
+        "usual": null,
+        "aliases": [
+          "núcleos",
+          "P-core",
+          "E-core",
+          "P-cores",
+          "E-cores"
+        ]
+      },
+      "en": {
+        "term": "core",
+        "definition": "An independent execution unit inside the CPU. This processor is hybrid: 8 fast P-cores and 16 efficient E-cores.",
+        "usual": null,
+        "aliases": [
+          "cores",
+          "P-core",
+          "E-core",
+          "P-cores",
+          "E-cores"
+        ]
+      }
+    },
+    {
+      "id": "thread",
+      "category": "maquina",
+      "pt": {
+        "term": "thread",
+        "definition": "Uma linha de execução. O engine usa um pool próprio de threads, com o trabalho dividido por linhas de saída da matriz.",
+        "usual": null,
+        "aliases": [
+          "threads"
+        ]
+      },
+      "en": {
+        "term": "thread",
+        "definition": "A line of execution. The engine uses its own thread pool, with work split by matrix output rows.",
+        "usual": null,
+        "aliases": [
+          "threads"
+        ]
+      }
+    },
+    {
+      "id": "afinidade",
+      "category": "maquina",
+      "pt": {
+        "term": "afinidade",
+        "definition": "Fixar cada thread em núcleos escolhidos. O default é ficar só nos P-cores: espalhar trabalho memory-bound pelos E-cores costuma piorar.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "affinity",
+        "definition": "Pinning each thread to chosen cores. The default is P-cores only: spreading memory-bound work across E-cores usually hurts.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "simd",
+      "category": "maquina",
+      "pt": {
+        "term": "SIMD",
+        "definition": "Uma instrução que opera sobre vários números de uma vez. É como o kernel processa 8 ou 16 pesos por ciclo em vez de um.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "SIMD",
+        "definition": "One instruction operating on several numbers at once. It is how the kernel processes 8 or 16 weights per cycle instead of one.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "avx",
+      "category": "maquina",
+      "pt": {
+        "term": "AVX2 / AVX-VNNI",
+        "definition": "Os conjuntos de instruções SIMD desta CPU. O engine escolhe qual usar em tempo de execução, para o binário rodar em outras máquinas.",
+        "usual": null,
+        "aliases": [
+          "AVX2",
+          "AVX-VNNI"
+        ]
+      },
+      "en": {
+        "term": "AVX2 / AVX-VNNI",
+        "definition": "This CPU's SIMD instruction sets. The engine picks which to use at runtime, so the binary still runs on other machines.",
+        "usual": null,
+        "aliases": [
+          "AVX2",
+          "AVX-VNNI"
+        ]
+      }
+    },
+    {
+      "id": "fma",
+      "category": "maquina",
+      "pt": {
+        "term": "FMA",
+        "definition": "Multiplicar e somar numa instrução só. Rápido, mas arredonda diferente — por isso o build proíbe fundir automaticamente.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "FMA",
+        "definition": "Multiply and add in a single instruction. Fast, but it rounds differently - which is why the build forbids automatic fusion.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "cache-l3",
+      "category": "maquina",
+      "pt": {
+        "term": "cache L1/L2/L3",
+        "definition": "Memórias minúsculas e rapidíssimas dentro do processador. O L3 desta CPU tem 36 MB, e cabe o cache de uma camada inteira a 4k.",
+        "usual": null,
+        "aliases": [
+          "L3",
+          "L2",
+          "L1"
+        ]
+      },
+      "en": {
+        "term": "L1/L2/L3 cache",
+        "definition": "Tiny, extremely fast memories inside the processor. This CPU's L3 holds 36 MB, enough for one full layer's cache at 4k.",
+        "usual": null,
+        "aliases": [
+          "L3",
+          "L2",
+          "L1"
+        ]
+      }
+    },
+    {
+      "id": "mmap",
+      "category": "maquina",
+      "pt": {
+        "term": "mmap",
+        "definition": "Mapear um arquivo direto no espaço de endereços do processo. O arquivo passa a ser a memória, sem passo de cópia.",
+        "usual": null,
+        "aliases": [
+          "mapeado",
+          "mapeamento"
+        ]
+      },
+      "en": {
+        "term": "mmap",
+        "definition": "Mapping a file straight into the process address space. The file becomes the memory, with no copy step.",
+        "usual": null,
+        "aliases": [
+          "mapped",
+          "mapping"
+        ]
+      }
+    },
+    {
+      "id": "page-cache",
+      "category": "maquina",
+      "pt": {
+        "term": "page cache",
+        "definition": "O cache que o sistema operacional mantém dos arquivos lidos. Como o modelo é mapeado, esse cache é o cache de pesos.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "page cache",
+        "definition": "The cache the operating system keeps of files it has read. Since the model is mapped, that cache is the weight cache.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "page-fault",
+      "category": "maquina",
+      "pt": {
+        "term": "falta de página",
+        "definition": "O que acontece no primeiro acesso a uma página mapeada: o sistema para tudo e vai buscar do disco. Daí o pre-fault na carga.",
+        "usual": null,
+        "aliases": [
+          "pre-fault"
+        ]
+      },
+      "en": {
+        "term": "page fault",
+        "definition": "What happens on the first access to a mapped page: the system stops everything and fetches from disk. Hence the pre-fault at load time.",
+        "usual": null,
+        "aliases": [
+          "pre-fault"
+        ]
+      }
+    },
+    {
+      "id": "huge-pages",
+      "category": "maquina",
+      "pt": {
+        "term": "páginas grandes",
+        "definition": "Usar páginas de 2 MB em vez de 4 KB. Com 19,3 GB de pesos, isso reduz de 4,7 milhões de páginas para ~9 mil.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "huge pages",
+        "definition": "Using 2 MB pages instead of 4 KB. With 19.3 GB of weights, that goes from 4.7 million pages down to ~9 thousand.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "tlb",
+      "category": "maquina",
+      "pt": {
+        "term": "TLB",
+        "definition": "A tabelinha do processador que traduz endereços. Tem ~2048 entradas: com páginas de 4 KB cobre 8 MB, com 2 MB cobre 4 GB.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "TLB",
+        "definition": "The small processor table that translates addresses. It has ~2048 entries: with 4 KB pages it covers 8 MB, with 2 MB pages it covers 4 GB.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "rss",
+      "category": "maquina",
+      "pt": {
+        "term": "RSS",
+        "definition": "Resident Set Size: quanta memória física o processo realmente ocupa. É o número que o watchdog compara com o orçamento.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "RSS",
+        "definition": "Resident Set Size: how much physical memory the process actually occupies. It is the number the watchdog compares against the budget.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "swap",
+      "category": "maquina",
+      "pt": {
+        "term": "swap",
+        "definition": "Quando o sistema operacional escreve memória no disco por falta de RAM. Aqui é considerado falha: o orçamento existe para nunca chegar lá.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "swap",
+        "definition": "When the operating system writes memory to disk for lack of RAM. Here it counts as a failure: the budget exists so it never happens.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "oom",
+      "category": "maquina",
+      "pt": {
+        "term": "OOM",
+        "definition": "Out of memory: quando o sistema mata o processo por falta de RAM. É o que a regra de recusar em vez de degradar previne.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "OOM",
+        "definition": "Out of memory: when the system kills the process for lack of RAM. It is what the refuse-instead-of-degrade rule prevents.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "orcamento",
+      "category": "maquina",
+      "pt": {
+        "term": "orçamento",
+        "definition": "Um teto duro de RAM, VRAM ou threads passado por parâmetro. Verificado em execução, não só no plano.",
+        "usual": null,
+        "aliases": [
+          "orçamentos"
+        ]
+      },
+      "en": {
+        "term": "budget",
+        "definition": "A hard cap on RAM, VRAM or threads passed as a parameter. Verified at runtime, not just in the plan.",
+        "usual": null,
+        "aliases": [
+          "budgets"
+        ]
+      }
+    },
+    {
+      "id": "gargalo",
+      "category": "maquina",
+      "pt": {
+        "term": "gargalo",
+        "definition": "O recurso que limita tudo o mais. Aqui é a banda de memória; otimizar qualquer outra coisa não muda o tempo total.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "bottleneck",
+        "definition": "The resource that limits everything else. Here it is memory bandwidth; optimizing anything else does not change total time.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "overhead",
+      "category": "maquina",
+      "pt": {
+        "term": "overhead",
+        "definition": "Custo que não é o trabalho em si: chamar função, sincronizar threads, alocar memória. Invisível a 1 tok/s, percentual a 20.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "overhead",
+        "definition": "Cost that is not the work itself: calling functions, synchronizing threads, allocating memory. Invisible at 1 tok/s, a percentage at 20.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "amdahl",
+      "category": "maquina",
+      "pt": {
+        "term": "lei de Amdahl",
+        "definition": "A conta que diz quanto acelerar uma parte acelera o todo. Usada aqui para estimar o ganho de mover 39% das camadas para a GPU.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "Amdahl's law",
+        "definition": "The arithmetic saying how much speeding up one part speeds up the whole. Used here to estimate the gain of moving 39% of layers to the GPU.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "bit",
+      "category": "numerica",
+      "pt": {
+        "term": "bit",
+        "definition": "A menor unidade de informação: 0 ou 1. Um peso em int4 ocupa 4 bits.",
+        "usual": null,
+        "aliases": [
+          "bits"
+        ]
+      },
+      "en": {
+        "term": "bit",
+        "definition": "The smallest unit of information: 0 or 1. An int4 weight takes 4 bits.",
+        "usual": null,
+        "aliases": [
+          "bits"
+        ]
+      }
+    },
+    {
+      "id": "byte",
+      "category": "numerica",
+      "pt": {
+        "term": "byte",
+        "definition": "Oito bits. Cabem dois pesos int4 num byte — daí o empacotamento por nibbles.",
+        "usual": null,
+        "aliases": [
+          "bytes"
+        ]
+      },
+      "en": {
+        "term": "byte",
+        "definition": "Eight bits. Two int4 weights fit in one byte - hence nibble packing.",
+        "usual": null,
+        "aliases": [
+          "bytes"
+        ]
+      }
+    },
+    {
+      "id": "gb",
+      "category": "numerica",
+      "pt": {
+        "term": "GB",
+        "definition": "Gigabyte, mil milhões de bytes. O modelo tem 19,65 GB; lê-se 2,01 GB por token.",
+        "usual": null,
+        "aliases": [
+          "KB",
+          "MB"
+        ]
+      },
+      "en": {
+        "term": "GB",
+        "definition": "Gigabyte, a thousand million bytes. The model is 19.65 GB; 2.01 GB is read per token.",
+        "usual": null,
+        "aliases": [
+          "KB",
+          "MB"
+        ]
+      }
+    },
+    {
+      "id": "float",
+      "category": "numerica",
+      "pt": {
+        "term": "float",
+        "definition": "Um número com casas decimais, guardado em formato de ponto flutuante. As contas do engine são todas em float de 32 bits.",
+        "usual": null,
+        "aliases": [
+          "floats",
+          "ponto flutuante"
+        ]
+      },
+      "en": {
+        "term": "float",
+        "definition": "A number with decimals, stored in floating-point format. The engine's arithmetic is all in 32-bit floats.",
+        "usual": null,
+        "aliases": [
+          "floats",
+          "floating point"
+        ]
+      }
+    },
+    {
+      "id": "fp32",
+      "category": "numerica",
+      "pt": {
+        "term": "fp32",
+        "definition": "Ponto flutuante de 32 bits, com 23 bits de mantissa. É a precisão de trabalho do engine, e a do oráculo.",
+        "usual": null,
+        "aliases": [
+          "f32"
+        ]
+      },
+      "en": {
+        "term": "fp32",
+        "definition": "32-bit floating point, with 23 mantissa bits. It is the engine's working precision, and the oracle's.",
+        "usual": null,
+        "aliases": [
+          "f32"
+        ]
+      }
+    },
+    {
+      "id": "bf16",
+      "category": "numerica",
+      "pt": {
+        "term": "bf16",
+        "definition": "Ponto flutuante de 16 bits com o expoente do fp32 e só 7 bits de mantissa. É como o modelo é publicado.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "bf16",
+        "definition": "16-bit floating point with fp32's exponent and only 7 mantissa bits. It is how the model is published.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "int4",
+      "category": "numerica",
+      "pt": {
+        "term": "int4 / int8",
+        "definition": "Inteiros de 4 e 8 bits, usados para guardar os pesos. Sempre acompanhados de uma escala que os reconverte.",
+        "usual": null,
+        "aliases": [
+          "int4",
+          "int8"
+        ]
+      },
+      "en": {
+        "term": "int4 / int8",
+        "definition": "4-bit and 8-bit integers, used to store weights. Always paired with a scale that converts them back.",
+        "usual": null,
+        "aliases": [
+          "int4",
+          "int8"
+        ]
+      }
+    },
+    {
+      "id": "nibble",
+      "category": "numerica",
+      "pt": {
+        "term": "nibble",
+        "definition": "Meio byte, 4 bits. Exatamente um peso int4 — e por isso a ordem em que os dois nibbles de um byte são lidos importa.",
+        "usual": null,
+        "aliases": [
+          "nibbles"
+        ]
+      },
+      "en": {
+        "term": "nibble",
+        "definition": "Half a byte, 4 bits. Exactly one int4 weight - which is why the order the two nibbles of a byte are read in matters.",
+        "usual": null,
+        "aliases": [
+          "nibbles"
+        ]
+      }
+    },
+    {
+      "id": "escala",
+      "category": "numerica",
+      "pt": {
+        "term": "escala",
+        "definition": "O float que reconverte um inteiro no peso real: <code>peso ≈ (código − 8) × escala</code>. Uma escala para cada 64 pesos.",
+        "usual": null,
+        "aliases": [
+          "escalas"
+        ]
+      },
+      "en": {
+        "term": "scale",
+        "definition": "The float that turns an integer back into the real weight: <code>weight ≈ (code − 8) × scale</code>. One scale per 64 weights.",
+        "usual": null,
+        "aliases": [
+          "scales"
+        ]
+      }
+    },
+    {
+      "id": "g64",
+      "category": "numerica",
+      "pt": {
+        "term": "g64",
+        "definition": "\"Grupo de 64\": uma escala compartilhada a cada 64 pesos vizinhos. Custa 4/64 = 0,0625 byte extra por peso.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "g64",
+        "definition": "\"Group of 64\": one shared scale per 64 neighbouring weights. It costs 4/64 = 0.0625 extra bytes per weight.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "absmax",
+      "category": "numerica",
+      "pt": {
+        "term": "absmax",
+        "definition": "O maior valor absoluto de um grupo. Dividido por 7, dá a escala mais simples — mas não a ótima.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "absmax",
+        "definition": "The largest absolute value in a group. Divided by 7, it gives the simplest scale - though not the optimal one.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "w4a32",
+      "category": "numerica",
+      "pt": {
+        "term": "W4A32",
+        "definition": "Pesos em 4 bits, ativações em 32. O kernel desempacota e multiplica em float, sem quantizar as ativações.",
+        "usual": null,
+        "aliases": [
+          "W4A8",
+          "W4A16"
+        ]
+      },
+      "en": {
+        "term": "W4A32",
+        "definition": "Weights in 4 bits, activations in 32. The kernel unpacks and multiplies in float, never quantizing activations.",
+        "usual": null,
+        "aliases": [
+          "W4A8",
+          "W4A16"
+        ]
+      }
+    },
+    {
+      "id": "ativacao",
+      "category": "numerica",
+      "pt": {
+        "term": "ativação",
+        "definition": "Os números que fluem entre camadas — o vetor de 2048 valores. São minúsculos perto dos pesos: 8 KB contra 4,7 MB por expert.",
+        "usual": null,
+        "aliases": [
+          "ativações"
+        ]
+      },
+      "en": {
+        "term": "activation",
+        "definition": "The numbers flowing between layers - the 2048-value vector. Tiny compared to weights: 8 KB against 4.7 MB per expert.",
+        "usual": null,
+        "aliases": [
+          "activations"
+        ]
+      }
+    },
+    {
+      "id": "associatividade",
+      "category": "numerica",
+      "pt": {
+        "term": "associatividade",
+        "definition": "Somar em ordem diferente dá resultado diferente em ponto flutuante. Por isso a ordem de redução do engine é fixa e independente do número de threads.",
+        "usual": null,
+        "aliases": [
+          "ordem de redução"
+        ]
+      },
+      "en": {
+        "term": "associativity",
+        "definition": "Summing in a different order gives a different floating-point result. Hence the engine's reduction order is fixed and independent of thread count.",
+        "usual": null,
+        "aliases": [
+          "reduction order"
+        ]
+      }
+    },
+    {
+      "id": "fp-precise",
+      "category": "numerica",
+      "pt": {
+        "term": "/fp:precise",
+        "definition": "A opção do compilador que proíbe reassociar somas e fundir multiplicação com adição. Custa desempenho e compra reprodutibilidade.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "/fp:precise",
+        "definition": "The compiler option forbidding sum reassociation and multiply-add fusion. It costs performance and buys reproducibility.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "arredondamento",
+      "category": "numerica",
+      "pt": {
+        "term": "arredondamento",
+        "definition": "Escolher o valor representável mais próximo. O erro do int4 é o piso do arredondamento, não um bug.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "rounding",
+        "definition": "Choosing the nearest representable value. int4's error is the floor of rounding, not a bug.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "erro-relativo",
+      "category": "numerica",
+      "pt": {
+        "term": "erro relativo",
+        "definition": "De quanto o resultado se afasta do correto, em porcentagem. Aqui é medido na saída de uma multiplicação, não em cada peso isolado.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "relative error",
+        "definition": "How far the result strays from the correct one, as a percentage. Here it is measured at a multiplication's output, not per isolated weight.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "outlier",
+      "category": "numerica",
+      "pt": {
+        "term": "outlier",
+        "definition": "Um valor muito fora da faixa dos vizinhos. Em ativações reais alguns canais têm magnitude 10–100× a mediana, e são eles que dominam o erro.",
+        "usual": null,
+        "aliases": [
+          "outliers"
+        ]
+      },
+      "en": {
+        "term": "outlier",
+        "definition": "A value far outside its neighbours' range. In real activations a few channels carry 10-100x the median magnitude, and they dominate the error.",
+        "usual": null,
+        "aliases": [
+          "outliers"
+        ]
+      }
+    },
+    {
+      "id": "perplexidade",
+      "category": "medicao",
+      "pt": {
+        "term": "perplexidade",
+        "definition": "Quão \"surpreso\" o modelo fica com um texto. Menor é melhor. É a medida que diz se a quantização degradou de verdade.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "perplexity",
+        "definition": "How \"surprised\" the model is by a text. Lower is better. It is the measure that says whether quantization actually degraded anything.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "nll",
+      "category": "medicao",
+      "pt": {
+        "term": "nll",
+        "definition": "Negative log-likelihood, o logaritmo da perplexidade. Usa-se porque é somável — dá para calcular médias e intervalos.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "nll",
+        "definition": "Negative log-likelihood, perplexity's logarithm. Used because it is additive - means and intervals can be computed on it.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "intervalo",
+      "category": "medicao",
+      "pt": {
+        "term": "intervalo de 95%",
+        "definition": "A faixa dentro da qual o valor real provavelmente está. Se ela cruza zero, não há efeito demonstrado — só ruído.",
+        "usual": null,
+        "aliases": [
+          "intervalo de confiança"
+        ]
+      },
+      "en": {
+        "term": "95% interval",
+        "definition": "The range the true value probably lies in. If it crosses zero, no effect is demonstrated - just noise.",
+        "usual": null,
+        "aliases": [
+          "confidence interval"
+        ]
+      }
+    },
+    {
+      "id": "janela",
+      "category": "medicao",
+      "pt": {
+        "term": "janela",
+        "definition": "Um trecho fixo de texto usado na medição. Aqui são 10 janelas de 384 tokens, e a comparação é feita janela a janela.",
+        "usual": null,
+        "aliases": [
+          "janelas"
+        ]
+      },
+      "en": {
+        "term": "window",
+        "definition": "A fixed chunk of text used in measurement. Here there are 10 windows of 384 tokens, compared window by window.",
+        "usual": null,
+        "aliases": [
+          "windows"
+        ]
+      }
+    },
+    {
+      "id": "fixture",
+      "category": "medicao",
+      "pt": {
+        "term": "fixture",
+        "definition": "Um arquivo com respostas corretas pré-calculadas, gerado uma vez e comparado a cada execução do teste.",
+        "usual": null,
+        "aliases": [
+          "fixtures"
+        ]
+      },
+      "en": {
+        "term": "fixture",
+        "definition": "A file of precomputed correct answers, generated once and compared against on every test run.",
+        "usual": null,
+        "aliases": [
+          "fixtures"
+        ]
+      }
+    },
+    {
+      "id": "selftest",
+      "category": "medicao",
+      "pt": {
+        "term": "selftest",
+        "definition": "O teste embutido no binário: kernels, parser JSON, pool de threads, tokenizer e sampler contra fixtures. Roda em segundos.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "selftest",
+        "definition": "The test built into the binary: kernels, JSON parser, thread pool, tokenizer and sampler against fixtures. It runs in seconds.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "regressao",
+      "category": "medicao",
+      "pt": {
+        "term": "teste de regressão",
+        "definition": "Um teste que existe só para impedir que um bug antigo volte. O caso <code>CUDA_DENSE</code> virou um.",
+        "usual": null,
+        "aliases": [
+          "regressão"
+        ]
+      },
+      "en": {
+        "term": "regression test",
+        "definition": "A test that exists only to keep an old bug from returning. The <code>CUDA_DENSE</code> case became one.",
+        "usual": null,
+        "aliases": [
+          "regression"
+        ]
+      }
+    },
+    {
+      "id": "baseline",
+      "category": "medicao",
+      "pt": {
+        "term": "baseline",
+        "definition": "O número de referência a ser batido. Aqui é 0,93 tok/s, medido com o colibrì e o modelo grande.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "baseline",
+        "definition": "The reference number to beat. Here it is 0.93 tok/s, measured with colibrì and the oversized model.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "benchmark",
+      "category": "medicao",
+      "pt": {
+        "term": "benchmark",
+        "definition": "Uma medição controlada e repetível. Sem orçamento fixado, aquecimento e hash da saída, ela não vale nada.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "benchmark",
+        "definition": "A controlled, repeatable measurement. Without a fixed budget, warm-up and an output hash, it is worthless.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "aquecimento",
+      "category": "medicao",
+      "pt": {
+        "term": "aquecimento",
+        "definition": "Uma execução descartada antes de medir, para que o custo de encher os caches não caia toda na primeira medida.",
+        "usual": null,
+        "aliases": [
+          "quente",
+          "a frio"
+        ]
+      },
+      "en": {
+        "term": "warm-up",
+        "definition": "A discarded run before measuring, so the cost of filling caches does not land entirely on the first measurement.",
+        "usual": null,
+        "aliases": [
+          "warm",
+          "cold"
+        ]
+      }
+    },
+    {
+      "id": "reprodutibilidade",
+      "category": "medicao",
+      "pt": {
+        "term": "reprodutibilidade",
+        "definition": "A propriedade de obter exatamente o mesmo resultado ao repetir. Aqui é critério de saída, não conveniência.",
+        "usual": null,
+        "aliases": [
+          "determinismo",
+          "determinístico"
+        ]
+      },
+      "en": {
+        "term": "reproducibility",
+        "definition": "The property of getting exactly the same result on repetition. Here it is an exit criterion, not a convenience.",
+        "usual": null,
+        "aliases": [
+          "determinism",
+          "deterministic"
+        ]
+      }
+    },
+    {
+      "id": "hash",
+      "category": "medicao",
+      "pt": {
+        "term": "hash",
+        "definition": "Um número curto calculado a partir de um conteúdo, que muda se qualquer byte mudar. Usado para provar que duas saídas são idênticas.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "hash",
+        "definition": "A short number computed from a content, which changes if any byte changes. Used to prove two outputs are identical.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "throughput",
+      "category": "medicao",
+      "pt": {
+        "term": "throughput",
+        "definition": "Quanto trabalho sai por unidade de tempo, somando todas as conversas. Diferente de latência, que é o tempo de uma só.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "throughput",
+        "definition": "How much work comes out per unit of time, summed over all conversations. Different from latency, which is the time of one.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "latencia",
+      "category": "medicao",
+      "pt": {
+        "term": "latência",
+        "definition": "O tempo até a resposta começar. Banda alta com latência ruim é comum em disco; a RAM tem as duas boas.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "latency",
+        "definition": "The time until the answer starts. High bandwidth with poor latency is common on disk; RAM has both good.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "c11",
+      "category": "software",
+      "pt": {
+        "term": "C11",
+        "definition": "A versão do padrão da linguagem C usada no engine. Escolhida por ser auditável e não arrastar dependência nenhuma.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "C11",
+        "definition": "The C language standard version the engine uses. Chosen because it is auditable and drags in no dependencies.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "dependencia",
+      "category": "software",
+      "pt": {
+        "term": "dependência",
+        "definition": "Uma biblioteca externa de que o programa precisa. O engine tem zero: JSON, tokenizer e leitor de arquivos são todos próprios.",
+        "usual": null,
+        "aliases": [
+          "dependências"
+        ]
+      },
+      "en": {
+        "term": "dependency",
+        "definition": "An external library the program needs. The engine has zero: JSON, tokenizer and file reader are all its own.",
+        "usual": null,
+        "aliases": [
+          "dependencies"
+        ]
+      }
+    },
+    {
+      "id": "linkagem-estatica",
+      "category": "software",
+      "pt": {
+        "term": "linkagem estática",
+        "definition": "Embutir tudo no executável, para ele rodar sem instalar nada. A meta é um binário só, com o backend de GPU carregado à parte.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "static linking",
+        "definition": "Bundling everything into the executable so it runs with nothing installed. The goal is a single binary, with the GPU backend loaded separately.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "compilador",
+      "category": "software",
+      "pt": {
+        "term": "compilador",
+        "definition": "O programa que transforma código em executável. Aqui é o MSVC no Windows, encontrado dinamicamente, e gcc ou clang no Linux.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "compiler",
+        "definition": "The program that turns code into an executable. Here it is MSVC on Windows, located dynamically, and gcc or clang on Linux.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "build-id",
+      "category": "software",
+      "pt": {
+        "term": "build id",
+        "definition": "Um hash das fontes e das opções de compilação, gravado no binário. Serve para invalidar caches persistidos quando o engine muda.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "build id",
+        "definition": "A hash of the sources and build flags, embedded in the binary. It invalidates persisted caches when the engine changes.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "cli",
+      "category": "software",
+      "pt": {
+        "term": "CLI",
+        "definition": "Interface de linha de comando: o programa que se usa digitando comandos no terminal.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "CLI",
+        "definition": "Command-line interface: the program you use by typing commands in a terminal.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "ponteiro",
+      "category": "software",
+      "pt": {
+        "term": "ponteiro",
+        "definition": "Um endereço de memória guardado numa variável. Mover um bloco grande aqui é trocar ponteiros, nunca copiar bytes.",
+        "usual": null,
+        "aliases": [
+          "ponteiros"
+        ]
+      },
+      "en": {
+        "term": "pointer",
+        "definition": "A memory address stored in a variable. Moving a large block here means swapping pointers, never copying bytes.",
+        "usual": null,
+        "aliases": [
+          "pointers"
+        ]
+      }
+    },
+    {
+      "id": "malloc",
+      "category": "software",
+      "pt": {
+        "term": "malloc",
+        "definition": "A função que pede memória ao sistema durante a execução. O laço de token do engine não a chama nenhuma vez.",
+        "usual": null,
+        "aliases": [
+          "alocador",
+          "alocação"
+        ]
+      },
+      "en": {
+        "term": "malloc",
+        "definition": "The function that asks the system for memory at runtime. The engine's token loop never calls it.",
+        "usual": null,
+        "aliases": [
+          "allocator",
+          "allocation"
+        ]
+      }
+    },
+    {
+      "id": "zero-copy",
+      "category": "software",
+      "pt": {
+        "term": "zero-copy",
+        "definition": "Usar os dados onde eles já estão, sem passo intermediário de cópia. Aqui, os ponteiros do kernel apontam para dentro do arquivo mapeado.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "zero-copy",
+        "definition": "Using data where it already is, with no intermediate copy step. Here, kernel pointers point straight into the mapped file.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "json",
+      "category": "software",
+      "pt": {
+        "term": "JSON",
+        "definition": "Um formato de texto para dados estruturados. O índice do container e a configuração do modelo são JSON, lidos por um parser próprio.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "JSON",
+        "definition": "A text format for structured data. The container index and the model config are JSON, read by the project's own parser.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "utf8",
+      "category": "software",
+      "pt": {
+        "term": "UTF-8",
+        "definition": "A codificação padrão de texto, em que um caractere ocupa de 1 a 4 bytes. O tokenizer trabalha nos bytes, não nos caracteres.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "UTF-8",
+        "definition": "The standard text encoding, where a character takes 1 to 4 bytes. The tokenizer works on bytes, not characters.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "unicode",
+      "category": "software",
+      "pt": {
+        "term": "Unicode",
+        "definition": "O catálogo de todos os caracteres de todas as escritas. O pré-tokenizador precisa saber, por caractere, se é letra, número ou espaço.",
+        "usual": null,
+        "aliases": [
+          "code point"
+        ]
+      },
+      "en": {
+        "term": "Unicode",
+        "definition": "The catalogue of every character of every writing system. The pre-tokenizer must know, per character, whether it is a letter, a digit or a space.",
+        "usual": null,
+        "aliases": [
+          "code point"
+        ]
+      }
+    },
+    {
+      "id": "regex",
+      "category": "software",
+      "pt": {
+        "term": "expressão regular",
+        "definition": "Um padrão que descreve como quebrar um texto. O tokenizer usa uma fixa, a mesma do GPT-4, implementada à mão em vez de com um motor genérico.",
+        "usual": null,
+        "aliases": [
+          "regex"
+        ]
+      },
+      "en": {
+        "term": "regular expression",
+        "definition": "A pattern describing how to split a text. The tokenizer uses a fixed one, the same as GPT-4's, hand-implemented instead of using a generic engine.",
+        "usual": null,
+        "aliases": [
+          "regex"
+        ]
+      }
+    },
+    {
+      "id": "http",
+      "category": "software",
+      "pt": {
+        "term": "HTTP",
+        "definition": "O protocolo da web. O subcomando <code>serve</code> abre um servidor local em <code>127.0.0.1:8080</code> com uma interface de chat.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "HTTP",
+        "definition": "The web protocol. The <code>serve</code> subcommand opens a local server at <code>127.0.0.1:8080</code> with a chat interface.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "loopback",
+      "category": "software",
+      "pt": {
+        "term": "loopback",
+        "definition": "O endereço <code>127.0.0.1</code>, que só a própria máquina alcança. É o padrão do servidor porque isto não é um serviço de produção.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "loopback",
+        "definition": "The address <code>127.0.0.1</code>, reachable only from the machine itself. It is the server's default because this is not a production service.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "atomico",
+      "category": "software",
+      "pt": {
+        "term": "escrita atômica",
+        "definition": "Escrever num arquivo temporário e renomear no fim. Uma queda de energia no meio não deixa um arquivo pela metade com cara de válido.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "atomic write",
+        "definition": "Writing to a temporary file and renaming at the end. A power cut halfway through cannot leave a truncated file looking valid.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "watchdog",
+      "category": "software",
+      "pt": {
+        "term": "watchdog",
+        "definition": "Uma thread que compara o consumo real com o orçamento durante a execução. Sem ela, \"orçamento\" seria só uma opinião.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "watchdog",
+        "definition": "A thread comparing real consumption against the budget while running. Without it, \"budget\" would be just an opinion.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "vetor",
+      "category": "matematica",
+      "pt": {
+        "term": "vetor",
+        "definition": "Uma lista de números. Aqui, o estado de um token é um vetor de 2048 floats.",
+        "usual": null,
+        "aliases": [
+          "vetores"
+        ]
+      },
+      "en": {
+        "term": "vector",
+        "definition": "A list of numbers. Here, a token's state is a vector of 2048 floats.",
+        "usual": null,
+        "aliases": [
+          "vectors"
+        ]
+      }
+    },
+    {
+      "id": "matriz",
+      "category": "matematica",
+      "pt": {
+        "term": "matriz",
+        "definition": "Uma tabela de números, com linhas e colunas. Um peso do modelo é uma matriz; a maior tem 2048 × 154.880.",
+        "usual": null,
+        "aliases": [
+          "matrizes"
+        ]
+      },
+      "en": {
+        "term": "matrix",
+        "definition": "A table of numbers, with rows and columns. A model weight is a matrix; the largest is 2048 × 154,880.",
+        "usual": null,
+        "aliases": [
+          "matrices"
+        ]
+      }
+    },
+    {
+      "id": "matmul",
+      "category": "matematica",
+      "pt": {
+        "term": "multiplicação de matriz",
+        "definition": "A operação central: cada linha da saída é a soma dos produtos de uma linha de pesos pela entrada. É onde vai quase todo o tempo.",
+        "usual": null,
+        "aliases": [
+          "matmul"
+        ]
+      },
+      "en": {
+        "term": "matrix multiplication",
+        "definition": "The central operation: each output row is the sum of products of one weight row against the input. Almost all the time goes here.",
+        "usual": null,
+        "aliases": [
+          "matmul"
+        ]
+      }
+    },
+    {
+      "id": "produto-escalar",
+      "category": "matematica",
+      "pt": {
+        "term": "produto escalar",
+        "definition": "Multiplicar dois vetores elemento a elemento e somar tudo. Uma multiplicação de matriz é um monte de produtos escalares.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "dot product",
+        "definition": "Multiplying two vectors element by element and summing. A matrix multiplication is a pile of dot products.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "posto-baixo",
+      "category": "matematica",
+      "pt": {
+        "term": "posto baixo",
+        "definition": "Substituir uma matriz grande por duas menores multiplicadas. Comprime, e é o que <code>q_lora_rank</code> e <code>kv_lora_rank</code> fazem.",
+        "usual": null,
+        "aliases": [
+          "low-rank",
+          "rank"
+        ]
+      },
+      "en": {
+        "term": "low rank",
+        "definition": "Replacing one large matrix by two smaller ones multiplied together. It compresses, and it is what <code>q_lora_rank</code> and <code>kv_lora_rank</code> do.",
+        "usual": null,
+        "aliases": [
+          "low-rank",
+          "rank"
+        ]
+      }
+    },
+    {
+      "id": "transposta",
+      "category": "matematica",
+      "pt": {
+        "term": "transposta",
+        "definition": "A matriz com linhas e colunas trocadas. Aqui importa porque ler uma coluna é caro e ler uma linha é barato.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "transpose",
+        "definition": "The matrix with rows and columns swapped. It matters here because reading a column is expensive and reading a row is cheap.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "flop",
+      "category": "matematica",
+      "pt": {
+        "term": "FLOP",
+        "definition": "Uma operação de ponto flutuante. Gerar um token custa ~7,1 GFLOP — pouco, perto dos 2,01 GB de leitura.",
+        "usual": null,
+        "aliases": [
+          "GFLOP",
+          "FLOPs"
+        ]
+      },
+      "en": {
+        "term": "FLOP",
+        "definition": "One floating-point operation. Generating a token costs ~7.1 GFLOP - little, next to the 2.01 GB of reads.",
+        "usual": null,
+        "aliases": [
+          "GFLOP",
+          "FLOPs"
+        ]
+      }
+    },
+    {
+      "id": "probabilidade",
+      "category": "matematica",
+      "pt": {
+        "term": "probabilidade",
+        "definition": "Um número entre 0 e 1 dizendo quão provável algo é. O softmax converte as notas de saída em probabilidades.",
+        "usual": null,
+        "aliases": [
+          "probabilidades"
+        ]
+      },
+      "en": {
+        "term": "probability",
+        "definition": "A number between 0 and 1 saying how likely something is. Softmax turns output scores into probabilities.",
+        "usual": null,
+        "aliases": [
+          "probabilities"
+        ]
+      }
+    },
+    {
+      "id": "desvio",
+      "category": "matematica",
+      "pt": {
+        "term": "desvio padrão",
+        "definition": "Quanto os valores se espalham em torno da média. É por causa dele que a comparação pareada existe: a variância entre janelas engolia o efeito.",
+        "usual": null,
+        "aliases": [
+          "variância"
+        ]
+      },
+      "en": {
+        "term": "standard deviation",
+        "definition": "How much values spread around the mean. It is why paired comparison exists: the variance across windows swallowed the effect.",
+        "usual": null,
+        "aliases": [
+          "variance"
+        ]
+      }
+    },
+    {
+      "id": "expoente",
+      "category": "matematica",
+      "pt": {
+        "term": "expoente",
+        "definition": "Em <code>N^0,25</code>, o 0,25. Diz que quadruplicar N multiplica o resultado por só 1,41 — a lei de escala que este projeto recusa.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "exponent",
+        "definition": "In <code>N^0.25</code>, the 0.25. It says quadrupling N multiplies the result by only 1.41 - the scaling law this project refuses.",
+        "usual": null,
+        "aliases": []
+      }
+    }
+  ]
+}

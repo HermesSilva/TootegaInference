@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 372" width="880" height="372" role="img" aria-label="The .tootega file, byte by byte"><style>
+  svg { --surface:#fcfcfb; --plane:#f9f9f7; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+        --grid:#e1e0d9; --axis:#c3c2b7;
+        --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+        --crit:#d03b3b; --good:#0ca30c; --warn:#fab219;
+        --s1f:#e7f0fc; --s2f:#fdece5; --s3f:#e4f6ef; --critf:#fbeaea; --warnf:#fdf3dd;
+        --neutral:#f0efec; }
+  @media (prefers-color-scheme: dark) {
+    svg { --surface:#1a1a19; --plane:#0d0d0d; --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+          --grid:#2c2c2a; --axis:#383835;
+          --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+          --crit:#d03b3b; --good:#0ca30c; --warn:#fab219;
+          --s1f:#152436; --s2f:#31180e; --s3f:#0f2a21; --critf:#331616; --warnf:#332a12;
+          --neutral:#383835; }
+  }
+  text { font-family: system-ui,-apple-system,"Segoe UI",sans-serif; fill: var(--ink); }
+  .t    { font-size:17px; font-weight:600; }
+  .st   { font-size:12.5px; fill: var(--ink2); }
+  .lb   { font-size:13px; }
+  .lbb  { font-size:13px; font-weight:600; }
+  .sm   { font-size:11.5px; fill: var(--ink2); }
+  .mu   { font-size:11px; fill: var(--muted); }
+  .num  { font-size:13px; font-variant-numeric: tabular-nums; }
+  .numb { font-size:13px; font-weight:600; font-variant-numeric: tabular-nums; }
+  .mono { font-family: ui-monospace,"Cascadia Mono","Consolas",monospace; font-size:12px; }
+  .monos{ font-family: ui-monospace,"Cascadia Mono","Consolas",monospace; font-size:10.5px;
+          fill: var(--ink2); }
+  .ln   { stroke: var(--axis); stroke-width:1.5; fill:none; }
+  .gl   { stroke: var(--grid); stroke-width:1; fill:none; }
+  .ar   { stroke: var(--muted); stroke-width:2; fill:none; marker-end:url(#a); }
+  .arS1 { stroke: var(--s1); stroke-width:2; fill:none; marker-end:url(#a1); }
+  .arC  { stroke: var(--crit); stroke-width:2; fill:none; marker-end:url(#ac); }
+  .dash { stroke: var(--muted); stroke-width:1.5; fill:none; stroke-dasharray:5 4; }
+</style><defs>
+  <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+          orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+  <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+          orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--s1)"/></marker>
+  <marker id="ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+          orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--crit)"/></marker>
+</defs><rect width="100%" height="100%" fill="var(--surface)"/>
+<text x="20" y="32" class="t" text-anchor="start">The .tootega file, byte by byte</text>
+<text x="20" y="51" class="st" text-anchor="start">One file, memory-mapped. What is on disk is what the kernel multiplies.</text>
+<rect x="20" y="84" width="96" height="46" rx="6" fill="var(--s1f)" stroke="var(--s1)" stroke-width="1.5"/>
+<text x="68" y="106" class="sm" text-anchor="middle">128 B header</text>
+<rect x="120" y="84" width="560" height="46" rx="6" fill="var(--s2f)" stroke="var(--s2)" stroke-width="1.5"/>
+<text x="400" y="112" class="sm" text-anchor="middle">data blobs, each aligned to 64 bytes</text>
+<rect x="684" y="84" width="140" height="46" rx="6" fill="var(--s3f)" stroke="var(--s3)" stroke-width="1.5"/>
+<text x="754" y="112" class="sm" text-anchor="middle">JSON index</text>
+<text x="830" y="112" class="mu" text-anchor="start">EOF</text>
+<line x1="190" y1="84" x2="190" y2="130" class="gl"/>
+<line x1="260" y1="84" x2="260" y2="130" class="gl"/>
+<line x1="330" y1="84" x2="330" y2="130" class="gl"/>
+<line x1="400" y1="84" x2="400" y2="130" class="gl"/>
+<line x1="470" y1="84" x2="470" y2="130" class="gl"/>
+<line x1="540" y1="84" x2="540" y2="130" class="gl"/>
+<line x1="610" y1="84" x2="610" y2="130" class="gl"/>
+<text x="20" y="150" class="mu" text-anchor="start">0</text>
+<text x="120" y="150" class="mu" text-anchor="start">128</text>
+<text x="684" y="150" class="mu" text-anchor="start">index_off</text>
+<rect x="20" y="168" width="300" height="130" rx="10" fill="var(--surface)" stroke="var(--s1)" stroke-width="1.5"/>
+<text x="38" y="196" class="mono" text-anchor="start">magic  &quot;TOOTEGA\x01&quot;</text>
+<text x="38" y="222" class="mono" text-anchor="start">format_version = 1</text>
+<text x="38" y="248" class="mono" text-anchor="start">n_tensors</text>
+<text x="38" y="274" class="mono" text-anchor="start">index_off / index_len</text>
+<path d="M 68 130 L 68 168" class="ar"/>
+<rect x="560" y="168" width="300" height="156" rx="10" fill="var(--surface)" stroke="var(--s3)" stroke-width="1.5"/>
+<text x="578" y="196" class="mono" text-anchor="start">&quot;kind&quot;: &quot;int4&quot;</text>
+<text x="578" y="222" class="mono" text-anchor="start">&quot;shape&quot;: [1536, 2048]</text>
+<text x="578" y="248" class="mono" text-anchor="start">&quot;data&quot;: [off, bytes]</text>
+<text x="578" y="274" class="mono" text-anchor="start">&quot;scales&quot;: [off, bytes]</text>
+<text x="578" y="300" class="mono" text-anchor="start">&quot;group&quot;: 64</text>
+<path d="M 754 130 L 754 168" class="ar"/>
+<text x="340" y="190" class="sm" text-anchor="start">64-byte aligned = one cache</text>
+<text x="340" y="206" class="sm" text-anchor="start">line = direct SIMD reads, no</text>
+<text x="340" y="222" class="sm" text-anchor="start">copy path.</text>
+<text x="340" y="246" class="sm" text-anchor="start">The whole config.json lives</text>
+<text x="340" y="262" class="sm" text-anchor="start">inside the index: architecture</text>
+<text x="340" y="278" class="sm" text-anchor="start">comes from the container, not</text>
+<text x="340" y="294" class="sm" text-anchor="start">from a sibling file that can</text>
+<text x="340" y="310" class="sm" text-anchor="start">drift.</text>
+<text x="20" y="320" class="mu" text-anchor="start">v2 measured: 19.65 GB - int4 8,973, int8 438, f32 290, bf16 2</text>
+</svg>

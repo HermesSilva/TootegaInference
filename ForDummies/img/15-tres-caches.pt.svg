@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 300" width="880" height="300" role="img" aria-label="&quot;Cache&quot; aqui são três coisas diferentes"><style>
+  svg { --surface:#fcfcfb; --plane:#f9f9f7; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+        --grid:#e1e0d9; --axis:#c3c2b7;
+        --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+        --crit:#d03b3b; --good:#0ca30c; --warn:#fab219;
+        --s1f:#e7f0fc; --s2f:#fdece5; --s3f:#e4f6ef; --critf:#fbeaea; --warnf:#fdf3dd;
+        --neutral:#f0efec; }
+  @media (prefers-color-scheme: dark) {
+    svg { --surface:#1a1a19; --plane:#0d0d0d; --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+          --grid:#2c2c2a; --axis:#383835;
+          --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+          --crit:#d03b3b; --good:#0ca30c; --warn:#fab219;
+          --s1f:#152436; --s2f:#31180e; --s3f:#0f2a21; --critf:#331616; --warnf:#332a12;
+          --neutral:#383835; }
+  }
+  text { font-family: system-ui,-apple-system,"Segoe UI",sans-serif; fill: var(--ink); }
+  .t    { font-size:17px; font-weight:600; }
+  .st   { font-size:12.5px; fill: var(--ink2); }
+  .lb   { font-size:13px; }
+  .lbb  { font-size:13px; font-weight:600; }
+  .sm   { font-size:11.5px; fill: var(--ink2); }
+  .mu   { font-size:11px; fill: var(--muted); }
+  .num  { font-size:13px; font-variant-numeric: tabular-nums; }
+  .numb { font-size:13px; font-weight:600; font-variant-numeric: tabular-nums; }
+  .mono { font-family: ui-monospace,"Cascadia Mono","Consolas",monospace; font-size:12px; }
+  .monos{ font-family: ui-monospace,"Cascadia Mono","Consolas",monospace; font-size:10.5px;
+          fill: var(--ink2); }
+  .ln   { stroke: var(--axis); stroke-width:1.5; fill:none; }
+  .gl   { stroke: var(--grid); stroke-width:1; fill:none; }
+  .ar   { stroke: var(--muted); stroke-width:2; fill:none; marker-end:url(#a); }
+  .arS1 { stroke: var(--s1); stroke-width:2; fill:none; marker-end:url(#a1); }
+  .arC  { stroke: var(--crit); stroke-width:2; fill:none; marker-end:url(#ac); }
+  .dash { stroke: var(--muted); stroke-width:1.5; fill:none; stroke-dasharray:5 4; }
+</style><defs>
+  <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+          orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+  <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+          orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--s1)"/></marker>
+  <marker id="ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+          orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--crit)"/></marker>
+</defs><rect width="100%" height="100%" fill="var(--surface)"/>
+<text x="20" y="32" class="t" text-anchor="start">&quot;Cache&quot; aqui são três coisas diferentes</text>
+<text x="20" y="51" class="st" text-anchor="start">Confundi-las é a origem da maior parte da confusão de projeto.</text>
+<rect x="20" y="82" width="273" height="150" rx="10" fill="var(--s1f)" stroke="var(--s1)" stroke-width="1.5"/>
+<text x="36" y="108" class="lbb" text-anchor="start" fill="var(--s1)">cache de pesos</text>
+<text x="36" y="132" class="sm" text-anchor="start">tensores por tier (VRAM / RAM)</text>
+<text x="36" y="176" class="sm" text-anchor="start">dono: o engine, só ele</text>
+<text x="36" y="212" class="mu" text-anchor="start">invisível para quem usa</text>
+<rect x="313" y="82" width="273" height="150" rx="10" fill="var(--s2f)" stroke="var(--s2)" stroke-width="1.5"/>
+<text x="329" y="108" class="lbb" text-anchor="start" fill="var(--s2)">cache de KV</text>
+<text x="329" y="132" class="sm" text-anchor="start">estado de atenção dos tokens já</text>
+<text x="329" y="147" class="sm" text-anchor="start">vistos</text>
+<text x="329" y="176" class="sm" text-anchor="start">dono: engine tem o mecanismo; o</text>
+<text x="329" y="191" class="sm" text-anchor="start">agente decide se acerta</text>
+<text x="329" y="212" class="mu" text-anchor="start">casa o maior prefixo idêntico e trunca</text>
+<text x="329" y="225" class="mu" text-anchor="start">no divergente</text>
+<rect x="606" y="82" width="273" height="150" rx="10" fill="var(--s3f)" stroke="var(--s3)" stroke-width="1.5"/>
+<text x="622" y="108" class="lbb" text-anchor="start" fill="var(--s3)">cache de prefixo</text>
+<text x="622" y="132" class="sm" text-anchor="start">a sequência de tokens que você</text>
+<text x="622" y="147" class="sm" text-anchor="start">monta</text>
+<text x="622" y="176" class="sm" text-anchor="start">dono: o agente, só ele</text>
+<text x="622" y="212" class="mu" text-anchor="start">o engine vê inteiros; não sabe o que é</text>
+<text x="622" y="225" class="mu" text-anchor="start">um system prompt</text>
+<text x="20" y="272" class="lbb" text-anchor="start">O engine não tem como consertar uma ordenação ruim de prompt.</text>
+</svg>

@@ -1,0 +1,47 @@
+# Pesos e derivados -- dezenas de GB, e todos reproduziveis.
+#   models/     baixado por ptools/download_model.py, convertido por tools/convert
+#   offload/    pasta de trabalho do accelerate em ptools/hf_ref.py (~62 GB)
+models/
+offload/
+
+# Artefatos de build.
+build/
+obj/
+*.obj
+*.exe
+*.dll
+*.lib
+*.exp
+*.pdb
+*.ilk
+
+# Carimbo de build: derivado do hash das fontes, muda a cada compilacao.
+# Versiona-lo criaria conflito em todo merge sem informar nada.
+src/build_id.h
+
+__pycache__/
+*.pyc
+
+# Saidas de medicao. O que interessa delas esta em docs/, com o contexto que
+# as torna interpretaveis; o arquivo cru nao se explica sozinho.
+*.bin
+*.npy
+ablate_raw.json
+bench*.txt
+ablate_*.txt
+ppl*.txt
+serve.log
+serve.out
+
+# Corpus derivado dos proprios docs -- regenera com um comando, e mudaria a
+# cada edicao de documentacao.
+corpus.txt
+corpus_rep.txt
+
+# NAO ignorados de proposito, e vale dizer por que:
+#   src/fixture_kernels.h    gerado, mas versionado: sem ele o build exige
+#   src/unicode_tables.h     numpy e transformers so para compilar
+#   corpus_prosa.txt         corpus de calibracao; o numero de docs/17 so
+#                            significa alguma coisa com ESTE texto
+#   ids32.txt, ref32.json    referencia do oraculo, presa ao container v3
+#   tokfixture.json          ids de referencia da HuggingFace

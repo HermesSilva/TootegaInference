@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 396" width="880" height="396" role="img" aria-label="MLA: store compressed and never decompress"><style>
+  svg { --surface:#fcfcfb; --plane:#f9f9f7; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+        --grid:#e1e0d9; --axis:#c3c2b7;
+        --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+        --crit:#d03b3b; --good:#0ca30c; --warn:#fab219;
+        --s1f:#e7f0fc; --s2f:#fdece5; --s3f:#e4f6ef; --critf:#fbeaea; --warnf:#fdf3dd;
+        --neutral:#f0efec; }
+  @media (prefers-color-scheme: dark) {
+    svg { --surface:#1a1a19; --plane:#0d0d0d; --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+          --grid:#2c2c2a; --axis:#383835;
+          --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+          --crit:#d03b3b; --good:#0ca30c; --warn:#fab219;
+          --s1f:#152436; --s2f:#31180e; --s3f:#0f2a21; --critf:#331616; --warnf:#332a12;
+          --neutral:#383835; }
+  }
+  text { font-family: system-ui,-apple-system,"Segoe UI",sans-serif; fill: var(--ink); }
+  .t    { font-size:17px; font-weight:600; }
+  .st   { font-size:12.5px; fill: var(--ink2); }
+  .lb   { font-size:13px; }
+  .lbb  { font-size:13px; font-weight:600; }
+  .sm   { font-size:11.5px; fill: var(--ink2); }
+  .mu   { font-size:11px; fill: var(--muted); }
+  .num  { font-size:13px; font-variant-numeric: tabular-nums; }
+  .numb { font-size:13px; font-weight:600; font-variant-numeric: tabular-nums; }
+  .mono { font-family: ui-monospace,"Cascadia Mono","Consolas",monospace; font-size:12px; }
+  .monos{ font-family: ui-monospace,"Cascadia Mono","Consolas",monospace; font-size:10.5px;
+          fill: var(--ink2); }
+  .ln   { stroke: var(--axis); stroke-width:1.5; fill:none; }
+  .gl   { stroke: var(--grid); stroke-width:1; fill:none; }
+  .ar   { stroke: var(--muted); stroke-width:2; fill:none; marker-end:url(#a); }
+  .arS1 { stroke: var(--s1); stroke-width:2; fill:none; marker-end:url(#a1); }
+  .arC  { stroke: var(--crit); stroke-width:2; fill:none; marker-end:url(#ac); }
+  .dash { stroke: var(--muted); stroke-width:1.5; fill:none; stroke-dasharray:5 4; }
+</style><defs>
+  <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+          orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+  <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+          orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--s1)"/></marker>
+  <marker id="ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+          orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--crit)"/></marker>
+</defs><rect width="100%" height="100%" fill="var(--surface)"/>
+<text x="20" y="32" class="t" text-anchor="start">MLA: store compressed and never decompress</text>
+<text x="20" y="51" class="st" text-anchor="start">Attention rereads the whole cache every token. Cache size is the cost.</text>
+<rect x="20" y="74" width="386" height="196" rx="10" fill="var(--surface)" stroke="var(--crit)" stroke-width="1.5"/>
+<text x="36" y="98" class="lbb" text-anchor="start" fill="var(--crit)">Naive (expanded)</text>
+<rect x="36" y="112" width="140" height="14" rx="3" fill="var(--critf)" stroke="var(--crit)" stroke-width="1"/>
+<text x="184" y="124" class="mu" text-anchor="start">t0</text>
+<rect x="36" y="132" width="140" height="14" rx="3" fill="var(--critf)" stroke="var(--crit)" stroke-width="1"/>
+<text x="184" y="144" class="mu" text-anchor="start">t1</text>
+<rect x="36" y="152" width="140" height="14" rx="3" fill="var(--critf)" stroke="var(--crit)" stroke-width="1"/>
+<text x="184" y="164" class="mu" text-anchor="start">t2</text>
+<rect x="36" y="172" width="140" height="14" rx="3" fill="var(--critf)" stroke="var(--crit)" stroke-width="1"/>
+<text x="184" y="184" class="mu" text-anchor="start">t3</text>
+<rect x="36" y="192" width="140" height="14" rx="3" fill="var(--critf)" stroke="var(--crit)" stroke-width="1"/>
+<text x="184" y="204" class="mu" text-anchor="start">t4</text>
+<rect x="36" y="212" width="140" height="14" rx="3" fill="var(--critf)" stroke="var(--crit)" stroke-width="1"/>
+<text x="184" y="224" class="mu" text-anchor="start">...</text>
+<text x="228" y="130" class="sm" text-anchor="start">20 heads x (256 + 256)</text>
+<text x="228" y="148" class="numb" text-anchor="start">= 10,240 values</text>
+<text x="228" y="166" class="mu" text-anchor="start">per token, per layer</text>
+<text x="228" y="200" class="mu" text-anchor="start">at 4k context, 47 layers:</text>
+<text x="228" y="220" class="numb" text-anchor="start" fill="var(--crit)">7.9 GB read per token</text>
+<rect x="474" y="74" width="386" height="196" rx="10" fill="var(--surface)" stroke="var(--s3)" stroke-width="1.5"/>
+<text x="490" y="98" class="lbb" text-anchor="start" fill="var(--s3)">MLA compressed</text>
+<rect x="490" y="112" width="10" height="14" rx="3" fill="var(--s3f)" stroke="var(--s3)" stroke-width="1"/>
+<text x="508" y="124" class="mu" text-anchor="start">t0</text>
+<rect x="490" y="132" width="10" height="14" rx="3" fill="var(--s3f)" stroke="var(--s3)" stroke-width="1"/>
+<text x="508" y="144" class="mu" text-anchor="start">t1</text>
+<rect x="490" y="152" width="10" height="14" rx="3" fill="var(--s3f)" stroke="var(--s3)" stroke-width="1"/>
+<text x="508" y="164" class="mu" text-anchor="start">t2</text>
+<rect x="490" y="172" width="10" height="14" rx="3" fill="var(--s3f)" stroke="var(--s3)" stroke-width="1"/>
+<text x="508" y="184" class="mu" text-anchor="start">t3</text>
+<rect x="490" y="192" width="10" height="14" rx="3" fill="var(--s3f)" stroke="var(--s3)" stroke-width="1"/>
+<text x="508" y="204" class="mu" text-anchor="start">t4</text>
+<rect x="490" y="212" width="10" height="14" rx="3" fill="var(--s3f)" stroke="var(--s3)" stroke-width="1"/>
+<text x="508" y="224" class="mu" text-anchor="start">...</text>
+<text x="682" y="130" class="sm" text-anchor="start">kv_lora 512 + rope 64</text>
+<text x="682" y="148" class="numb" text-anchor="start">= 576 values</text>
+<text x="682" y="166" class="mu" text-anchor="start">per token, per layer</text>
+<text x="682" y="200" class="mu" text-anchor="start">at 4k context, 47 layers:</text>
+<text x="682" y="220" class="numb" text-anchor="start" fill="var(--s3)">443 MB read per token</text>
+<path d="M 412 172 L 462 172" class="ar"/>
+<text x="437" y="152" class="sm" text-anchor="middle">18x less</text>
+<text x="437" y="165" class="sm" text-anchor="middle">traffic</text>
+<rect x="20" y="284" width="840" height="92" rx="10" fill="var(--s1f)" stroke="var(--s1)" stroke-width="1.5"/>
+<text x="38" y="308" class="lbb" text-anchor="start" fill="var(--s1)">The identity that allows the swap</text>
+<text x="38" y="332" class="mono" text-anchor="start">q . (W_k c)  =  (W_k^T q) . c</text>
+<text x="300" y="332" class="sm" text-anchor="start">project the query once  instead of  expanding every cached position</text>
+<text x="38" y="358" class="sm" text-anchor="start">Same algebra, different bits: adopted only after 32/32 against the oracle.</text>
+<text x="700" y="308" class="mu" text-anchor="start">weights read per token: 2.01 GB</text>
+</svg>

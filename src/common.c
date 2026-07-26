@@ -1,0 +1,134 @@
+#include "common.h"
+#include "compat.h"
+
+/* Gerado pelo build a partir do hash de `src/*.c` e `src/*.h`.  Se faltar, o
+ * binario foi compilado fora do build oficial -- e vale dizer isso em vez de
+ * fingir um id. */
+#if __has_include("build_id.h")
+#  include "build_id.h"
+#endif
+#ifndef TT_BUILD_ID
+#  define TT_BUILD_ID "sem-carimbo"
+#endif
+
+const char *tt_build_id(void) { return TT_BUILD_ID; }
+
+#include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
+
+/* --------------------------------------------------------------- erro */
+
+static char g_error[512];
+
+int tt_fail(const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(g_error, sizeof(g_error), fmt, ap);
+    va_end(ap);
+    return -1;
+}
+
+const char *tt_error(void) { return g_error; }
+
+void tt_error_clear(void) { g_error[0] = '\0'; }
+
+/* ---------------------------------------------------------------- log */
+
+static int g_verbose = 0;
+
+void tt_verbose(int on) { g_verbose = on; }
+int  tt_is_verbose(void) { return g_verbose; }
+
+void tt_log(const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+    fputc('\n', stderr);
+}
+
+void tt_dbg(const char *fmt, ...)
+{
+    if (!g_verbose) return;
+    va_list ap;
+    va_start(ap, fmt);
+    fputs("  . ", stderr);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+    fputc('\n', stderr);
+}
+
+/* -------------------------------------------------------------- arena */
+
+int tt_arena_init(tt_arena *a, size_t bytes, const char *name)
+{
+    memset(a, 0, sizeof(*a));
+    if (!bytes) bytes = 1;
+    bytes = tt_align_up(bytes, TT_ALIGN);
+
+    a->base = (unsigned char *)tt_alloc_aligned(bytes, TT_ALIGN);
+    if (!a->base) {
+        char b[32];
+        return tt_fail("arena '%s': sem memoria para %s", name ? name : "?",
+                       tt_bytes(b, sizeof(b), bytes));
+    }
+    a->size = bytes;
+    a->name = name ? name : "arena";
+    return 0;
+}
+
+void tt_arena_free(tt_arena *a)
+{
+    if (a->base) tt_free_aligned(a->base);
+    memset(a, 0, sizeof(*a));
+}
+
+void tt_arena_reset(tt_arena *a)
+{
+    if (a->used > a->peak) a->peak = a->used;
+    a->used = 0;
+}
+
+void *tt_arena_alloc(tt_arena *a, size_t bytes, size_t align)
+{
+    if (!align) align = TT_ALIGN;
+
+    size_t off = tt_align_up(a->used, align);
+    if (off > a->size || bytes > a->size - off) {
+        char need[32], have[32];
+        size_t missing = off + bytes - a->size;
+        tt_fail("arena '%s' estourou: pedido %s, faltam %s (dimensionamento "
+                "errado na init, nao condicao de execucao)",
+                a->name,
+                tt_bytes(need, sizeof(need), bytes),
+                tt_bytes(have, sizeof(have), missing));
+        return NULL;
+    }
+
+    a->used = off + bytes;
+    if (a->used > a->peak) a->peak = a->used;
+    return a->base + off;
+}
+
+/* --------------------------------------------------------------- util */
+
+/* Unidades decimais, nao binarias: os documentos, as bandas medidas e
+ * `tt_ram_total_gb` todos falam em 1e9.  Misturar GB e GiB no mesmo relatorio
+ * e como comparar duas medicoes com configuracao diferente -- nao significa
+ * nada (docs/07). */
+const char *tt_bytes(char *buf, size_t buflen, uint64_t bytes)
+{
+    const double b = (double)bytes;
+    if (bytes >= 1000000000ull)
+        snprintf(buf, buflen, "%.2f GB", b / 1e9);
+    else if (bytes >= 1000000ull)
+        snprintf(buf, buflen, "%.1f MB", b / 1e6);
+    else if (bytes >= 1000ull)
+        snprintf(buf, buflen, "%.1f KB", b / 1e3);
+    else
+        snprintf(buf, buflen, "%llu B", (unsigned long long)bytes);
+    return buf;
+}

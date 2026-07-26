@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 372" width="880" height="372" role="img" aria-label="Two scaling laws - and only one of them pays"><style>
+  svg { --surface:#fcfcfb; --plane:#f9f9f7; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+        --grid:#e1e0d9; --axis:#c3c2b7;
+        --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+        --crit:#d03b3b; --good:#0ca30c; --warn:#fab219;
+        --s1f:#e7f0fc; --s2f:#fdece5; --s3f:#e4f6ef; --critf:#fbeaea; --warnf:#fdf3dd;
+        --neutral:#f0efec; }
+  @media (prefers-color-scheme: dark) {
+    svg { --surface:#1a1a19; --plane:#0d0d0d; --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+          --grid:#2c2c2a; --axis:#383835;
+          --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+          --crit:#d03b3b; --good:#0ca30c; --warn:#fab219;
+          --s1f:#152436; --s2f:#31180e; --s3f:#0f2a21; --critf:#331616; --warnf:#332a12;
+          --neutral:#383835; }
+  }
+  text { font-family: system-ui,-apple-system,"Segoe UI",sans-serif; fill: var(--ink); }
+  .t    { font-size:17px; font-weight:600; }
+  .st   { font-size:12.5px; fill: var(--ink2); }
+  .lb   { font-size:13px; }
+  .lbb  { font-size:13px; font-weight:600; }
+  .sm   { font-size:11.5px; fill: var(--ink2); }
+  .mu   { font-size:11px; fill: var(--muted); }
+  .num  { font-size:13px; font-variant-numeric: tabular-nums; }
+  .numb { font-size:13px; font-weight:600; font-variant-numeric: tabular-nums; }
+  .mono { font-family: ui-monospace,"Cascadia Mono","Consolas",monospace; font-size:12px; }
+  .monos{ font-family: ui-monospace,"Cascadia Mono","Consolas",monospace; font-size:10.5px;
+          fill: var(--ink2); }
+  .ln   { stroke: var(--axis); stroke-width:1.5; fill:none; }
+  .gl   { stroke: var(--grid); stroke-width:1; fill:none; }
+  .ar   { stroke: var(--muted); stroke-width:2; fill:none; marker-end:url(#a); }
+  .arS1 { stroke: var(--s1); stroke-width:2; fill:none; marker-end:url(#a1); }
+  .arC  { stroke: var(--crit); stroke-width:2; fill:none; marker-end:url(#ac); }
+  .dash { stroke: var(--muted); stroke-width:1.5; fill:none; stroke-dasharray:5 4; }
+</style><defs>
+  <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+          orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+  <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+          orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--s1)"/></marker>
+  <marker id="ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+          orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--crit)"/></marker>
+</defs><rect width="100%" height="100%" fill="var(--surface)"/>
+<text x="20" y="32" class="t" text-anchor="start">Two scaling laws - and only one of them pays</text>
+<text x="20" y="51" class="st" text-anchor="start">All in tok/s on this machine, one shared scale. Buying RAM crawls; fitting in RAM jumps.</text>
+<line x1="210" y1="292.0" x2="770" y2="292.0" class="gl"/>
+<text x="202" y="296.0" class="mu" text-anchor="end">0</text>
+<line x1="210" y1="255.63636363636363" x2="770" y2="255.63636363636363" class="gl"/>
+<text x="202" y="259.6363636363636" class="mu" text-anchor="end">4</text>
+<line x1="210" y1="219.27272727272725" x2="770" y2="219.27272727272725" class="gl"/>
+<text x="202" y="223.27272727272725" class="mu" text-anchor="end">8</text>
+<line x1="210" y1="182.9090909090909" x2="770" y2="182.9090909090909" class="gl"/>
+<text x="202" y="186.9090909090909" class="mu" text-anchor="end">12</text>
+<line x1="210" y1="146.54545454545453" x2="770" y2="146.54545454545453" class="gl"/>
+<text x="202" y="150.54545454545453" class="mu" text-anchor="end">16</text>
+<line x1="210" y1="110.18181818181819" x2="770" y2="110.18181818181819" class="gl"/>
+<text x="202" y="114.18181818181819" class="mu" text-anchor="end">20</text>
+<text x="202" y="82" class="mu" text-anchor="end">tok/s</text>
+<rect x="224" y="286.03636363636366" width="54" height="5.963636363636365" rx="4" fill="var(--s1)" stroke="none" stroke-width="0"/>
+<text x="251" y="278.03636363636366" class="numb" text-anchor="middle">0.66</text>
+<text x="251" y="310" class="sm" text-anchor="middle">RAM 16 GB</text>
+<rect x="298" y="285.6818181818182" width="54" height="6.318181818181818" rx="4" fill="var(--s1)" stroke="none" stroke-width="0"/>
+<text x="325" y="277.6818181818182" class="numb" text-anchor="middle">0.69</text>
+<text x="325" y="310" class="sm" text-anchor="middle">RAM 30 GB</text>
+<rect x="372" y="284.3727272727273" width="54" height="7.627272727272726" rx="4" fill="var(--s1)" stroke="none" stroke-width="0"/>
+<text x="399" y="276.3727272727273" class="numb" text-anchor="middle">0.84</text>
+<text x="399" y="310" class="sm" text-anchor="middle">RAM 45 GB</text>
+<rect x="446" y="283.55454545454546" width="54" height="8.445454545454545" rx="4" fill="var(--s1)" stroke="none" stroke-width="0"/>
+<text x="473" y="275.55454545454546" class="numb" text-anchor="middle">0.93</text>
+<text x="473" y="310" class="sm" text-anchor="middle">RAM ~60 GB</text>
+<line x1="534" y1="98" x2="534" y2="292" class="dash"/>
+<rect x="566" y="152.72727272727272" width="54" height="139.27272727272728" rx="4" fill="var(--s3)" stroke="none" stroke-width="0"/>
+<text x="593" y="144.72727272727272" class="numb" text-anchor="middle">15.3</text>
+<text x="593" y="310" class="sm" text-anchor="middle">M1 today,</text>
+<text x="593" y="323" class="sm" text-anchor="middle">ctx 1k</text>
+<rect x="640" y="114.72727272727272" width="54" height="177.27272727272728" rx="4" fill="var(--s3)" stroke="none" stroke-width="0"/>
+<text x="667" y="106.72727272727272" class="numb" text-anchor="middle">17-22</text>
+<text x="667" y="310" class="sm" text-anchor="middle">4k target</text>
+<line x1="210" y1="292" x2="770" y2="292" class="ln"/>
+<text x="224" y="350" class="mu" text-anchor="start">same oversized model (744B), varying RAM</text>
+<text x="550" y="350" class="mu" text-anchor="start">model that fits entirely (31.2B)</text>
+<rect x="20" y="118" width="158" height="58" rx="8" fill="var(--s1f)" stroke="var(--s1)" stroke-width="1.5"/>
+<text x="32" y="138" class="sm" text-anchor="start">3.75x the RAM -&gt; 1.42x</text>
+<text x="32" y="153" class="sm" text-anchor="start">(N^0.25)</text>
+<rect x="20" y="190" width="158" height="58" rx="8" fill="var(--s3f)" stroke="var(--s3)" stroke-width="1.5"/>
+<text x="32" y="210" class="sm" text-anchor="start">changing regime -&gt; ~16x</text>
+</svg>

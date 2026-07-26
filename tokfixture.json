@@ -1,0 +1,582 @@
+{
+ "cases": [
+  {
+   "text": "",
+   "ids": [],
+   "decoded": ""
+  },
+  {
+   "text": "a",
+   "ids": [
+    64
+   ],
+   "decoded": "a"
+  },
+  {
+   "text": " ",
+   "ids": [
+    220
+   ],
+   "decoded": " "
+  },
+  {
+   "text": "   ",
+   "ids": [
+    262
+   ],
+   "decoded": "   "
+  },
+  {
+   "text": "\n",
+   "ids": [
+    198
+   ],
+   "decoded": "\n"
+  },
+  {
+   "text": "\r\n\r\n",
+   "ids": [
+    871
+   ],
+   "decoded": "\r\n\r\n"
+  },
+  {
+   "text": "hello world",
+   "ids": [
+    14978,
+    1879
+   ],
+   "decoded": "hello world"
+  },
+  {
+   "text": "Hello, World! How's it going?",
+   "ids": [
+    9703,
+    11,
+    4337,
+    0,
+    2585,
+    594,
+    432,
+    2087,
+    30
+   ],
+   "decoded": "Hello, World! How's it going?"
+  },
+  {
+   "text": "it's don't they're we've I'm you'll he'd",
+   "ids": [
+    275,
+    594,
+    1513,
+    944,
+    807,
+    2299,
+    582,
+    3003,
+    358,
+    2776,
+    498,
+    3278,
+    566,
+    4172
+   ],
+   "decoded": "it's don't they're we've I'm you'll he'd"
+  },
+  {
+   "text": "IT'S DON'T THEY'RE WE'VE",
+   "ids": [
+    952,
+    13264,
+    44017,
+    17302,
+    62053,
+    93362,
+    19640,
+    6,
+    4491
+   ],
+   "decoded": "IT'S DON'T THEY'RE WE'VE"
+  },
+  {
+   "text": "1 12 123 1234 12345 007",
+   "ids": [
+    16,
+    220,
+    98886,
+    220,
+    108714,
+    220,
+    108714,
+    19,
+    220,
+    108714,
+    100461,
+    220,
+    125744
+   ],
+   "decoded": "1 12 123 1234 12345 007"
+  },
+  {
+   "text": "x=1;y=2;  z = x+y  // soma",
+   "ids": [
+    87,
+    28,
+    16,
+    70331,
+    28,
+    17,
+    26,
+    220,
+    1147,
+    284,
+    856,
+    42765,
+    220,
+    442,
+    57364
+   ],
+   "decoded": "x=1;y=2;  z = x+y  // soma"
+  },
+  {
+   "text": "     espacos     no     meio     ",
+   "ids": [
+    257,
+    16525,
+    41412,
+    257,
+    902,
+    257,
+    65419,
+    414
+   ],
+   "decoded": "     espacos     no     meio     "
+  },
+  {
+   "text": "linha um\nlinha dois\n\n\nlinha tres",
+   "ids": [
+    66334,
+    4443,
+    198,
+    66334,
+    50016,
+    1406,
+    66334,
+    30503
+   ],
+   "decoded": "linha um\nlinha dois\n\n\nlinha tres"
+  },
+  {
+   "text": "tabs\tentre\tpalavras",
+   "ids": [
+    30867,
+    197,
+    39681,
+    3223,
+    278,
+    87392
+   ],
+   "decoded": "tabs\tentre\tpalavras"
+  },
+  {
+   "text": "acentuação: coração, ímã, ëxôtiço, ñandu",
+   "ids": [
+    18152,
+    71771,
+    25,
+    1829,
+    12960,
+    11,
+    39915,
+    76,
+    3202,
+    11,
+    1683,
+    104,
+    87,
+    9570,
+    10246,
+    20170,
+    11,
+    1683,
+    109,
+    437,
+    84
+   ],
+   "decoded": "acentuação: coração, ímã, ëxôtiço, ñandu"
+  },
+  {
+   "text": "中文字符测试",
+   "ids": [
+    98322,
+    101464,
+    99840,
+    100838
+   ],
+   "decoded": "中文字符测试"
+  },
+  {
+   "text": "日本語のテキスト",
+   "ids": [
+    99799,
+    131513,
+    15755,
+    56451,
+    61369,
+    70008
+   ],
+   "decoded": "日本語のテキスト"
+  },
+  {
+   "text": "한국어 텍스트",
+   "ids": [
+    23508,
+    130419,
+    30953,
+    10759,
+    43849,
+    52836
+   ],
+   "decoded": "한국어 텍스트"
+  },
+  {
+   "text": "русский текст",
+   "ids": [
+    131971,
+    127616,
+    70363
+   ],
+   "decoded": "русский текст"
+  },
+  {
+   "text": "emoji 😀 e 👨‍👩‍👧‍👦 familia",
+   "ids": [
+    37328,
+    89570,
+    384,
+    61370,
+    101,
+    124564,
+    151929,
+    124564,
+    151927,
+    124564,
+    151926,
+    50613
+   ],
+   "decoded": "emoji 😀 e 👨‍👩‍👧‍👦 familia"
+  },
+  {
+   "text": "misto 中文 with english e 123 números!",
+   "ids": [
+    76,
+    25261,
+    117604,
+    448,
+    28858,
+    384,
+    220,
+    108714,
+    68912,
+    0
+   ],
+   "decoded": "misto 中文 with english e 123 números!"
+  },
+  {
+   "text": "```python\ndef f(x):\n    return x ** 2\n```",
+   "ids": [
+    73022,
+    12663,
+    198,
+    750,
+    282,
+    2075,
+    982,
+    262,
+    470,
+    856,
+    3070,
+    220,
+    17,
+    198,
+    73022
+   ],
+   "decoded": "```python\ndef f(x):\n    return x ** 2\n```"
+  },
+  {
+   "text": "{\"json\": [1, 2, 3], \"nested\": {\"a\": null}}",
+   "ids": [
+    4913,
+    2236,
+    788,
+    508,
+    16,
+    11,
+    220,
+    17,
+    11,
+    220,
+    18,
+    1125,
+    330,
+    58860,
+    788,
+    5212,
+    64,
+    788,
+    845,
+    3417
+   ],
+   "decoded": "{\"json\": [1, 2, 3], \"nested\": {\"a\": null}}"
+  },
+  {
+   "text": "https://exemplo.com/path?query=1&other=2#frag",
+   "ids": [
+    2428,
+    1110,
+    327,
+    30093,
+    905,
+    50642,
+    30,
+    1631,
+    28,
+    16,
+    5,
+    1575,
+    28,
+    17,
+    2,
+    33038
+   ],
+   "decoded": "https://exemplo.com/path?query=1&other=2#frag"
+  },
+  {
+   "text": "C:\\Users\\Hermes\\Documents\\arquivo.txt",
+   "ids": [
+    34,
+    7190,
+    7137,
+    59,
+    39,
+    4195,
+    288,
+    59,
+    27054,
+    59,
+    277,
+    28841,
+    3909
+   ],
+   "decoded": "C:\\Users\\Hermes\\Documents\\arquivo.txt"
+  },
+  {
+   "text": "muitos!!!???...,,,;;;pontos",
+   "ids": [
+    76,
+    3083,
+    436,
+    12063,
+    32858,
+    1112,
+    60298,
+    36144,
+    79,
+    148427
+   ],
+   "decoded": "muitos!!!???...,,,;;;pontos"
+  },
+  {
+   "text": "<|endoftext|>",
+   "ids": [
+    154820
+   ],
+   "decoded": "<|endoftext|>"
+  },
+  {
+   "text": "antes<|endoftext|>depois",
+   "ids": [
+    15465,
+    154820,
+    450,
+    131652
+   ],
+   "decoded": "antes<|endoftext|>depois"
+  },
+  {
+   "text": "<|user|>oi<|assistant|>ola",
+   "ids": [
+    154827,
+    6728,
+    154828,
+    7924
+   ],
+   "decoded": "<|user|>oi<|assistant|>ola"
+  },
+  {
+   "text": "[MASK] [gMASK] [sMASK] <sop> <eop>",
+   "ids": [
+    154821,
+    220,
+    154822,
+    220,
+    154823,
+    220,
+    154824,
+    220,
+    154825
+   ],
+   "decoded": "[MASK] [gMASK] [sMASK] <sop> <eop>"
+  },
+  {
+   "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "ids": [
+    68926,
+    68926,
+    68926,
+    68926,
+    68926,
+    68926,
+    68926,
+    68926,
+    68926,
+    68926,
+    68926,
+    68926,
+    68926,
+    68926,
+    68926,
+    68926,
+    68926,
+    68926,
+    68926,
+    68926,
+    68926,
+    68926,
+    68926,
+    68926,
+    68926
+   ],
+   "decoded": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  {
+   "text": "palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra ",
+   "ids": [
+    19272,
+    62426,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    93850,
+    220
+   ],
+   "decoded": "palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra palavra "
+  },
+  {
+   "text": "0x1F 0b1010 1e10 3.14159 -42",
+   "ids": [
+    15,
+    87,
+    16,
+    37,
+    220,
+    15,
+    65,
+    107609,
+    15,
+    220,
+    16,
+    68,
+    98668,
+    220,
+    18,
+    13,
+    122804,
+    102573,
+    481,
+    101961
+   ],
+   "decoded": "0x1F 0b1010 1e10 3.14159 -42"
+  },
+  {
+   "text": "e-mail: nome.sobrenome+tag@dominio.com.br",
+   "ids": [
+    68,
+    11463,
+    25,
+    17110,
+    514,
+    674,
+    1440,
+    635,
+    10,
+    4578,
+    31,
+    5600,
+    258,
+    815,
+    905,
+    20890
+   ],
+   "decoded": "e-mail: nome.sobrenome+tag@dominio.com.br"
+  },
+  {
+   "text": "aaaa bbbb cccc　dddd",
+   "ids": [
+    28358,
+    4102,
+    86883,
+    103245,
+    55224,
+    22382,
+    63641
+   ],
+   "decoded": "aaaa bbbb cccc　dddd"
+  }
+ ]
+}

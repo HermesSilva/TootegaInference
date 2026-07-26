@@ -1,0 +1,1496 @@
+# TootegaEngine — for dummies
+
+> **Sibling document:** [`TootegaEngine-ForDummies.pt.md`](TootegaEngine-ForDummies.pt.md) —
+> same content, in Portuguese. The two versions are kept in parallel; when one
+> changes, the other changes with it.
+
+This is the project's front door. It exists because the rest of the
+documentation (`docs/01` through `docs/16`) is written for someone who already
+has the vocabulary — and a good part of that vocabulary is either field jargon,
+or **this project's** jargon, or an ordinary word that means something else here.
+
+The order is deliberate: **words first, system second.**
+
+---
+
+## Contents
+
+| # | section | what you get |
+|---|---|---|
+| 0 | [How to read this document](#0--how-to-read-this-document) | conventions, audience, assumptions |
+| 1 | [The project in one page](#1--the-project-in-one-page) | the thesis, the machine, current state |
+| 2 | [Five ideas that explain almost everything](#2--five-ideas-that-explain-almost-everything) | the minimum to follow any decision |
+| 3 | [Glossary A — words that mean something else here](#3--glossary-a--words-that-mean-something-else-here) | the other meanings |
+| 4 | [Glossary B — the project's coinages](#4--glossary-b--the-projects-coinages-and-nicknames) | the internal dialect |
+| 5 | [Glossary C — field vocabulary](#5--glossary-c--field-vocabulary-one-line-each) | quick reference |
+| 6 | [From text to text: the full journey](#6--from-text-to-text-the-full-journey) | how a token is born |
+| 7 | [Why it is slow: the physics of decode](#7--why-it-is-slow-the-physics-of-decode) | prefill, decode, roofline |
+| 8 | [This machine's hardware and the inversion](#8--this-machines-hardware-and-the-inversion) | why the GPU does not save you |
+| 9 | [Residency: the decision worth 20x](#9--residency-the-decision-worth-20x) | the thesis, with numbers |
+| 10 | [How the model is stored](#10--how-the-model-is-stored) | int4, ablation, container |
+| 11 | [Memory: one copy, not one more](#11--memory-one-copy-not-one-more) | mmap, arena, the three caches |
+| 12 | [How we know it is correct](#12--how-we-know-it-is-correct) | oracle, 32/32, paired measurement |
+| 13 | [Where we are and what comes next](#13--where-we-are-and-what-comes-next) | roadmap with kill criteria |
+| 14 | [Hands on](#14--hands-on) | build and commands, with output reading |
+| 15 | [Repository map](#15--repository-map) | where everything lives |
+| 16 | [Common misunderstandings](#16--common-misunderstandings) | FAQ |
+| 17 | [PT ↔ EN index](#17--term-index-pt--en) | to read both versions side by side |
+
+---
+
+## 0 — How to read this document
+
+### Who it is for
+
+Anyone who programs, or at least reads code, and has **never opened an inference
+engine from the inside**. No machine-learning background required.
+
+### What I assume
+
+- You know what a file, a pointer, a byte and a vector are.
+- You know matrix multiplication is expensive.
+- You do **not** know (and do not need to know) what a transformer is, what
+  attention is, what quantization is, or what an "expert" is.
+
+### What I do not do
+
+I do not teach model training. This project **trains nothing** — it only runs an
+already trained model that someone else published.
+
+### Conventions
+
+**Numbers.** This document uses the period as decimal separator (`0.93`) and the
+comma as thousands separator (`154,880`). The Portuguese version uses the
+opposite convention. The values are the same.
+
+**Two marks that show up everywhere:**
+
+| mark | meaning |
+|---|---|
+| **[measured]** | the number came from a run on this machine, with the configuration recorded |
+| **[estimate]** | the number came from arithmetic and has not been confirmed by a run |
+
+That distinction is taken seriously enough to be written into the original
+documents. An estimate that becomes "fact" by repetition is the failure mode this
+project works hardest to avoid — and it already cost a public 60% correction to a
+central calculation (see [§12](#12--how-we-know-it-is-correct)).
+
+**References.** Whenever a claim comes from a normative document, it appears like
+this: → [`docs/08`](../docs/08-teto-de-desempenho.md). This document is a **front
+door**, not the source of truth; where they disagree, the numbered document wins.
+
+**"This machine"** always means the reference computer described in
+[§1](#the-reference-machine). No number in this project is generic.
+
+---
+
+## 1 — The project in one page
+
+### What it is
+
+TootegaEngine is a **program that makes a language model answer**, written from
+scratch in C, with no libraries, for one specific case: **MoE** models that
+**fit entirely in the machine's RAM**.
+
+Three of those words already need definitions, and they come in the next
+sections: *model*, *MoE*, *fits entirely*.
+
+### The thesis, in one paragraph
+
+There is a previous project, **colibrì**, which proved you can run a giant model
+(744 billion parameters) on an ordinary machine by streaming pieces from disk as
+needed. It works — and it delivers **0.93 tokens per second** [measured] on this
+machine. Too slow for interactive use.
+
+The observation behind TootegaEngine is that **the bottleneck is not the
+hardware**: it is the ratio between model size and fast memory. Buying more RAM
+helps very little (measured at `N^0.25`: quadrupling RAM gives ~1.4x). Switching
+to a model **that fits entirely in RAM** changes the regime: disk leaves the
+picture and the ceiling becomes memory bandwidth — **17 to 22 tokens per second**
+[realistic-band estimate], against 0.93.
+
+TootegaEngine is the engine designed for **that regime**, and explicitly **not**
+for hiding disk.
+
+### The reference machine
+
+Every number in this project was measured here:
+
+```
+CPU    Intel i9-14900K, 32 threads, AVX-VNNI
+RAM    64 GB DDR5-4800 dual channel      ~60 GB/s effective
+GPU    RTX 2060 SUPER, 8 GB, sm_75       448 GB/s of VRAM
+PCIe   gen 3 x16 (the GPU's limit)       ~12 GB/s   <-- the slowest link
+Disk   RAID0 NVMe (F:)                   18.4 GB/s sequential
+OS     Windows 10 Pro 19045
+```
+
+Remember the PCIe line. It is the origin of half the project's decisions
+([§8](#8--this-machines-hardware-and-the-inversion)).
+
+### The target model
+
+**GLM-4.7-Flash**: 31.2 billion stored parameters, ~3.57 billion used per token,
+19.65 GB in the project's format, 202,752 tokens of maximum context.
+→ [`docs/04`](../docs/04-modelo-alvo.md)
+
+### Current state
+
+**M1 complete, CPU only.** The engine already:
+
+- reproduces the reference implementation — **32 of 32 identical tokens**
+  [measured];
+- produces **byte-identical** output between 1 and 24 threads [measured];
+- tokenizes with **36 of 36 cases identical** to the reference library
+  [measured];
+- holds multi-turn conversations reusing the cache: **92 of 100 prompt tokens
+  came from cache on the second turn** [measured];
+- refuses configurations that do not fit, naming what to reduce.
+
+Current speed [measured]: **9.79 tok/s** decoding a short example;
+**15.32 tok/s** at 1,024 of context; **7.48 tok/s** with a full 4,096 context.
+Milestone target: ≥ 10 tok/s at 4k. Not met yet under the strict reading.
+
+---
+
+## 2 — Five ideas that explain almost everything
+
+If you read only this section, you can follow 90% of the project's discussions.
+
+### Idea 1 — the model does not write text, it guesses the next piece
+
+The model receives a list of integers (**tokens**) and returns, for each of the
+154,880 possible vocabulary pieces, a score for "how likely is this to be next".
+One is picked, it becomes the next number in the list, and everything restarts.
+
+**Consequence:** generating 60 tokens means running the whole model 60 times.
+The cost is **per token**, always.
+
+### Idea 2 — "stored parameter" and "active parameter" are different things
+
+The model file holds 31.2 billion numbers (the **weights**). But the MoE
+architecture only switches on part of them per token: **3.57 billion**.
+
+```
+stored in the file   31.2 B parameters  ->  19.65 GB on disk
+read per token        3.57 B parameters ->   2.01 GB of reads
+```
+
+**Consequence:** file size does not determine speed. What determines it is how
+much is **read per token**.
+
+### Idea 3 — the bottleneck is memory bandwidth, not arithmetic
+
+To generate one token the processor must **read 2.01 GB** of weights and do
+~7.1 GFLOP of arithmetic. On this machine:
+
+```
+reading  2.01 GB at 60 GB/s  = ~33 ms
+computing 7.1 GFLOP          = ~4 to 7 ms
+```
+
+Reading costs five times more than computing. The problem is called
+**memory-bound** (limited by bandwidth), not **compute-bound** (limited by
+arithmetic).
+
+**The surprising practical consequence:** trading precision for arithmetic speed
+barely helps, because the CPU spends most of its time waiting on memory. That is
+why the project chose the **most precise** and arithmetically "slower" kernel —
+there is compute headroom to spare. → [`docs/15`](../docs/15-kernels-e-numerica.md)
+
+### Idea 4 — residency: either the model fits, or you are playing a different game
+
+If the model fits in RAM, every token reads from RAM (60 GB/s). If it does not,
+every token reads pieces from disk (18.4 GB/s at best, and far worse in practice
+because of random-access latency).
+
+This is not a 3x difference. It is a difference of **regime**, measured between
+11x and 34x.
+
+### Idea 5 — nothing ships without passing the oracle
+
+Every change that could alter the output is compared against an independent
+reference implementation (in Python, using `transformers`), and is only accepted
+if it produces **32 of 32 identical tokens**.
+
+Three good optimizations have already been **rejected** by that criterion and
+remain as switched-off options. → [§12](#12--how-we-know-it-is-correct)
+
+---
+
+## 3 — Glossary A — words that mean something else here
+
+This is the section the rest of the documentation assumes you have read.
+
+### 3.1 The table of other meanings
+
+| word | what it usually means | what it means **here** |
+|---|---|---|
+| model | the "brain", something abstract | A file of numbers. Here it is literally `model.tootega`, 19.65 GB of weights. Not a program and not a service. |
+| expert | a specialist in some subject | A pair of matrices picked by a score, per token and per layer. It has no subject: there is no "math expert". |
+| cache | one single thing, generic fast memory | Here it means three different things with different owners: the weight cache, the KV cache and the prefix cache. Conflating them is the origin of most design confusion. |
+| bandwidth | internet bandwidth, measured in Mbps | How many gigabytes per second memory delivers. Nothing to do with internet, and different from latency. |
+| resident | installed on the machine | Living entirely in RAM and never leaving during the run. Not the same as "installed" or "loaded". |
+| quantization | discretizing any signal | Storing each weight in 4 or 8 bits instead of 16. Weights only: the arithmetic stays in 32 bits. |
+| LoRA | a model fine-tuning technique | Here (`q_lora_rank`, `kv_lora_rank`) it is just low-rank projection, part of the original architecture. No relation to the fine-tuning technique of the same name. |
+| token | a symbol, or an access credential | A piece of text, ~4 characters on average. The model only ever sees the integer that stands for that piece. |
+| context | the topic being discussed | The maximum number of tokens that fit in the conversation window. It costs memory: 52.9 KB per token. |
+| group | generic grouping | Two unrelated homonyms: `group=64` (how many weights share one scale) and `n_group` (a routing restriction across experts). |
+| page | a document or web page | A 4 KB (or 2 MB) block the operating system manages memory with. Nothing to do with document pages. |
+| plan | an intention or a schedule | The decision of where each weight will live (RAM or VRAM), computed at startup from the measured bandwidths. |
+| oracle | a fortune teller, or a database vendor | The Python reference implementation the engine is compared against, token by token. |
+| ablation | a medical procedure | Switching off (or restoring) one part at a time to measure how much it contributes to the result. |
+| slot | a physical socket, a calendar opening | One independent conversation context inside the engine. Each slot has its own KV. |
+| shard | a generic fragment, a database partition | One of the 48 files the original model comes split into, because of size limits. |
+| kernel | the operating system core | The routine doing the heavy arithmetic - `matmul_int4_g`, for instance. Not the operating system kernel. |
+| draft | a rough version of a text | A cheap guess at a token, produced to be confirmed or discarded in bulk (speculation). |
+| temperature | heat | A number controlling how random the next-token choice is. 0 = always the most likely one. |
+| engine | a car engine, or a game engine | The program that runs the model: loads the weights, does the arithmetic, manages the cache. It is not the model, and not the interface. |
+| agent | a person acting on someone's behalf | A program that uses the model in a loop: asks, gets an answer, runs tools, feeds the result back. |
+| tool | a utensil, or a command-line program | In the agent sense: a function the model can ask to run (read a file, run a command). Its schema goes into the prompt. |
+
+### 3.2 The four that confuse the most, with examples
+
+**"Expert" is not a specialist.** The natural intuition — "the math expert",
+"the code expert" — is wrong. An expert is a pair of matrices. The router scores
+all 64 and picks the top 4, **per token and per layer**. The same token may
+activate experts 5, 18, 27 and 52 in layer 3 and experts 1, 9, 40 and 63 in
+layer 4. There is no topic, no assignable meaning, and nobody programmed it — the
+split emerged from training.
+
+**"Quantization" here is only about weights.** The engine stores weights in
+4 bits but **unpacks to 32 bits before multiplying**. Activations (the numbers
+flowing between layers) are never quantized. This has a name in the project:
+**W4A32** — *weights 4 bits, activations 32 bits*. The arithmetically faster
+alternative (W4A8) was rejected because arithmetic is not the bottleneck and it
+would introduce fresh error. → [`docs/15`](../docs/15-kernels-e-numerica.md)
+
+**"LoRA" here is not fine-tuning.** `q_lora_rank: 768` in the config means: instead
+of one 2048×5120 matrix, the model uses two — 2048×768 and 768×5120. It is
+compression baked into the architecture, present since training. The popular
+fine-tuning technique called LoRA uses the same mathematical idea and a similar
+name, but **is not involved here in any way**.
+
+**"Bandwidth" is not latency.** Bandwidth is *how many bytes per second*. Latency
+is *how long until the first byte*. An NVMe disk has excellent bandwidth and poor
+latency; RAM has both good. Almost every calculation in this project is a
+bandwidth calculation, because during decode the reads are large, predictable and
+sequential.
+
+---
+
+## 4 — Glossary B — the project's coinages and nicknames
+
+Terms you will **not find anywhere else**. They were coined here, usually right
+after a mistake cost time.
+
+| term | meaning |
+|---|---|
+| the inversion | The discovery that this machine's PCIe (12 GB/s) is slower than its disk (18.4 GB/s), inverting the hierarchy nearly every engine assumes. |
+| placement law | "Put on the GPU only what fits there permanently; never stream weights over a link slower than the source tier." |
+| layer partition | Splitting the model between GPU and CPU by layers, not by tensors. Weights stay pinned where the layer is computed; only 8 KB crosses between layers. |
+| residency fraction | What percentage of the model sits in fast memory. It is the variable that governs speed, more than any hardware spec. |
+| this machine's trap | colibrì's `CUDA_DENSE=1` setting, which did not refuse the impossible and degraded 13x silently: 0.684 → 0.054 tok/s. |
+| refuse instead of degrade | If the plan does not fit the declared budget, the engine exits with an error naming what to reduce. It never accepts and gets slow. |
+| 32/32 | The acceptance criterion: 32 test positions, all matching the reference token. Binary, and it blocks merges. |
+| paired measurement | Comparing two configurations window by window over the same text, never by global mean. The global mean already produced a sign-flipped number. |
+| determinism by state | Two runs in the same state produce identical bytes; different states may legitimately diverge. "Greedy is enough" is not assumed. |
+| absorption | Rewriting attention to operate in the compressed space, projecting the query once instead of expanding every cached position. |
+| unabsorbed | The original attention formulation, which expands the cache before using it. It is the one the oracle uses. |
+| half/half | The nibble packing convention: byte `j` holds weights `j` and `j+32`, not `2j` and `2j+1`. |
+| scratch arena | One block of memory allocated once at startup and sliced for every temporary buffer. Zero `malloc` in the token loop. |
+| stable first, volatile last | The prompt ordering rule that makes the cache work: system → tools → long context → history → current turn. |
+| exit criterion | The number that closes a roadmap milestone. No number, no sign-off. |
+| kill criterion | The number below which the feature is cancelled, not postponed. M2 has one: a gain below 20% kills the GPU/CPU partition. |
+| file-backed | Memory that came from a mapped file: the operating system can drop it and reread from disk. That is why it does not count against the RAM budget. |
+| anonymous memory | Memory that exists only in RAM, with no file behind it. If evicted, the content is lost - hence it counts against the budget. |
+| publish what was measured | When intuition says one thing and measurement says another, the measurement is published - even if the alternative looks safer. |
+| ceiling | The upper speed bound obtained by dividing bytes by bandwidth, ignoring compute and overhead. Also called the roofline. |
+| colibrì | The previous project, from another repository, solving the opposite problem: models too big, streamed from disk. Here it is a historical reference - none of its code enters. |
+| .tootega container | The project's file format: a 128-byte header, blobs aligned to 64 bytes, a JSON index at the end. Read directly, with no conversion step. |
+
+### The nickname that shows up most: **colibrì**
+
+`colibrì` is the **previous project**, from another repository, solving the
+opposite problem (models too big, streamed from disk). It is cited constantly for
+two reasons: it supplied the baseline numbers, and it supplied the list of
+mistakes not to repeat.
+
+**Hard project rule:** no colibrì code or toolchain enters here. The citations
+are historical — measurement reference and lessons learned, not permission to
+reuse. → `CLAUDE.md`
+
+---
+
+## 5 — Glossary C — field vocabulary, one line each
+
+Quick reference. Nothing here is project-specific.
+
+### 5.1 The model
+
+| term | one line |
+|---|---|
+| LLM | Large Language Model: a program that predicts the next token of a text. |
+| transformer | The architecture practically every LLM uses: a stack of identical layers, each with attention and a multiplication block. |
+| layer | One block of the transformer stack. Here there are 47, run in sequence - each one's output is the next one's input. |
+| weight | One of the numbers learned during training. Here there are 31.2 billion of them, and they are what fills the 19.65 GB. |
+| parameter | A synonym for weight when talking about model size. "31.2 billion parameters" = 31.2 billion learned numbers. |
+| active parameter | How many weights are actually read to produce one token. Here 3.57 billion out of 31.2 - and that is the number that sets the speed. |
+| tensor | A named multidimensional array of weights. The container has 9,703 of them, and the index says where each one starts. |
+| hidden | The vector travelling through the layer stack. Here it holds 2048 numbers - 8 KB. Also called the residual stream. |
+| embedding | The table converting a token id into the initial 2048-number vector. Here it has 154,880 rows and one is read per token. |
+| logits | The 154,880 output scores, one per vocabulary piece, before they become probabilities. High score = likely candidate. |
+| softmax | The function turning scores into probabilities that sum to 1. The maximum is subtracted first, to avoid exponent overflow. |
+| RMSNorm | Normalization that rescales the vector to a predictable magnitude before each block. Without it, 47 stacked layers blow up or vanish. |
+| residual | Adding the input back into the block's output. It makes a layer correct the vector rather than replace it, which is what allows stacking 47. |
+| attention | The mechanism by which the current token looks at all previous ones and decides which to copy information from. |
+| head | One of the 20 parallel views inside attention. Each can specialize in a different kind of relation between tokens. |
+| Q, K, V | Query, key and value: what I look for, what I offer, what I hand over. Attention compares Q against every K and mixes the Vs. |
+| RoPE | Positional encoding by rotating the vector. Here it is partial: only 64 of each head's 256 dimensions rotate. |
+| MLP | The two-multiplication block that follows attention. Also called FFN, feed-forward network. |
+| MoE | Mixture-of-Experts: instead of one MLP per layer, many - and only a few run per token. It is what makes 31.2 B of weights cost 3.57 B per token. |
+| router | The small matrix that scores every expert and decides which ones run. In code and config it appears as `gate`. |
+| top-k | "Take the k largest". In the router it is top-4 of 64; in sampling it means choosing among the k highest-scoring tokens. |
+| shared expert | An expert that always runs, on top of the ones the router picks. It holds what is useful for any token. |
+| MLA | Multi-head Latent Attention: attention that keeps the cache compressed, 576 numbers per token per layer instead of 10,240. |
+| GQA / MHA | The more common attention variants. They work, but their cache is much larger - hence the target model uses MLA. |
+| MTP | Multi-Token Prediction: an extra head that guesses the following token almost for free, to speed things up by speculation. |
+| lm_head | The final matrix, 2048 × 154,880, turning the last layer's vector into output scores. It is read in full every token. |
+| vocabulary | The 154,880 text pieces the model knows. Only 154,856 actually exist; the rest is padding. |
+| dense layer | A layer with no MoE, holding a plain MLP. Here only layer 0 is like that, with internal size 10,240. |
+| architecture | The model's blueprint: how many layers, of what kind, with what sizes. It comes from `config.json`, which the container stores whole. |
+| checkpoint | The published set of files holding the trained weights. Here it arrives as 48 shards in the safetensors format. |
+| safetensors | The format weights are published in: a JSON header giving name, shape and offset, then the raw numbers. |
+| Hugging Face | The public repository the model and tokenizer are downloaded from, and the source of the library used as reference. |
+
+### 5.2 Execution
+
+| term | one line |
+|---|---|
+| inference | Running an already trained model to get an answer. It is all this project does - there is no training anywhere. |
+| training | The very expensive process that produced the weights. It happens once, elsewhere, and is never repeated here. |
+| fine-tuning | Adjusting an already trained model for a specific task. Declared out of scope in this project. |
+| forward | One complete pass through the layer stack, from input to logits. It is also the name of the subcommand that does it over fixed ids. |
+| prefill | Processing the whole prompt at once, before generating. All tokens go through together, so weights are read once for many tokens. |
+| decode | Generating one token at a time, in a chain. Each token rereads the full 2.01 GB of weights - this is where bandwidth rules. |
+| TTFT | Time to first token: how long until the first word shows up. Not a goal in this project until milestone M3. |
+| tok/s | Tokens per second. The project's headline metric. Always reported together with the context it was measured at. |
+| KV cache | The attention state already computed for previous tokens. Keeping it avoids redoing the whole prompt for every word. |
+| prefix cache | Reusing the KV of the conversation's beginning across turns. It holds up to the first differing token; from there on everything is redone. |
+| teacher forcing | Running the model over a known text, forcing each correct word, to compare prediction by prediction against the reference. |
+| greedy | Always picking the highest-scoring token. Deterministic, and the mode used in every measurement. |
+| top-p | Drawing among the highest-scoring tokens whose probabilities together reach p. Also called nucleus sampling. |
+| sampling | The step that picks one token out of the 154,880 candidates, from the scores. Greedy, temperature, top-k and top-p are its modes. |
+| continuous batching | Serving several conversations at once, amortizing the same weight read across all of them. It is where the project's second goal lives. |
+| speculation | Guessing several tokens at once with a cheap mechanism and verifying them in bulk. It pays off when the model is resident. |
+| prompt | The complete input text: instructions, tools, history and the current question. It is what the prefix cache tries to reuse. |
+| system prompt | The fixed part of the prompt, holding permanent instructions. It goes first precisely so it never invalidates the cache. |
+| chat template | The rules for assembling a conversation's text out of turns, with the speaker markers. It ships with the model. |
+| turn | One round of the conversation: what the user said plus what the assistant answered. |
+| tokenizer | The component converting text into ids and back. An error here does not crash: it yields slightly different ids and a plausible, wrong answer. |
+| BPE | Byte Pair Encoding: repeatedly merges the two cheapest adjacent pieces, according to a table of 321,649 rules. |
+| special token | One of the 36 markers such as `<|user|>`, matched by exact text before BPE. They delimit who is speaking. |
+
+### 5.3 The machine
+
+| term | one line |
+|---|---|
+| CPU | The main processor. Here, an i9-14900K with 8 fast cores, 16 efficient ones and 32 threads in total. |
+| GPU | The graphics card, used as an arithmetic accelerator. Here it is an 8 GB RTX 2060 SUPER - fast inside, poorly connected outside. |
+| RAM | The computer's main memory. Here, 64 GB delivering ~60 GB/s. It is where the whole model needs to fit. |
+| VRAM | The graphics card's memory. Fast (448 GB/s) and small (8 GB), and only reachable through PCIe. |
+| PCIe | The bus connecting the GPU to the rest of the computer. Here it is gen 3: ~12 GB/s, the machine's slowest link. |
+| NVMe | The standard for fast SSDs wired straight to the bus. Here, two in RAID0 delivering 18.4 GB/s sequential. |
+| tier | One level of the memory hierarchy: VRAM, RAM, disk. Each tier has its bandwidth, its capacity and its access link. |
+| memory-bound | When time is dominated by waiting on memory rather than doing arithmetic. It is decode's regime: ~33 ms of reads against 4-7 ms of compute. |
+| compute-bound | When time is dominated by arithmetic. It is prefill's regime, which is why optimizing it is a different problem. |
+| core | An independent execution unit inside the CPU. This processor is hybrid: 8 fast P-cores and 16 efficient E-cores. |
+| thread | A line of execution. The engine uses its own thread pool, with work split by matrix output rows. |
+| affinity | Pinning each thread to chosen cores. The default is P-cores only: spreading memory-bound work across E-cores usually hurts. |
+| SIMD | One instruction operating on several numbers at once. It is how the kernel processes 8 or 16 weights per cycle instead of one. |
+| AVX2 / AVX-VNNI | This CPU's SIMD instruction sets. The engine picks which to use at runtime, so the binary still runs on other machines. |
+| FMA | Multiply and add in a single instruction. Fast, but it rounds differently - which is why the build forbids automatic fusion. |
+| L1/L2/L3 cache | Tiny, extremely fast memories inside the processor. This CPU's L3 holds 36 MB, enough for one full layer's cache at 4k. |
+| mmap | Mapping a file straight into the process address space. The file becomes the memory, with no copy step. |
+| page cache | The cache the operating system keeps of files it has read. Since the model is mapped, that cache is the weight cache. |
+| page fault | What happens on the first access to a mapped page: the system stops everything and fetches from disk. Hence the pre-fault at load time. |
+| huge pages | Using 2 MB pages instead of 4 KB. With 19.3 GB of weights, that goes from 4.7 million pages down to ~9 thousand. |
+| TLB | The small processor table that translates addresses. It has ~2048 entries: with 4 KB pages it covers 8 MB, with 2 MB pages it covers 4 GB. |
+| RSS | Resident Set Size: how much physical memory the process actually occupies. It is the number the watchdog compares against the budget. |
+| swap | When the operating system writes memory to disk for lack of RAM. Here it counts as a failure: the budget exists so it never happens. |
+| OOM | Out of memory: when the system kills the process for lack of RAM. It is what the refuse-instead-of-degrade rule prevents. |
+| budget | A hard cap on RAM, VRAM or threads passed as a parameter. Verified at runtime, not just in the plan. |
+| bottleneck | The resource that limits everything else. Here it is memory bandwidth; optimizing anything else does not change total time. |
+| overhead | Cost that is not the work itself: calling functions, synchronizing threads, allocating memory. Invisible at 1 tok/s, a percentage at 20. |
+| Amdahl's law | The arithmetic saying how much speeding up one part speeds up the whole. Used here to estimate the gain of moving 39% of layers to the GPU. |
+
+### 5.4 Numerics
+
+| term | one line |
+|---|---|
+| bit | The smallest unit of information: 0 or 1. An int4 weight takes 4 bits. |
+| byte | Eight bits. Two int4 weights fit in one byte - hence nibble packing. |
+| GB | Gigabyte, a thousand million bytes. The model is 19.65 GB; 2.01 GB is read per token. |
+| float | A number with decimals, stored in floating-point format. The engine's arithmetic is all in 32-bit floats. |
+| fp32 | 32-bit floating point, with 23 mantissa bits. It is the engine's working precision, and the oracle's. |
+| bf16 | 16-bit floating point with fp32's exponent and only 7 mantissa bits. It is how the model is published. |
+| int4 / int8 | 4-bit and 8-bit integers, used to store weights. Always paired with a scale that converts them back. |
+| nibble | Half a byte, 4 bits. Exactly one int4 weight - which is why the order the two nibbles of a byte are read in matters. |
+| scale | The float that turns an integer back into the real weight: `weight ≈ (code − 8) × scale`. One scale per 64 weights. |
+| g64 | "Group of 64": one shared scale per 64 neighbouring weights. It costs 4/64 = 0.0625 extra bytes per weight. |
+| absmax | The largest absolute value in a group. Divided by 7, it gives the simplest scale - though not the optimal one. |
+| W4A32 | Weights in 4 bits, activations in 32. The kernel unpacks and multiplies in float, never quantizing activations. |
+| activation | The numbers flowing between layers - the 2048-value vector. Tiny compared to weights: 8 KB against 4.7 MB per expert. |
+| associativity | Summing in a different order gives a different floating-point result. Hence the engine's reduction order is fixed and independent of thread count. |
+| /fp:precise | The compiler option forbidding sum reassociation and multiply-add fusion. It costs performance and buys reproducibility. |
+| rounding | Choosing the nearest representable value. int4's error is the floor of rounding, not a bug. |
+| relative error | How far the result strays from the correct one, as a percentage. Here it is measured at a multiplication's output, not per isolated weight. |
+| outlier | A value far outside its neighbours' range. In real activations a few channels carry 10-100x the median magnitude, and they dominate the error. |
+
+### 5.5 Measurement
+
+| term | one line |
+|---|---|
+| perplexity | How "surprised" the model is by a text. Lower is better. It is the measure that says whether quantization actually degraded anything. |
+| nll | Negative log-likelihood, perplexity's logarithm. Used because it is additive - means and intervals can be computed on it. |
+| 95% interval | The range the true value probably lies in. If it crosses zero, no effect is demonstrated - just noise. |
+| window | A fixed chunk of text used in measurement. Here there are 10 windows of 384 tokens, compared window by window. |
+| fixture | A file of precomputed correct answers, generated once and compared against on every test run. |
+| selftest | The test built into the binary: kernels, JSON parser, thread pool, tokenizer and sampler against fixtures. It runs in seconds. |
+| regression test | A test that exists only to keep an old bug from returning. The `CUDA_DENSE` case became one. |
+| baseline | The reference number to beat. Here it is 0.93 tok/s, measured with colibrì and the oversized model. |
+| benchmark | A controlled, repeatable measurement. Without a fixed budget, warm-up and an output hash, it is worthless. |
+| warm-up | A discarded run before measuring, so the cost of filling caches does not land entirely on the first measurement. |
+| reproducibility | The property of getting exactly the same result on repetition. Here it is an exit criterion, not a convenience. |
+| hash | A short number computed from a content, which changes if any byte changes. Used to prove two outputs are identical. |
+| throughput | How much work comes out per unit of time, summed over all conversations. Different from latency, which is the time of one. |
+| latency | The time until the answer starts. High bandwidth with poor latency is common on disk; RAM has both good. |
+
+### 5.6 Software and the system
+
+| term | one line |
+|---|---|
+| C11 | The C language standard version the engine uses. Chosen because it is auditable and drags in no dependencies. |
+| dependency | An external library the program needs. The engine has zero: JSON, tokenizer and file reader are all its own. |
+| static linking | Bundling everything into the executable so it runs with nothing installed. The goal is a single binary, with the GPU backend loaded separately. |
+| compiler | The program that turns code into an executable. Here it is MSVC on Windows, located dynamically, and gcc or clang on Linux. |
+| build id | A hash of the sources and build flags, embedded in the binary. It invalidates persisted caches when the engine changes. |
+| CLI | Command-line interface: the program you use by typing commands in a terminal. |
+| pointer | A memory address stored in a variable. Moving a large block here means swapping pointers, never copying bytes. |
+| malloc | The function that asks the system for memory at runtime. The engine's token loop never calls it. |
+| zero-copy | Using data where it already is, with no intermediate copy step. Here, kernel pointers point straight into the mapped file. |
+| JSON | A text format for structured data. The container index and the model config are JSON, read by the project's own parser. |
+| UTF-8 | The standard text encoding, where a character takes 1 to 4 bytes. The tokenizer works on bytes, not characters. |
+| Unicode | The catalogue of every character of every writing system. The pre-tokenizer must know, per character, whether it is a letter, a digit or a space. |
+| regular expression | A pattern describing how to split a text. The tokenizer uses a fixed one, the same as GPT-4's, hand-implemented instead of using a generic engine. |
+| HTTP | The web protocol. The `serve` subcommand opens a local server at `127.0.0.1:8080` with a chat interface. |
+| loopback | The address `127.0.0.1`, reachable only from the machine itself. It is the server's default because this is not a production service. |
+| atomic write | Writing to a temporary file and renaming at the end. A power cut halfway through cannot leave a truncated file looking valid. |
+| watchdog | A thread comparing real consumption against the budget while running. Without it, "budget" would be just an opinion. |
+
+### 5.7 Math
+
+| term | one line |
+|---|---|
+| vector | A list of numbers. Here, a token's state is a vector of 2048 floats. |
+| matrix | A table of numbers, with rows and columns. A model weight is a matrix; the largest is 2048 × 154,880. |
+| matrix multiplication | The central operation: each output row is the sum of products of one weight row against the input. Almost all the time goes here. |
+| dot product | Multiplying two vectors element by element and summing. A matrix multiplication is a pile of dot products. |
+| low rank | Replacing one large matrix by two smaller ones multiplied together. It compresses, and it is what `q_lora_rank` and `kv_lora_rank` do. |
+| transpose | The matrix with rows and columns swapped. It matters here because reading a column is expensive and reading a row is cheap. |
+| FLOP | One floating-point operation. Generating a token costs ~7.1 GFLOP - little, next to the 2.01 GB of reads. |
+| probability | A number between 0 and 1 saying how likely something is. Softmax turns output scores into probabilities. |
+| standard deviation | How much values spread around the mean. It is why paired comparison exists: the variance across windows swallowed the effect. |
+| exponent | In `N^0.25`, the 0.25. It says quadrupling N multiplies the result by only 1.41 - the scaling law this project refuses. |
+
+---
+
+## 6 — From text to text: the full journey
+
+![A token's journey](img/03-pipeline.en.svg)
+
+Let us follow the question *"What is the capital of Brazil?"* to its answer.
+
+### 6.1 Tokenizer — from text to numbers
+
+The model does not see letters. It sees integers. The **tokenizer** does the
+conversion, in four steps. → [`docs/16`](../docs/16-tokenizer.md)
+
+**Step 1 — split into pieces by rule.** A fixed regular expression (the same one
+GPT-4 uses) separates words, numbers and punctuation. It is not "split on
+spaces": the rule is long and must know what counts as a letter and what counts
+as a digit in **any** alphabet — hence the project's generated Unicode tables.
+
+**Step 2 — bytes become symbols.** Every byte from 0 to 255 becomes a character
+from a fixed table. That is why a space appears as `Ġ` inside the vocabulary. It
+guarantees that **any** file, including broken binary, is representable.
+
+**Step 3 — BPE.** Repeatedly merge the two cheapest adjacent pieces, according to
+a table of 321,649 merge rules. With one important exception: if the whole piece
+is already in the vocabulary, its id is used directly and **no merge is applied**
+(the `ignore_merges` flag). Ignoring that produces wrong tokenization for exactly
+the most common words.
+
+**Step 4 — special tokens.** 36 symbols such as `<|user|>`, `<|assistant|>`,
+`[gMASK]` are recognized **before** anything else, by exact text match, and never
+go through BPE. They are what delimits who is speaking.
+
+Result:
+
+```
+"[gMASK]<sop><|user|>Qual e a capital do Brasil?<|assistant|>"
+   -> [154827, 154823, 154834, 9061, 383, 261, 8471, 495, 12089, 30, 154835]
+```
+
+> **Why this is treated as a critical path:** an error here **does not crash**.
+> It produces slightly different ids, and the model answers something plausible
+> and wrong. It is the kind of bug that eats days if the test does not isolate
+> the tokenizer — hence `--check` against 36 cases generated by the reference
+> library.
+
+### 6.2 Embedding — from number to vector
+
+Each id becomes a row of the `embed_tokens` table: 154,880 rows × 2048 numbers.
+**One row is read per token.** Since the whole table is 1.27 GB and only 8 KB of
+it is read per token, it stays in the mapped file and does **not** consume RAM
+budget — a distinction a naive loader gets wrong.
+→ [`docs/11`](../docs/11-memoria.md)
+
+From here on, the token is a vector of 2048 numbers that the documents call
+`hidden` or "the residual stream".
+
+### 6.3 The 47 layers
+
+![Inside one layer](img/04-camada.en.svg)
+
+The vector crosses 47 layers, one after another. Each layer does two things, and
+each of them is preceded by normalization and followed by an addition:
+
+```
+x = x + Attention(RMSNorm(x))
+x = x + MoE(RMSNorm(x))
+```
+
+The addition is called the **residual**, and it is what allows stacking 47 layers
+without the signal degrading: each layer **corrects** the vector rather than
+replacing it.
+
+Layer 0 is different: instead of MoE it has a plain MLP of size 10,240
+(`first_k_dense_replace: 1`). Layers 1 to 46 are MoE.
+
+### 6.4 Attention and the KV cache
+
+![MLA: store compressed](img/06-mla.en.svg)
+
+**Attention** is the mechanism by which the current token looks at all previous
+ones. Every past position has a key (K) and a value (V); the current token
+produces a query (Q), compares it against all keys, and takes a weighted average
+of the values.
+
+**Why a cache exists:** the keys and values of past positions do not change.
+Recomputing them per token would mean redoing the whole prompt for every word. So
+they are stored — that is the **KV cache**.
+
+**Why it is the problem:** during decode, attention **rereads the entire cache
+every token**. Cache size is, literally, the cost.
+
+**What MLA changes:** instead of storing expanded keys and values
+(20 heads × (256+256) = 10,240 numbers per token per layer), a compressed version
+of **576 numbers** is stored. Expansion happens on the fly — or rather, it
+**does not happen**: an algebraic identity lets you project the *query* once
+instead of expanding every cached position. That is **absorption**.
+
+```
+expanded KV    47 layers × 4,096 positions × 10,240 × 4 B = 7.9 GB per token
+compressed KV  47 layers × 4,096 positions ×    576 × 4 B = 443 MB per token
+```
+
+18x less traffic [measured: 3.64 → 9.98 tok/s at 2,048 of context].
+
+> **The trap the first version of absorption fell into.** The identity involves a
+> transposed matrix, and "transposed" suggests "materialize it in fp32 so columns
+> can be read". Done that way, absorption came out **slower** (5.6 vs 12.3 tok/s):
+> materializing cost 863 MB of weight reads per token, more than the 443 MB
+> absorption saved in KV. The fix was noticing the transpose can be computed by
+> accumulating **rows**, which is what the format delivers cheaply.
+>
+> The project's lesson: *trading work for memory needs the traffic arithmetic
+> done first.* → [`docs/13`](../docs/13-decisoes-pendentes.md), D11
+
+### 6.5 MoE — 64 stored, 5 used
+
+![Mixture-of-Experts](img/05-moe.en.svg)
+
+In an MoE layer:
+
+1. A small matrix (the **router**, or `gate`) scores each of the 64 experts.
+2. The **top 4** are chosen; scores are renormalized (`norm_topk_prob: true`) and
+   multiplied by 1.8 (`routed_scaling_factor`).
+3. Those 4 experts process the vector; a **fifth**, the **shared expert**, always
+   runs.
+4. The five outputs are summed weighted by the scores.
+
+**The choice is per token and per layer.** A token may activate completely
+different experts in the next layer. There is no topic, no nameable specialty.
+
+`n_group` and `topk_group` are parameters that, in other models, restrict the
+choice to certain blocks of experts. In this model they are both 1 — meaning
+**no restriction**. That is why the project implements only this path on day one,
+but keeps the variant declared rather than hard-wired into the parser (colibrì's
+mistake, which shrank the universe of compatible models to a single family).
+→ [`docs/06`](../docs/06-licoes-colibri.md)
+
+### 6.6 lm_head, logits and sampling
+
+After layer 46, a final normalization, and then the `lm_head` matrix
+(2048 × 154,880) turns the vector into **154,880 scores** — the *logits*.
+
+The **sampler** picks one:
+
+| mode | how it picks |
+|---|---|
+| **greedy** | the highest score, always. Deterministic |
+| **temperature** | divides scores by T before drawing. High T = more random |
+| **top-k** | draws only among the k highest |
+| **top-p** | draws among the highest that together reach probability p |
+
+An easy detail to get wrong: `vocab_size` is 154,880, but only 154,856 ids
+actually exist. The remaining 24 are padding; **the sampling mask must know
+that**, otherwise the engine can emit a nonexistent id.
+
+The chosen id goes back to step 6.2 and everything restarts.
+
+### 6.7 The end-to-end example, with numbers
+
+```powershell
+.\tootega.exe chat models\glm47flash-int4\model.tootega `
+    --tokenizer models\glm47flash-bf16\tokenizer.json --ctx 8192
+```
+
+```
+A capital do Brasil é Brasília.
+
+prefill  18 tokens em 4.63 s (3.9 tok/s)
+decode    8 tokens em 0.82 s (9.79 tok/s)
+```
+
+What happened: 18 prompt tokens went through the 47 layers at once (prefill),
+then 8 tokens were generated one by one (decode), each rereading 2.01 GB of
+weights and the whole accumulated KV.
+
+---
+
+## 7 — Why it is slow: the physics of decode
+
+![Prefill and decode](img/13-prefill-decode.en.svg)
+
+### 7.1 Two regimes, same model
+
+| | prefill | decode |
+|---|---|---|
+| what it does | reads the whole prompt | generates one token at a time |
+| parallelism | all tokens together | none: each token depends on the previous |
+| weight reads | 2.01 GB for **N** tokens | 2.01 GB for **1** token |
+| limited by | arithmetic | **memory bandwidth** |
+
+Decode is what shapes the user experience, and decode is what the bandwidth
+arithmetic rules.
+
+> **Honest note:** in the current state, this implementation's prefill is
+> **slower per token** than its decode (3.9 vs 9.79 tok/s [measured]). That is
+> not a mystery: prefill has not been optimized yet, and the roadmap says so out
+> loud — time-to-first-token is not a goal until M3.
+> → [`docs/05`](../docs/05-roadmap.md)
+
+### 7.2 The arithmetic
+
+```
+time per token = (2.01 GB of weights + 52.9 KB × context) / bandwidth
+```
+
+The first term is fixed. The second grows with the conversation.
+
+![The ceiling](img/11-roofline.en.svg)
+
+| context | KV read | total/token | CPU ceiling | ceiling with partial GPU |
+|---|---|---|---|---|
+| 1,024 | 0.05 GB | 2.06 GB | **29.1 tok/s** | 44.0 [estimate] |
+| 4,096 | 0.22 GB | 2.23 GB | **26.9** | 40.6 [estimate] |
+| 16,384 | 0.87 GB | 2.88 GB | **20.9** | 31.5 [estimate] |
+| 65,536 | 3.47 GB | 5.48 GB | **11.0** | 16.5 [estimate] |
+| 131,072 | 6.93 GB | 8.94 GB | **6.7** | 10.1 [estimate] |
+
+### 7.3 What the ceiling does **not** include
+
+Three things, all optimistic:
+
+- **bandwidth efficiency** — well-written engines reach 60 to 80% of peak, not
+  100%;
+- **compute is not zero** — ~7.1 GFLOP per token, about 20% of the time, and it
+  must **overlap** the reads, not add to them;
+- **the chain is serial** — 47 layers in sequence; nothing parallelizes with the
+  next one when decoding a single conversation.
+
+Applying 60–80%, the honest band:
+
+| scenario | ceiling | **realistic** |
+|---|---|---|
+| CPU, short context (≤4k) | 27–29 | **17–22 tok/s** |
+| CPU+GPU, short context | 41–44 | **25–32 tok/s** |
+| CPU, agent context (32k) | ~15 | **10–12 tok/s** |
+
+### 7.4 The consequence that shapes the design
+
+**From ~16k of context onward, KV dominates.** At 64k it is 63% of the traffic
+per token. In an agentic CLI, long context is the normal case, not the exception.
+
+Hence two conclusions that recur across documents:
+
+1. optimizing KV reads matters as much as optimizing weight reads;
+2. **reusing the prefix is worth more than any kernel** — a turn that reuses
+   100k tokens of already-computed KV avoids the entire prefill, and no
+   multiplication optimization comes close.
+
+---
+
+## 8 — This machine's hardware and the inversion
+
+![The four bandwidths](img/01-bandas.en.svg)
+
+### 8.1 The measurement that inverts intuition
+
+Nearly every inference engine assumes: *VRAM is fast, so fill VRAM*. On this
+machine that is false, and the reason is the PCIe line.
+
+```
+pcie.link.gen.hostmax = 5     <- the motherboard offers Gen 5 (63 GB/s)
+pcie.link.gen.max     = 3     <- the GPU only speaks Gen 3
+```
+
+The motherboard is modern; the GPU is a 2019 RTX 2060 SUPER that only speaks
+PCIe gen 3. The link negotiates down to the slower side: **~12 GB/s**.
+
+**Consequence:** any weight that does not *live* in VRAM must cross a channel
+slower than the disk it came from, and five times slower than RAM.
+
+### 8.2 The trap, measured
+
+In colibrì, the `CUDA_DENSE=1` option places the dense tensors on the GPU **even
+when they do not fit**:
+
+```
+config              tok/s
+cpu-native          0.684
+cuda-experts4       0.647
+cuda-tc-w4a16       0.639
+cuda-dense          0.054   <-- 13x slower
+```
+
+The engine **did not refuse**. It accepted, and started shipping weights over
+PCIe every layer, every token.
+
+That measurement produced two of TootegaEngine's rules:
+
+> **Placement law.** Put on the GPU only what fits there permanently. Never
+> stream weights over a link slower than the source tier.
+
+> **Refuse instead of degrade.** If the plan does not fit the declared budget,
+> the engine exits with an error naming what to reduce.
+
+```
+ERRO: nao cabe em --ram-gb 12
+  pesos (int4)          18,1 GB
+  KV (ctx 8192 x 1)      0,4 GB
+  scratch + runtime      1,2 GB
+  ------------------------------
+  necessario            19,7 GB   excede em 7,7 GB
+sugestao: --ram-gb 21, ou --gpu-layers para mover peso para a VRAM
+```
+
+### 8.3 The way out: layer partition
+
+![Layer partition](img/08-particao.en.svg)
+
+If weights cannot cross PCIe, what can? **Activations.**
+
+An activation vector is 2048 numbers × 4 bytes = **8 KB**. An expert is ~4.7 MB.
+Three orders of magnitude apart.
+
+Hence the architecture's central bet:
+
+> **Partition by layer, not by tensor.** Each layer's weights are permanently
+> resident on the device that computes it. Only 8 KB of activation crosses
+> between layers.
+
+With ~7 GB of usable VRAM and ~18.1 GB of layer weights, about **39%** of the
+layers would fit on the GPU. Per token, PCIe would carry 16 KB — 1.3
+microseconds. Irrelevant.
+
+**This is still a hypothesis.** It is marked [estimate] and milestone M2 exists
+to validate it **or kill it**: if the gain falls below 20%, M2 is *cancelled*,
+not postponed, because maintaining two backends is a permanent cost.
+→ [`docs/03`](../docs/03-arquitetura.md), [`docs/05`](../docs/05-roadmap.md)
+
+### 8.4 What the measurement says about buying hardware
+
+A counterintuitive detail: if a GPU upgrade ever happens, the bigger gain is
+**not** more VRAM or more compute — it is the **link**. Ampere/Ada cards speak
+Gen 4 (31.5 GB/s) and Blackwell speaks Gen 5 (63 GB/s). And 63 GB/s **exceeds RAM
+bandwidth**, which would invert the hierarchy again and make streaming to the GPU
+a good deal for the first time.
+
+---
+
+## 9 — Residency: the decision worth 20x
+
+![Two scaling laws](img/02-residencia.en.svg)
+
+### 9.1 The two measured axes
+
+With the oversized model (744B, streamed from disk), varying resources:
+
+| axis | variation | gain | exponent |
+|---|---|---|---|
+| RAM (16 → 60 GB) | 3.75x | 1.42x | ~0.26 |
+| concurrency (K=1 → K=4) | 4x | 1.45x | 0.27 |
+
+**Both give `N^0.25`.** Quadrupling anything yields about 40%.
+
+### 9.2 Why
+
+Because the governing variable is not hardware, it is the **residency fraction**.
+With a 60 GB budget and 324 GB of experts, ~15% of the model is cached; the other
+85% comes from disk every token, and no reasonable amount of RAM changes that.
+
+Multiplying by N only approaches N× over the stretch where N makes you **cross
+the residency threshold**.
+
+### 9.3 The practical conclusion
+
+> Choosing a model that already fits yields 20 to 50x. Buying hardware yields
+> `N^0.25`.
+
+That is the whole thesis in one line. And it is why TootegaEngine **throws away**
+all the disk-hiding machinery colibrì built — prefetch, dual-SSD routing,
+`O_DIRECT`, learned pin sets, per-layer eviction. None of it helps when the model
+is resident, and all of it is the bulk of that project's complexity budget.
+
+**TootegaEngine's main structural advantage over colibrì is not speed — it is
+code size.**
+
+---
+
+## 10 — How the model is stored
+
+### 10.1 Why quantize
+
+The published model uses `bfloat16`: 2 bytes per weight, 62.4 GB total. It does
+not fit in the machine's 64 GB alongside everything else.
+
+Storing each weight in **4 bits** with a shared scale, the same model takes
+19.65 GB — and fits with wide margin.
+
+### 10.2 How it works, concretely
+
+![int4 on disk](img/07-int4.en.svg)
+
+Take 64 neighbouring weights. Find the largest absolute value among them. Divide
+by 7. That is the step (the **scale**). Now each weight becomes an integer from
+−8 to +7:
+
+```
+code   = round(weight / scale)             stored as 0..15 (code + 8)
+weight ≈ (code − 8) × scale
+```
+
+64 weights take 32 bytes (two per byte) plus 4 bytes of scale = **0.5625 byte per
+weight**.
+
+**Nibble order matters.** The adopted convention is **half/half**: byte `j` holds
+weight `j` in the low nibble and weight `j+32` in the high one. That way, loading
+32 bytes at once with SIMD instructions, `v & 0x0F` yields 32 **contiguous**
+weights and `v >> 4` yields the next 32 — two vectors ready, no shuffling. The
+alternative (even/odd) would force permuting the activations for every group.
+→ [`docs/14`](../docs/14-formato-container.md)
+
+### 10.3 What it costs in quality — and the surprise
+
+Quantization error was measured two ways.
+
+**First: per-tensor error.** How much a multiplication's output changes:
+
+| format | output error |
+|---|---|
+| int4 g64 | 10.81% |
+| int8 g64 | 0.62% |
+
+The ratio between them (17.4) matches the theoretical step ratio (`127/7 = 18.1`).
+That is the **floor of round-to-nearest**, not a bug.
+
+**Second: perplexity.** How much the model actually degrades on real text:
+
+```
+int4 g64 against bf16:  +5.26% perplexity   [measured, 10 windows, paired]
+```
+
+Half of what the per-tensor error would suggest — confirming that per-tensor
+error **does not predict quality**.
+
+**The surprise came from ablation.** Restoring one group of tensors at a time to
+the original format and measuring:
+
+| restored group | tensors | share of the degradation explained |
+|---|---|---|
+| **attention** | 193 | **100.3%** |
+| shared experts | 141 | 20.0% |
+| dense layer 0 | 3 | 2.8% |
+| **routed experts** | **9,024** | **−33.6%** |
+
+**All of the degradation came from attention.** The 9,024 expert tensors — 93% of
+the file — were not a source of loss.
+
+The reason is structural: each token activates 4 experts out of 64, so an
+expert's error enters diluted and uncorrelated. Attention runs **in full, across
+all 47 layers, for every token**, and its error compounds with depth.
+
+**The prediction was tested and met.** Reconverting with attention in int8:
+
+| container | attention | perplexity vs bf16 | size |
+|---|---|---|---|
+| v1 | int4 g64 | +6.81% | 19.33 GB |
+| **v2** | **int8 g64** | **−0.19%** | **19.65 GB** |
+
+v2's 95% interval **crosses zero**: the quantized version can no longer be
+distinguished from the original by this measure. Cost: 1.7% of size.
+→ [`docs/04`](../docs/04-modelo-alvo.md)
+
+### 10.4 The `.tootega` container
+
+![The .tootega file](img/10-container.en.svg)
+
+A single file, memory-mapped:
+
+```
+offset 0        fixed header, 128 bytes
+offset 128..    data blobs, each aligned to 64 bytes
+index_off       JSON index
+EOF
+```
+
+Three decisions that look like details and are not:
+
+**64-byte alignment.** That is a cache line. Without it, reading straight from
+the mapped file with SIMD would need a copy path to realign — and the whole
+zero-copy design would be lost.
+
+**The entire `config.json` goes inside the index.** Architecture comes from the
+container, not from a sibling file that can drift away from it.
+
+**An unknown version is refused, never read "hopefully".** Different magic,
+different version → error.
+
+v2 contents [measured]: int4 8,973 tensors (15.91 GB), int8 438 (2.44 GB),
+f32 290 (25.7 MB), bf16 2 (1.27 GB). Resident: 18.38 GB.
+
+---
+
+## 11 — Memory: one copy, not one more
+
+The project's general rule: **a byte of weight exists in exactly one place.**
+→ [`docs/11`](../docs/11-memoria.md)
+
+### 11.1 The mapped file **is** the memory
+
+There is no "load the model" step: the file is mapped and the quantizer's
+pointers point **into the mapped pages**.
+
+```c
+qt->q4 = (uint8_t*)(base + tensor->offset);   /* nao ha memcpy */
+qt->s  = (float*)  (base + scales->offset);
+```
+
+Three consequences:
+
+- **the operating system's page cache is the cache** — no double buffering, no
+  hand-managed residency;
+- **weight pages are reclaimable** — under pressure the OS drops and rereads
+  them. That is why they do **not** count against the RAM budget: they are
+  *file-backed*, not anonymous;
+- **two processes on the same model cost one set of weights, not two.**
+
+### 11.2 Scratch arena: zero `malloc` per token
+
+Every temporary buffer in the forward pass has a fixed size, known once the
+configuration is read. They are slices of **one arena sized once at startup**.
+The token loop never calls the allocator.
+
+colibrì does ~500 `malloc`/`free` per token. At 0.93 tok/s that is 0.01% and does
+not matter; at 22 tok/s it does — and the fix is structural, not a
+micro-optimization for later.
+
+### 11.3 The three caches, and why conflating them is expensive
+
+![Three caches](img/15-tres-caches.en.svg)
+
+| cache | holds | owner |
+|---|---|---|
+| **weights** | tensors per tier (VRAM / RAM) | the engine, exclusively |
+| **KV** | attention state of tokens already seen | the engine owns the mechanism; the agent determines hits |
+| **prefix** | the token sequence you assemble | the agent, exclusively |
+
+The engine **sees integers**. It does not know what a "system prompt" is.
+Therefore:
+
+> **The engine cannot fix a badly ordered prompt.**
+
+### 11.4 The ordering rule, and why it is a performance decision
+
+![Prefix cache](img/09-prefixo.en.svg)
+
+The engine matches the prefix token by token, **stops at the first difference and
+truncates from there on**. Everything after the first changed token is
+recomputed.
+
+> **Stable first, volatile last.**
+> `system → tool schemas → long context → history → current turn`
+
+A clock, a UUID or a directory listing at the start of the prompt invalidates the
+next 100k tokens, and the engine has no way of knowing that part was irrelevant.
+
+Two consequences specific to a CLI with tools:
+
+- **tools render at position 0** — swapping, adding or reordering a tool
+  invalidates everything. There must be an *append* path, not a replace path;
+- **an instruction arriving mid-stream must not edit the front** — late state
+  ("the mode changed", "the file changed on disk") goes at the **end** of the
+  prefix.
+
+The mechanism measured at work: **92 of 100 prompt tokens came from cache on the
+second turn** — 8 tokens of prefill instead of 100. [measured]
+
+**Hash addressing, and the bug it prevents.** A KV block is addressed by the
+**accumulated hash of the exact token sequence that produced it** — never by
+slot, never by position. The reason is concrete: in colibrì, one run diverged
+from the others because a persisted KV **from another conversation** partially
+matched the new prompt. The engine resumed from a state that did not correspond
+to that text. Partial matching does not exist: either the hash matches, or the
+block is ignored. → [`docs/12`](../docs/12-estado-persistente.md)
+
+### 11.5 Budgets: what counts and what does not
+
+| region | counts against `--ram-gb`? | why |
+|---|---|---|
+| the model mapping | **no** | file-backed, the OS reclaims it |
+| pages locked with `mlock` | **yes** | effectively anonymous |
+| KV blocks | **yes** | anonymous |
+| scratch arena | **yes** | anonymous |
+| pinned GPU buffer | **yes** | anonymous and non-pageable |
+
+And the cap is **verified at runtime**, not just in the plan — planning estimates
+are wrong sometimes, and without verification "budget" becomes decoration.
+→ [`docs/09`](../docs/09-limites-de-recursos.md)
+
+Defaults for this machine:
+
+```
+--ram-gb 48          # of 64, leaving 16 for the OS and your own work
+--vram-gb 6.5        # of 8, reserving 1.5 for driver and desktop
+--threads 16         # the 8 P-cores with SMT
+--affinity p-cores
+--ctx 8192
+--kv-slots 1
+```
+
+---
+
+## 12 — How we know it is correct
+
+This is probably the project's most characteristic section.
+
+### 12.1 The oracle and 32/32
+
+There is a Python reference implementation (`ptools/oracle.py`) that runs the
+same model, over the same container, using `numpy` and `transformers`. It is slow
+and simple — on purpose.
+
+The engine runs 32 positions under *teacher forcing* (that is, forcing the known
+text) and compares token by token. **32 of 32** or it does not pass.
+
+Why binary: because it separates an *engine* from a *plausibility generator*. A
+"similar" result is not a result.
+
+### 12.2 Paired measurement — and the mistake that created the rule
+
+![Paired measurement](img/12-pareada.en.svg)
+
+The first two perplexity measurements of int4 gave:
+
+```
+191 predictions   ->  −4.2%   (int4 "better" than the original — impossible)
+381 predictions   ->  +2.5%
+```
+
+**The sign flipped when the sample doubled.**
+
+The cause: perplexity ranges from **223 to 473 across windows** of that text.
+That variance swallows a 5% effect. Comparing two global means would have
+produced a publishable and **wrong** number.
+
+The fix is comparing **the same window under both configurations** and measuring
+the difference, whose deviation is twenty times smaller:
+
+```
+nll delta (int4 − bf16):  +0.0513 ± 0.0076
+95% interval:             [+0.0365, +0.0661]
+perplexity:               +5.26%
+```
+
+Ten windows out of ten positive, interval does not cross zero. That is a
+measurement, not an impression.
+
+> The rule became project doctrine: **paired comparison, always.**
+
+### 12.3 What has already been rejected
+
+Four **good** optimizations, implemented, measured, and not adopted as defaults:
+
+| optimization | what it promised | result |
+|---|---|---|
+| **KV in bf16** | half the cache memory | **29/32.** Three tokens changed. Available via `--kv bf16`, not the default |
+| **KV in int8 g64** | 3.8x smaller cache, lower error than bf16 | **29/32** as well. And only 2% faster |
+| **online softmax** | half the KV reads | **9% slower** at 4k — the reads it cut were already coming from L3 |
+| **materialized absorption** | operating in the compressed space | 2x **slower** — traded KV traffic for weight traffic |
+
+Two observations worth more than the optimizations themselves:
+
+**The criterion detects "different", not "worse".** Two quantizers of very
+different quality (1.5% and 0.59% error) failed with the same score. The reason
+is not their quality: it is that this prompt's margins are small — 0.0007 at
+position 31. To decide whether one of them **actually degrades** the model, the
+specific perplexity measurement is missing. Until it exists, the default is
+whatever passes the test that does exist.
+
+**"Fewer reads" is not the same as "faster"** when the reads you cut were already
+coming from cache.
+
+### 12.4 The other measurement disciplines
+
+All of them came from a mistake made:
+
+- **never change two variables at once** — "native + CUDA" was measured against
+  "release CPU" and the result said nothing;
+- **fix the RAM budget across configurations** — the "auto" value floated between
+  47.1 and 60.5 GB depending on the moment, invalidating an entire benchmark
+  matrix;
+- **warm up before measuring concurrency** — without warm-up, the cold-tier cost
+  lands entirely on K=1 and invents a scaling gain that does not exist;
+- **hash the output in every measurement** — that is how it was found that CPU
+  and GPU produce identical bytes.
+
+### 12.5 The final rule
+
+> **Publish what was measured, not what looks safer.**
+
+The case that fixed the rule: when reconverting the container to v2, one tensor
+changed precision without ablation having evaluated it. The temptation was to
+revert "to be safe". But the container **that was measured** was the one with
+that tensor at that precision — and it measured loss indistinguishable from zero.
+Reverting would produce an *untested* configuration to buy a guarantee the
+measurement already gave.
+
+### 12.6 The test that runs in a second
+
+```powershell
+.\tootega.exe selftest
+```
+
+Checks kernels, the JSON parser, the thread pool, the tokenizer and the sampler
+against precomputed fixtures (`src/fixture_kernels.h`, `tokfixture.json`). It is
+the first command to run after any change.
+
+---
+
+## 13 — Where we are and what comes next
+
+![Roadmap](img/14-marcos.en.svg)
+
+Every milestone has a **measurable exit criterion**. No number, no sign-off.
+Two of them have a **kill criterion**: if it does not pay, it is cancelled, not
+postponed.
+
+| milestone | what it delivers | exit criterion | state |
+|---|---|---|---|
+| **M0** | convert and validate the model | aligned int4 container + measured perplexity | **done** |
+| **M1** | CPU-only forward, token-exact | 32/32 on the oracle; ≥10 tok/s at 4k; stable RSS; `--ram-gb` respected | **done** (speed on the boundary) |
+| **M2** | GPU/CPU partition by layer | output byte-identical to M1; **≥20% faster, otherwise CANCELLED** | ahead |
+| **M3** | server and continuous batching | K=4 yields ≥2.5x of K=1; latency ≤2x | ahead |
+| **M4** | agentic CLI | cache hit ≥90%; warm open ≤3 s | ahead |
+| **M5** | optimization, with numbers | every item with before/after in the same configuration | ahead |
+
+### What the project declares it is **not**
+
+- **not a disk-streaming engine** — if the model does not fit, use something
+  else;
+- **not multi-GPU** — one GPU, one host;
+- **not a production server** — no multi-tenancy, no authentication beyond
+  loopback, no quotas;
+- **it trains nothing** — no training, no fine-tuning, no LoRA.
+
+### Declared failure criteria
+
+The project is wrong if CPU-only does not exceed 10 tok/s at 4k, if the GPU/CPU
+split yields less than 20%, or if the output diverges from the oracle under any
+placement. → [`docs/01`](../docs/01-objetivos.md)
+
+---
+
+## 14 — Hands on
+
+### 14.1 Build
+
+```powershell
+.\build.ps1                    # engine (MSVC, located via vswhere)
+.\build.ps1 test               # build and run the selftest
+.\tools\<name>\build.ps1       # one specific tool
+```
+
+On Linux, `make`. The compiler is located dynamically — **never** by a hard-coded
+path.
+
+One build option deserves a note: `/fp:precise`, with no FMA contraction. It
+stops the compiler from reassociating sums and from fusing multiply with add.
+It costs a little performance and buys **reproducibility**, which is an exit
+criterion, not a luxury. It was verified in the disassembly, not assumed.
+→ [`docs/10`](../docs/10-implementacao.md)
+
+### 14.2 The commands
+
+```powershell
+.\tootega.exe selftest
+.\tootega.exe version
+.\tootega.exe inspect  models\glm47flash-int4\model.tootega
+.\tootega.exe plan     models\glm47flash-int4\model.tootega --ctx 4096
+.\tootega.exe tokenize models\glm47flash-bf16\tokenizer.json --check tokfixture.json
+.\tootega.exe forward  models\glm47flash-int4\model.tootega --ids-file ids32.txt
+.\tootega.exe generate models\glm47flash-int4\model.tootega --tokenizer ... --prompt "..." -n 60
+.\tootega.exe chat     models\glm47flash-int4\model.tootega --tokenizer ... --ctx 8192
+.\tootega.exe serve    models\glm47flash-int4\model.tootega
+```
+
+| command | what for | when to use |
+|---|---|---|
+| `selftest` | kernels, JSON, pool, tokenizer, sampler against fixtures | always, after any change |
+| `version` | version and detected hardware | when reporting a result |
+| `inspect` | header, index and budget of the container | to see what is inside the file |
+| `plan` | what fits: weights, KV and scratch against `--ram-gb` | **before** running, so you do not find out halfway |
+| `tokenize` | tests the tokenizer against the fixture | when touching anything text-related |
+| `forward` | *teacher-forcing* pass over fixed ids | this is the oracle's command |
+| `generate` | tokenizer + forward + sampling | to watch the model write |
+| `chat` | multi-turn conversation with prefix cache | normal use |
+| `serve` | HTTP server + web chat at `127.0.0.1:8080` | normal use, from the browser |
+
+Options that appear almost everywhere:
+
+| option | what it does |
+|---|---|
+| `--threads N` | how many compute threads. Default: physical P-cores |
+| `--affinity p-cores\|all\|none` | where to pin threads |
+| `--kernel auto\|scalar` | `scalar` disables SIMD; useful to isolate a kernel bug |
+| `--attn absorbed\|expanded` | which attention formulation. Default: `absorbed` |
+| `--ctx N` | KV capacity |
+| `--ram-gb N` | hard memory cap |
+| `-v` | details what is being done |
+
+### 14.3 How to make your first measurement without getting it wrong
+
+Four rules, all bought with lost time:
+
+1. **fix `--ram-gb` and `--threads`.** Two measurements with different budgets
+   are not comparable;
+2. **warm up.** Discard the first run; the warm-cache effect was already worth
+   +20.7% in one baseline measurement;
+3. **change one thing at a time.** If you changed the kernel and the thread
+   count, the result says nothing;
+4. **record the output hash.** That is how you discover that a speed difference
+   came with a result difference.
+
+---
+
+## 15 — Repository map
+
+### 15.1 The folders and each one's rule
+
+| folder | what it is | rule |
+|---|---|---|
+| `src/` | the engine | ISO C11, **zero dependencies**; only `compat.c` has OS `#ifdef`s |
+| `tools/` | **native** tools | C or Rust, one folder per tool, the `.exe` sits at the root of `tools/` |
+| `ptools/` | Python tools | legacy and references that require `transformers`/`numpy` |
+| `docs/` | the specification | every decision with its reason and the number backing it |
+| `models/` | the containers | not versioned |
+| `ForDummies/` | this document and the figures | PT and EN in parallel |
+
+**A new tool is C or Rust, never Python.** The no-dependency ban applies to
+`src/` — the engine must be auditable in one reading session and it consumes
+third-party files. A tool is a different thing: it may link whatever it needs, as
+long as that does not enter `src/`. And a C tool **should reuse the sources in
+`src/`**, so that it measures the engine rather than a reimplementation of it.
+→ `CLAUDE.md`
+
+### 15.2 The engine's files
+
+| file | responsibility |
+|---|---|
+| `main.c` | subcommand dispatch and option parsing |
+| `model.c` | loading the container, config → internal structure |
+| `container.c` | the `.tootega` format, reading and writing |
+| `forward.c` | the pass through the 47 layers |
+| `kernels.c` | the arithmetic: int4 matmul, attention, rmsnorm, RoPE |
+| `tokenizer.c` | text ↔ ids |
+| `sample.c` | greedy, temperature, top-k, top-p |
+| `pool.c` | the project's own thread pool (no OpenMP) |
+| `budget.c` | budgets and the refusal |
+| `server.c` + `webui.h` | HTTP and the web interface |
+| `json.c` | the project's own JSON parser |
+| `compat.c` | **the only file with OS `#ifdef`s** |
+| `unicode_tables.h` | generated tables for the pre-tokenizer |
+| `fixture_kernels.h` | the `selftest`'s correct answers |
+
+### 15.3 The tools
+
+| tool | what it does |
+|---|---|
+| `tools/convert` | BF16 → int4/int8 container, with per-tensor precision policy |
+| `tools/ablate` | restores groups of tensors to the original and measures the effect |
+| `tools/gentest` | generates fixtures |
+| `ptools/oracle.py` | the reference implementation |
+| `ptools/perplexity.py` | the paired perplexity measurement |
+| `ptools/gen_*.py` | fixture and Unicode-table generators |
+
+> Some documents still cite `tools/oracle.py` and `tools/perplexity.py`. The
+> Python files now live in **`ptools/`**.
+
+### 15.4 The 16 documents
+
+| # | document | what it decides |
+|---|---|---|
+| 01 | [Goals and scope](../docs/01-objetivos.md) | what it is and what it explicitly is not |
+| 02 | [Hardware model](../docs/02-hardware.md) | the measured bandwidths and the placement law |
+| 03 | [Architecture](../docs/03-arquitetura.md) | layers, contracts, the three caches |
+| 04 | [Target model](../docs/04-modelo-alvo.md) | GLM-4.7-Flash and quantization |
+| 05 | [Roadmap](../docs/05-roadmap.md) | milestones with exit criteria |
+| 06 | [Lessons from colibrì](../docs/06-licoes-colibri.md) | copy, discard, fix |
+| 07 | [Baseline](../docs/07-baseline.md) | the numbers to beat |
+| 08 | [Performance ceiling](../docs/08-teto-de-desempenho.md) | roofline |
+| 09 | [Resource limits](../docs/09-limites-de-recursos.md) | budgets and the refusal |
+| 10 | [Implementation](../docs/10-implementacao.md) | C11, linking, portability |
+| 11 | [Memory](../docs/11-memoria.md) | zero-copy, paged KV |
+| 12 | [Persistent state](../docs/12-estado-persistente.md) | starting warm |
+| 13 | [Open decisions](../docs/13-decisoes-pendentes.md) | the D1–D14 scoreboard |
+| 14 | [Container format](../docs/14-formato-container.md) | `.tootega` byte by byte |
+| 15 | [Kernels and numerics](../docs/15-kernels-e-numerica.md) | W4A32, accumulation order |
+| 16 | [Tokenizer](../docs/16-tokenizer.md) | BPE, what to implement and how to test |
+
+> The documents themselves are written in Portuguese; the titles above are
+> translated for navigation.
+
+**Read 02 first.** It contains the measurement that inverts intuition and from
+which almost every other decision derives. Then 08, which sets expectations.
+
+---
+
+## 16 — Common misunderstandings
+
+**"Just use the GPU."**
+This machine's GPU speaks PCIe gen 3: ~12 GB/s. Any weight that does not *live*
+in VRAM must cross that channel, which is slower than the disk and five times
+slower than RAM. Measured: 13x worse.
+→ [§8](#8--this-machines-hardware-and-the-inversion)
+
+**"A 31-billion-parameter model must be 31 times slower than a 1-billion one."**
+No: what costs is the **active** parameter count per token, which here is 3.57
+billion. And the cost is reading, not computing.
+
+**"The file is 19.65 GB, so it reads 19.65 GB per token."**
+It reads 2.01 GB. The rest of the file sits still.
+
+**"Quantizing to 4 bits must ruin the model."**
+Measured: +5.26% perplexity with everything in int4; **−0.19%**
+(indistinguishable from zero) with attention in int8.
+→ [§10.3](#103-what-it-costs-in-quality--and-the-surprise)
+
+**"Experts specialize in subjects."**
+No. The choice is per token and per layer, and the split emerged from training
+with no assignable meaning.
+
+**"Increasing context is free."**
+It is 52.9 KB per token of context, **per conversation**. At 64k that is 3.5 GB —
+and KV becomes 63% of the traffic per token.
+
+**"Prompt caching is a comfort detail."**
+It is the largest optimization available. Reusing 100k tokens of KV avoids an
+entire prefill; no multiplication optimization comes close.
+
+**"A result 'almost equal' to the reference is fine."**
+It does not pass. The criterion is 32/32, binary. Three good optimizations have
+already been rejected at 29/32.
+
+**"More threads is always better."**
+The work is memory-bound and the CPU is hybrid (8 P-cores + 16 E-cores).
+Spreading a bandwidth-limited matmul across E-cores usually hurts; the default is
+`p-cores`.
+
+**"If it does not fit in memory, the engine will manage."**
+It **refuses**, with a message naming what to reduce. That is a design decision,
+and the measurement behind it is the silent 13x degradation.
+
+---
+
+## 17 — Term index PT ↔ EN
+
+To read both versions of this document side by side, or to look a term up in the
+code (which is commented in Portuguese but uses English identifiers).
+
+| English | Portuguese | section |
+|---|---|---|
+| ablation | ablação | [§10.3](#103-what-it-costs-in-quality--and-the-surprise) |
+| absorption (of MLA) | absorção | [§6.4](#64-attention-and-the-kv-cache) |
+| affinity | afinidade | [§14.2](#142-the-commands) |
+| attention head | cabeça (de atenção) | [§5.1](#51-the-model) |
+| budget | orçamento | [§11.5](#115-budgets-what-counts-and-what-does-not) |
+| crossing | travessia | [§8.3](#83-the-way-out-layer-partition) |
+| dense layer | camada densa | [§6.3](#63-the-47-layers) |
+| exit criterion | critério de saída | [§13](#13--where-we-are-and-what-comes-next) |
+| half/half | metade/metade | [§10.2](#102-how-it-works-concretely) |
+| kill criterion | critério de corte | [§13](#13--where-we-are-and-what-comes-next) |
+| layer | camada | [§6.3](#63-the-47-layers) |
+| layer partition | partição por camada | [§8.3](#83-the-way-out-layer-partition) |
+| memory bandwidth | banda de memória | [§2](#idea-3--the-bottleneck-is-memory-bandwidth-not-arithmetic) |
+| oracle | oráculo | [§12.1](#121-the-oracle-and-3232) |
+| paired measurement | medição pareada | [§12.2](#122-paired-measurement--and-the-mistake-that-created-the-rule) |
+| perplexity | perplexidade | [§12.2](#122-paired-measurement--and-the-mistake-that-created-the-rule) |
+| placement | colocação | [§8.2](#82-the-trap-measured) |
+| placement law | lei de colocação | [§8.2](#82-the-trap-measured) |
+| quantization scale | escala (de quantização) | [§10.2](#102-how-it-works-concretely) |
+| reduction order | ordem de redução | [§5.4](#54-numerics) |
+| residency fraction | fração de residência | [§9.2](#92-why) |
+| resident | residente | [§9](#9--residency-the-decision-worth-20x) |
+| residual | resíduo | [§6.3](#63-the-47-layers) |
+| roofline / ceiling | teto | [§7.2](#72-the-arithmetic) |
+| router / gate | roteador | [§6.5](#65-moe--64-stored-5-used) |
+| sampling | amostragem | [§6.6](#66-lm_head-logits-and-sampling) |
+| scratch arena | arena de scratch | [§11.2](#112-scratch-arena-zero-malloc-per-token) |
+| shared expert | expert compartilhado | [§6.5](#65-moe--64-stored-5-used) |
+| speculative decoding | especulação | [§5.2](#52-execution) |
+| thread pool | pool de threads | [§15.2](#152-the-engines-files) |
+| tokenizer | tokenizador | [§6.1](#61-tokenizer--from-text-to-numbers) |
+| weight | peso | [§5.1](#51-the-model) |
+
+---
+
+## Where to go next
+
+1. [`docs/02`](../docs/02-hardware.md) — the measurement that inverts intuition;
+2. [`docs/08`](../docs/08-teto-de-desempenho.md) — the performance expectation;
+3. [`docs/13`](../docs/13-decisoes-pendentes.md) — the decision scoreboard, with
+   the reasoning of each one preserved, including the ones that went wrong;
+4. `src/forward.c` — if you want to see the 47 layers in code.

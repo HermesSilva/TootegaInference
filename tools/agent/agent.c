@@ -114,6 +114,7 @@ typedef struct {
     int   no_tools;         /* --no-tools: so conversa */
     int   yes;              /* --yes: nao pede aprovacao (sandbox continua) */
     int   max_steps;        /* teto de voltas do laco por pedido do usuario */
+    int   idle_exit;        /* segundos sem stdin ate sair; 0 = nunca */
     sb    msgs;             /* mensagens ja serializadas, separadas por virgula */
     int   n_msgs;
     int   turns;
@@ -1130,6 +1131,97 @@ static void add_system(agent *a)
     sb_free(&s);
 }
 
+/* ------------------------------------------------------ transcricao */
+
+/* Onde a conversa desta sessao mora entre um processo e o proximo.
+ *
+ * O agente sai sozinho depois de ocioso, e sem isto a conversa morreria com
+ * ele: a proxima mensagem da mesma aba chegaria a um processo novo, de memoria
+ * vazia, e o modelo responderia como se nunca tivessem conversado. */
+static int transcript_path(const agent *a, char *dst, size_t cap)
+{
+    const char *base =
+#if defined(_WIN32)
+        getenv("LOCALAPPDATA");
+#else
+        getenv("HOME");
+#endif
+    if (!base || !*base || !a->session[0]) return -1;
+
+#if defined(_WIN32)
+    snprintf(dst, cap, "%s\\tootega\\sessions", base);
+    CreateDirectoryA(dst, NULL);          /* o pai pode ja existir */
+    snprintf(dst, cap, "%s\\tootega", base);
+    CreateDirectoryA(dst, NULL);
+    snprintf(dst, cap, "%s\\tootega\\sessions", base);
+    CreateDirectoryA(dst, NULL);
+    snprintf(dst, cap, "%s\\tootega\\sessions\\%s.json", base, a->session);
+#else
+    snprintf(dst, cap, "%s/.tootega", base);
+    mkdir(dst, 0700);
+    snprintf(dst, cap, "%s/.tootega/sessions", base);
+    mkdir(dst, 0700);
+    snprintf(dst, cap, "%s/.tootega/sessions/%s.json", base, a->session);
+#endif
+    return 0;
+}
+
+static void save_history(const agent *a)
+{
+    char path[1024];
+    if (transcript_path(a, path, sizeof(path)) != 0) return;
+
+    FILE *f = fopen(path, "wb");
+    if (!f) return;
+    fputc('[', f);
+    if (a->msgs.p) fwrite(a->msgs.p, 1, a->msgs.len, f);
+    fputc(']', f);
+    fclose(f);
+}
+
+static void load_history(agent *a)
+{
+    char path[1024];
+    if (transcript_path(a, path, sizeof(path)) != 0) return;
+
+    FILE *f = fopen(path, "rb");
+    if (!f) return;
+    fseek(f, 0, SEEK_END);
+    const long n = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    if (n < 3 || n > (32L << 20)) { fclose(f); return; }
+
+    char *buf = (char *)malloc((size_t)n + 1);
+    if (!buf) { fclose(f); return; }
+    const size_t got = fread(buf, 1, (size_t)n, f);
+    fclose(f);
+    buf[got] = '\0';
+
+    /* Conta as mensagens parseando; e o `n_msgs` que decide se o prompt de
+     * sistema ainda precisa entrar. */
+    tt_arena ar;
+    int count = 0;
+    if (tt_arena_init(&ar, tt_json_bound(buf, got) + 4096, "hist") == 0) {
+        const tt_json *arr = tt_json_parse(buf, got, &ar);
+        if (arr && arr->type == TT_JSON_ARRAY) count = (int)arr->count;
+        tt_arena_free(&ar);
+    }
+    if (count <= 0) { free(buf); return; }
+
+    /* Guarda sem os colchetes: `msgs` e a lista separada por virgula. */
+    size_t start = 0, end = got;
+    while (start < end && buf[start] != '[') start++;
+    start++;
+    while (end > start && buf[end - 1] != ']') end--;
+    if (end > start) end--;
+
+    a->msgs.len = 0;
+    sb_put(&a->msgs, buf + start, end - start);
+    a->n_msgs = count;
+    free(buf);
+    trace("historico retomado: %d mensagens de %s", count, path);
+}
+
 /* Objeto de mensagem ja serializado (assistente com `tool_calls`, resultado de
  * ferramenta): entra cru no historico. */
 static void add_message_raw(agent *a, const char *json)
@@ -1140,20 +1232,59 @@ static void add_message_raw(agent *a, const char *json)
 
 /* --------------------------------------------- entrada da UI, em fila */
 
-/* Le uma linha do stdin.  Devolve 0 no fim do fluxo. */
-static int read_line(sb *line)
+/* Ha byte esperando no stdin?  -1 quando nao da para saber (console). */
+static int stdin_ready(void)
+{
+#if defined(_WIN32)
+    const HANDLE h = GetStdHandle(STD_INPUT_HANDLE);
+    DWORD avail = 0;
+    if (!PeekNamedPipe(h, NULL, 0, NULL, &avail, NULL)) return -1;
+    return avail > 0;
+#else
+    fd_set r;
+    FD_ZERO(&r);
+    FD_SET(0, &r);
+    struct timeval tv = { 0, 0 };
+    const int n = select(1, &r, NULL, NULL, &tv);
+    return n < 0 ? -1 : n > 0;
+#endif
+}
+
+/* Le uma linha do stdin.  Devolve 1 com linha, 0 no fim do fluxo, -1 se
+ * `idle_sec` passou sem nada chegar.
+ *
+ * O timeout existe para o agente poder ir embora sozinho: a UI sobe um
+ * processo por aba e nao mata o que sobra quando a aba fecha (nem quando o
+ * host da extensao recarrega).  Sem isto os agentes se acumulam -- foram
+ * sete de uma vez nesta maquina. */
+static int read_line_timeout(sb *line, int idle_sec)
 {
     line->len = 0;
     if (line->p) line->p[0] = '\0';
-    int c;
-    while ((c = fgetc(stdin)) != EOF) {
+
+    const double deadline = idle_sec > 0 ? tt_now() + idle_sec : 0;
+    for (;;) {
+        if (idle_sec > 0 && !line->len) {
+            const int ready = stdin_ready();
+            if (ready == 0) {
+                if (tt_now() > deadline) return -1;
+                tt_sleep_ms(25);
+                continue;
+            }
+            /* `ready < 0` e console: cai no `fgetc` bloqueante, que e o certo
+             * quando quem digita e uma pessoa. */
+        }
+
+        const int c = fgetc(stdin);
+        if (c == EOF) return line->len ? 1 : 0;
         if (c == '\n') return 1;
         if (c == '\r') continue;
         const char ch = (char)c;
         sb_put(line, &ch, 1);
     }
-    return line->len ? 1 : 0;
 }
+
+static int read_line(sb *line) { return read_line_timeout(line, 0) > 0; }
 
 /* Linhas que chegaram enquanto esperavamos uma aprovacao.  A UI pode enfileirar
  * mensagem enquanto o agente trabalha; descartar seria perder o que o usuario
@@ -1559,6 +1690,7 @@ static void run_turn(agent *a, const char *user_text, size_t n)
     }
 
     a->turns++;
+    save_history(a);          /* o processo pode sair antes do proximo turno */
     if (g_tty) {
         const double secs = tt_now() - t0;
         /* O tempo e de PAREDE: inclui prefill, execucao das ferramentas e a
@@ -1666,6 +1798,9 @@ static void print_help(void)
            "  --no-tools            so conversa, sem ferramentas\n"
            "  --yes                 nao pede aprovacao (o sandbox continua)\n"
            "  --max-steps N         teto de voltas do laco (default 16)\n"
+           "  --resume ID           retoma a conversa salva desta sessao\n"
+           "  --idle-exit N         sai apos N s sem receber nada (default 15;\n"
+           "                        0 desliga, e o default no --tty)\n"
            "  --version             versao e build\n"
            "\nFerramentas: Read, Write, Edit, Glob, Grep, Bash.  As tres que\n"
            "mudam estado (Write, Edit, Bash) pedem aprovacao pela UI; nenhuma\n"
@@ -1726,6 +1861,11 @@ int main(int argc, char **argv)
         else if (!strcmp(g, "--no-tools")) a.no_tools = 1;
         else if (!strcmp(g, "--yes"))      a.yes = 1;
         else if (!strcmp(g, "--max-steps") && has) a.max_steps = atoi(argv[++i]);
+        else if (!strcmp(g, "--idle-exit") && has) a.idle_exit = atoi(argv[++i]);
+        /* A sessao vem de fora quando a UI esta retomando uma conversa: e o id
+         * que aponta para a transcricao em disco. */
+        else if ((!strcmp(g, "--resume") || !strcmp(g, "--session-id")) && has)
+            snprintf(a.session, sizeof(a.session), "%s", argv[++i]);
 
         /* Flags do CLI oficial que nao mudam nada aqui.  Sao consumidas em
          * silencio -- inclusive o argumento -- porque a UI as manda sempre, e
@@ -1736,7 +1876,6 @@ int main(int argc, char **argv)
                  !strcmp(g, "--append-system-prompt-file") ||
                  !strcmp(g, "--permission-prompt-tool") ||
                  !strcmp(g, "--mcp-config") || !strcmp(g, "--add-dir") ||
-                 !strcmp(g, "--resume") || !strcmp(g, "--session-id") ||
                  !strcmp(g, "--output-format") || !strcmp(g, "--input-format")) {
             if (has) i++;
         }
@@ -1751,6 +1890,11 @@ int main(int argc, char **argv)
     }
     path_norm(a.cwd, a.cwd_abs, sizeof(a.cwd_abs));
     if (!a.max_steps) a.max_steps = 16;
+    /* No terminal quem manda e a pessoa, e sair sozinho no meio de uma sessao
+     * seria hostil.  Pela UI, sair e o certo: um processo por aba que nunca
+     * morre vira uma dezena deles. */
+    if (!a.idle_exit && !g_tty) a.idle_exit = 15;
+    if (a.session[0]) load_history(&a);
 
     if (tt_net_init() != 0) {
         fprintf(stderr, "rede indisponivel\n");
@@ -1824,10 +1968,19 @@ int main(int argc, char **argv)
 
     /* Uma linha NDJSON por evento da UI.  Linha longa (prompt colado com
      * arquivo inteiro) cresce o buffer em vez de ser cortada. */
-    trace("pronto, lendo stdin (servidor %s:%d, cwd %s)",
-          a.host, a.port, a.cwd_abs);
+    trace("pronto, lendo stdin (servidor %s:%d, cwd %s, ocioso %ds)",
+          a.host, a.port, a.cwd_abs, a.idle_exit);
     sb line = {0};
-    while (read_line(&line)) {
+    for (;;) {
+        const int r = read_line_timeout(&line, a.idle_exit);
+        if (r == 0) break;                       /* a UI fechou o stdin */
+        if (r < 0) {
+            /* Ocioso: sai e deixa a conversa no disco.  A proxima mensagem
+             * desta aba sobe um processo novo, que retoma de onde parou. */
+            trace("ocioso por %d s -- saindo (a conversa fica salva)",
+                  a.idle_exit);
+            break;
+        }
         if (line.len) {
             trace("stdin: %.160s", line.p);
             handle_line(&a, line.p, line.len);

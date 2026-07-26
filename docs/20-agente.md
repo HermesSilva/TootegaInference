@@ -203,16 +203,65 @@ result: success  passos=2  in=1269 out=60   53 s
 resposta: "...listando 16 itens: 11 arquivos modificados e 5 nao rastreados."
 ```
 
-**O mecanismo funciona; a resposta do primeiro caso está errada.** O arquivo
-tem **97 linhas**, não 126 — o modelo contou mal olhando a saída numerada. Vale
-registrar porque é exatamente o modo de falhar que importa num agente: a
-ferramenta acertou, o envelope acertou, e a conclusão saiu errada com
-confiança. Mitigação óbvia e barata: para contar, o laço devia preferir `Bash`
-a `Read` — e foi justamente o caso 7 que o portão marcou como erro.
+**O mecanismo funciona e a resposta está certa** — o arquivo tem mesmo 126
+linhas.
+
+Fica registrado o que aconteceu na primeira conferência, porque a lição é
+minha e não do modelo: dei a resposta como errada comparando com
+`Measure-Object -Line`, que **não conta linhas em branco** e devolveu 97. O
+modelo acertou; a régua é que estava torta. É a mesma armadilha de
+[17](17-diagnostico.md) invertida — lá o teste concordava com o erro, aqui o
+teste acusou um erro que não existia.
 
 E o custo de contexto aparece inteiro: ler um arquivo de 3,4 k tokens custou
 **246 s**, quase tudo em prefill a ~11 tok/s. Ferramenta que devolve muito é o
 gargalo real deste agente, não a geração.
+
+## O prompt de sistema, e o que ele vale
+
+O agente mandava o schema das ferramentas e mais nada: o modelo não sabia que
+era um agente, em que pasta estava, nem que o shell é o `cmd.exe`. Um prompt de
+sistema entrou no início do histórico — parte estável, portanto dentro do cache
+de prefixo.
+
+Mesma pergunta, antes e depois:
+
+| | passos | contexto | tempo |
+|---|---|---|---|
+| sem prompt de sistema | 4 | 5.961 tokens | 291 s |
+| com prompt de sistema | **2** | **1.870** | **73 s** |
+
+**4× mais rápido, e a mesma resposta certa.** Sem o prompt o modelo tentou
+`wc -l` (não existe no `cmd.exe`), errou, tentou de novo, e acabou lendo o
+arquivo inteiro — 3,4 k tokens de contexto para produzir um número. Com o
+prompt foi direto a `powershell -Command "(Get-Content ...).Count"`.
+
+As regras que estão lá saem todas de medição, não de estilo: preferir `Grep` a
+ler arquivo inteiro, usar `Bash` para contar, e a advertência sobre o shell do
+Windows.
+
+## Modo terminal
+
+`--tty` troca o NDJSON por uma sessão de gente: resposta em streaming, cartão
+por ferramenta, aprovação `[s/N]` no console.
+
+```
+> Quantas linhas tem o arquivo docs/03-arquitetura.md?
+
+  * Bash {"command":"powershell -Command \"(Get-Content 'docs/...').Count\""}
+
+  ! Bash quer executar:
+    {"command":"powershell -Command \"(Get-Content 'docs/...').Count\""}
+    permitir? [s/N] s
+    -> 2 linhas  126
+
+O arquivo `docs/03-arquitetura.md` tem **126 linhas**.
+
+  2 passos  48 tokens gerados  1870 de contexto  73.4 s
+```
+
+O rascunho não aparece e a saída das ferramentas vira uma linha de resumo: o
+que interessa na tela é a resposta, e despejar 12 kB de `Grep` enterraria ela.
 
 ### O que a UI vai mostrar vazio
 

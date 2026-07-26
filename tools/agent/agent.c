@@ -118,10 +118,21 @@ typedef struct {
     int   turns;
 } agent;
 
+/* Modo terminal: o mesmo laco, outra pele.
+ *
+ * Global e nao campo do `agent` porque `emit` e chamado de dezenas de lugares
+ * e passar o estado por todos eles so para decidir "imprime ou nao" poluiria a
+ * assinatura de tudo. */
+static int g_tty;
+
 /* Uma linha NDJSON no stdout.  Sempre com flush: a UI le por linha e um buffer
- * segurando eventos parece travamento do agente. */
+ * segurando eventos parece travamento do agente.
+ *
+ * Em `--tty` o canal e uma pessoa, e ela nao le NDJSON: os eventos morrem aqui
+ * e a impressao acontece nos pontos onde ha o que mostrar. */
 static void emit(const sb *line)
 {
+    if (g_tty) return;
     fwrite(line->p, 1, line->len, stdout);
     fputc('\n', stdout);
     fflush(stdout);
@@ -289,6 +300,26 @@ static void ev_delta(turn *t, int index, const char *field,
 static void on_text(turn *t, const char *s, size_t n)
 {
     sb_put(&t->raw, s, n);
+
+    /* No terminal a resposta sai token a token, e o rascunho nao sai: quem
+     * esta lendo quer a resposta, e o raciocinio deste modelo e varias vezes
+     * mais longo que ela. */
+    if (g_tty) {
+        if (t->in_think) {
+            const char *close = strstr(t->raw.p, "</think>");
+            if (!close) return;
+            t->in_think = 0;
+            const char *rest = close + 8;
+            while (*rest == '\n' || *rest == ' ') rest++;
+            fputs(rest, stdout);
+            sb_str(&t->answer, rest);
+        } else {
+            fwrite(s, 1, n, stdout);
+            sb_put(&t->answer, s, n);
+        }
+        fflush(stdout);
+        return;
+    }
 
     if (t->in_think) {
         /* O fechamento pode chegar colado com o inicio da resposta. */
@@ -967,6 +998,60 @@ static void add_message(agent *a, const char *role, const char *text, size_t n)
     sb_str(&a->msgs, "\"}");
 }
 
+/* Prompt de sistema.
+ *
+ * Entra UMA vez, no inicio do historico, antes de qualquer turno: e a parte que
+ * nao muda, e a regra de ordenacao de docs/03 (estavel primeiro) e o que faz o
+ * cache de prefixo valer numa sessao de agente.
+ *
+ * As regras do fim nao sao genericas -- saem do que foi MEDIDO nesta maquina:
+ *
+ *   - ler o arquivo todo: um Read de 3.425 tokens custou 246 s, quase tudo em
+ *     prefill.  Ferramenta que devolve muito e o gargalo real deste agente;
+ *   - contar e medir com Bash: nao porque o modelo errou -- ele acertou as 126
+ *     linhas --, e sim porque contar pelo Read custa o arquivo inteiro no
+ *     contexto para produzir um numero;
+ *   - o shell e o `cmd.exe`, e o modelo tentou `wc -l` na primeira chance.
+ */
+static void add_system(agent *a)
+{
+    sb s = {0};
+    sb_str(&s,
+        "Voce e o Tootega, um agente de programacao que roda na maquina do "
+        "usuario e responde em portugues do Brasil, salvo se o usuario "
+        "escrever em outro idioma.\n\n"
+        "Pasta de trabalho: ");
+    sb_str(&s, a->cwd_abs);
+    sb_str(&s,
+        "\nTodo caminho e relativo a ela, e nenhuma ferramenta alcanca nada "
+        "fora dela.\n\n"
+        "Ferramentas: Read, Write, Edit, Glob, Grep, Bash.\n"
+        "Write, Edit e Bash pedem aprovacao do usuario antes de executar.\n"
+        "Grep e busca por texto LITERAL, nao expressao regular.\n");
+#if defined(_WIN32)
+    sb_str(&s,
+        "Bash roda no cmd.exe do Windows: nao existem wc, grep, sed, ls nem "
+        "cat. Use `powershell -Command \"...\"` quando precisar deles -- por "
+        "exemplo `(Get-Content arquivo).Count` para contar linhas.\n");
+#endif
+    sb_str(&s, "\n"
+        "Como trabalhar:\n"
+        "- Use ferramenta quando a resposta depender do disco ou da maquina. "
+        "Quando voce ja sabe a resposta, responda direto.\n"
+        "- Para contar linhas, medir tamanho ou somar, use Bash: ler o arquivo "
+        "inteiro so para produzir um numero enche o contexto a toa.\n"
+        "- Prefira Grep e Glob a ler arquivos inteiros: cada arquivo lido "
+        "entra no contexto e custa caro.\n"
+        "- Use Read com offset e limit quando so precisar de um trecho.\n"
+        "- Antes de Edit, leia o trecho: o texto de old_string precisa bater "
+        "byte a byte e ser unico no arquivo.\n"
+        "- Termine dizendo o que foi feito, em uma ou duas frases. Nao repita "
+        "a saida das ferramentas.");
+
+    add_message(a, "system", s.p, s.len);
+    sb_free(&s);
+}
+
 /* Objeto de mensagem ja serializado (assistente com `tool_calls`, resultado de
  * ferramenta): entra cru no historico. */
 static void add_message_raw(agent *a, const char *json)
@@ -1020,6 +1105,19 @@ static int ask_permission(agent *a, const char *tool, const char *args_json,
                           const char *tool_use_id, sb *deny_msg)
 {
     if (a->yes || !tool_mutates(tool)) return 1;
+
+    if (g_tty) {
+        printf("\n  ! %s quer executar:\n    %s\n    permitir? [s/N] ",
+               tool, args_json);
+        fflush(stdout);
+        sb ans = {0};
+        if (!read_line(&ans)) { sb_free(&ans); return -1; }
+        const int ok = ans.len && (ans.p[0] == 's' || ans.p[0] == 'S' ||
+                                   ans.p[0] == 'y' || ans.p[0] == 'Y');
+        sb_free(&ans);
+        if (!ok) sb_str(deny_msg, "negado pelo usuario no terminal");
+        return ok;
+    }
 
     static int seq;
     char id[64];
@@ -1123,6 +1221,7 @@ static int step(agent *a, turn *t)
 
 static void run_turn(agent *a, const char *user_text, size_t n)
 {
+    if (!a->n_msgs) add_system(a);
     add_message(a, "user", user_text, n);
 
     turn t = {0};
@@ -1276,6 +1375,18 @@ static void run_turn(agent *a, const char *user_text, size_t n)
             sb out = {0}, deny = {0};
             int is_error = 0;
 
+            if (g_tty) {
+                /* Cartao da ferramenta: nome e argumentos, cortados para caber
+                 * numa linha.  O conteudo de um Write pode ter 40 kB. */
+                char brief[140];
+                size_t bn = strlen(argtxt);
+                if (bn > sizeof(brief) - 4) bn = sizeof(brief) - 4;
+                memcpy(brief, argtxt, bn);
+                strcpy(brief + bn, bn < strlen(argtxt) ? "..." : "");
+                printf("\n  * %s %s\n", nm, brief);
+                fflush(stdout);
+            }
+
             const int allowed = ask_permission(a, nm, argtxt, id, &deny);
             if (allowed < 0) { aborted = 1; free(argtxt); sb_free(&out);
                                sb_free(&deny); break; }
@@ -1299,6 +1410,22 @@ static void run_turn(agent *a, const char *user_text, size_t n)
             }
             sb_free(&deny);
             free(argtxt);
+
+            if (g_tty) {
+                /* Uma linha de resumo: quantas linhas voltaram e a primeira
+                 * delas.  Despejar a saida inteira no terminal enterraria a
+                 * resposta do modelo, que e o que interessa. */
+                int lines = 0;
+                for (size_t k = 0; k < out.len; k++) if (out.p[k] == '\n') lines++;
+                char head[100] = "";
+                size_t hn = 0;
+                while (hn < out.len && hn < sizeof(head) - 1 &&
+                       out.p[hn] != '\n') { head[hn] = out.p[hn]; hn++; }
+                head[hn] = '\0';
+                printf("    -> %s%d linha%s  %s\n", is_error ? "ERRO, " : "",
+                       lines + 1, lines ? "s" : "", head);
+                fflush(stdout);
+            }
 
             /* Evento para a UI: o resultado aparece no cartao da ferramenta. */
             {
@@ -1354,6 +1481,15 @@ static void run_turn(agent *a, const char *user_text, size_t n)
     }
 
     a->turns++;
+    if (g_tty) {
+        const double secs = tt_now() - t0;
+        /* O tempo e de PAREDE: inclui prefill, execucao das ferramentas e a
+         * espera pela aprovacao.  Nao dividir por ele e chamar de tok/s -- o
+         * numero pareceria a velocidade do decode, e nao e. */
+        printf("\n\n  %d passo%s  %d tokens gerados  %d de contexto  %.1f s\n",
+               steps, steps > 1 ? "s" : "", out_tokens, in_tokens, secs);
+        fflush(stdout);
+    }
     {
         const double secs = tt_now() - t0;
         sb e = {0};
@@ -1437,6 +1573,7 @@ static void print_help(void)
            "Fala o contrato de processo do Claude Code CLI: uma UI escrita\n"
            "contra aquele CLI funciona apontando o caminho do executavel para\n"
            "este binario.\n\n"
+           "  --tty, -i             sessao no terminal, para usar sem UI\n"
            "  --server HOST:PORTA   engine (default 127.0.0.1:8080)\n"
            "  --key CHAVE           quando o servidor subiu com --key\n"
            "  --cwd DIR             raiz do sandbox (default: pasta corrente)\n"
@@ -1499,6 +1636,7 @@ int main(int argc, char **argv)
         else if (!strcmp(g, "--include-partial-messages")) a.partial = 1;
         else if (!strcmp(g, "--think"))    a.think = 1;
         else if (!strcmp(g, "--no-think")) a.think = 0;
+        else if (!strcmp(g, "--tty") || !strcmp(g, "-i")) g_tty = 1;
         else if (!strcmp(g, "--no-tools")) a.no_tools = 1;
         else if (!strcmp(g, "--yes"))      a.yes = 1;
         else if (!strcmp(g, "--max-steps") && has) a.max_steps = atoi(argv[++i]);
@@ -1531,6 +1669,44 @@ int main(int argc, char **argv)
     if (tt_net_init() != 0) {
         fprintf(stderr, "rede indisponivel\n");
         return 1;
+    }
+
+    /* --- modo terminal ------------------------------------------------ */
+    if (g_tty) {
+#if defined(_WIN32)
+        /* O console do Windows nasce em code page 850; sem isto toda acentuacao
+         * da resposta vira lixo. */
+        SetConsoleOutputCP(CP_UTF8);
+#endif
+        printf("tootega-agent %s  ->  %s:%d\n", AGENT_VERSION, a.host, a.port);
+        printf("pasta        %s\n", a.cwd_abs);
+        printf("ferramentas  %s\n",
+               a.no_tools ? "(nenhuma)" : "Read Write Edit Glob Grep Bash");
+        printf("raciocinio   %s%s\n", a.think ? "ligado" : "desligado",
+               a.yes ? "    aprovacao AUTOMATICA (--yes)" : "");
+        printf("\nEscreva o pedido e Enter. /sair termina.\n");
+
+        sb line = {0};
+        for (;;) {
+            printf("\n> ");
+            fflush(stdout);
+            if (!read_line(&line)) break;
+            if (!line.len) continue;
+            if (!strcmp(line.p, "/sair") || !strcmp(line.p, "/quit")) break;
+            if (!strcmp(line.p, "/limpar")) {
+                a.msgs.len = 0;
+                a.n_msgs = 0;
+                if (a.msgs.p) a.msgs.p[0] = '\0';
+                printf("  (conversa esquecida)\n");
+                continue;
+            }
+            printf("\n");
+            run_turn(&a, line.p, line.len);
+        }
+        sb_free(&line);
+        sb_free(&a.msgs);
+        tt_net_shutdown();
+        return 0;
     }
 
     /* `init` primeiro: a UI so mostra a sessao depois dele. */

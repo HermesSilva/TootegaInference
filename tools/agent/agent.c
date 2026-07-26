@@ -1232,7 +1232,19 @@ static void add_message_raw(agent *a, const char *json)
 
 /* --------------------------------------------- entrada da UI, em fila */
 
-/* Ha byte esperando no stdin?  -1 quando nao da para saber (console). */
+/* Ha byte esperando no stdin?  -1 quando nao da para saber (console).
+ *
+ * ATENCAO: isto olha o PIPE, nao o buffer do stdio.  Se `fgetc` ja tiver
+ * puxado um bloco de 4 kB contendo duas linhas, a segunda esta no buffer e o
+ * pipe esta vazio -- a sondagem diria "nada chegou" com a mensagem na mao.
+ *
+ * Foi exatamente o que aconteceu: a UI escreve o `initialize` e a mensagem do
+ * usuario quase juntos, o agente lia as duas de uma vez, processava a primeira
+ * e depois esperava 15 s por algo que ja estava no buffer -- e saia por ocio
+ * sem nunca falar com o servidor.
+ *
+ * Por isso o stdin roda SEM BUFFER (`setvbuf` no main): o que esta no pipe e
+ * tudo o que existe. */
 static int stdin_ready(void)
 {
 #if defined(_WIN32)
@@ -1815,6 +1827,12 @@ static void gen_session(char *dst, size_t cap)
 
 int main(int argc, char **argv)
 {
+    /* Stdin sem buffer: a sondagem de `stdin_ready` olha o pipe, e um buffer
+     * do stdio escondendo linhas dele e a diferenca entre responder e sair por
+     * ocio com a pergunta na mao.  O volume aqui e de dezenas de kB por
+     * sessao; ler byte a byte nao custa nada. */
+    setvbuf(stdin, NULL, _IONBF, 0);
+
     agent a = {0};
     snprintf(a.host, sizeof(a.host), "127.0.0.1");
     a.port = 8080;

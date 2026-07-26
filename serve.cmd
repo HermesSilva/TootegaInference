@@ -2,12 +2,13 @@
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
-rem serve.cmd -- sobe o servidor e abre o chat no navegador.
+rem serve.cmd -- sobe o servidor do TootegaEngine.
 rem
-rem   serve.cmd                          padroes
+rem   serve.cmd                          padroes, com log verboso
 rem   serve.cmd --port 9000 --ctx 32768  passa qualquer opcao adiante
-rem   serve.cmd --verbose                mostra o que entra e sai no console
 rem   serve.cmd --help                   opcoes do engine
+rem
+rem   set TOOTEGA_QUIET=1                desliga o log verboso
 rem
 rem O container e o tokenizer sao procurados; nada de caminho fixo. Para usar
 rem outro modelo, defina TOOTEGA_MODEL antes de chamar.
@@ -20,6 +21,13 @@ rem
 rem Nao e o teto util: a 11 tok/s de prefill, encher 150k levaria 3,8 h. Serve
 rem para nunca esbarrar no limite, nao para ser preenchido.
 set "CTX=150000"
+
+rem Log verboso LIGADO por padrao: este servidor existe para ser depurado
+rem contra clientes (Cockpit, Copilot, a UI web), e um console mudo torna
+rem "nao aconteceu nada" indistinguivel de "o pedido nem chegou".
+rem Para desligar: set TOOTEGA_QUIET=1 antes de chamar.
+set "VERBOSE=--verbose"
+if "%TOOTEGA_QUIET%"=="1" set "VERBOSE="
 
 if "%~1"=="--help" goto :help
 if "%~1"=="-h"     goto :help
@@ -104,7 +112,7 @@ echo   Aquecendo os pesos; leva ~25 s antes do primeiro pedido.
 echo   Ctrl-C encerra. A conversa nao sobrevive ao processo.
 echo.
 
-"%EXE%" serve "%MODEL%" --tokenizer "%TOK%" --port %PORT% --ctx %CTX% %*
+"%EXE%" serve "%MODEL%" --tokenizer "%TOK%" --port %PORT% --ctx %CTX% %VERBOSE% %*
 exit /b %errorlevel%
 
 :help

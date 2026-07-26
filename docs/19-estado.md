@@ -82,9 +82,10 @@ ordem de acumulação.
 
 - **Slots e batching contínuo** (M3). Um pedido por vez; a segunda aba espera
   no backlog do TCP, em silêncio.
-- **Partição GPU por camada** (M2). O backend existe e mede `0,24×` porque a
-  interface força ida e volta pelo PCIe por matmul. O desenho de
-  [03](03-arquitetura.md) pede um `run_layer` no device — não escrito.
+- **Partição GPU por camada** (M2). Os kernels foram reescritos e o portão
+  **passou**: 179–190 GB/s contra 68,7 da CPU, projetando 20,8 tok/s já na
+  placa de 8 GB. Falta o que transforma projeção em ganho — `run_layer` no
+  device, experts em lançamento único, planner ([18](18-gpu.md)).
 - **Ferramentas locais no agente** (M4 fase B) — o laço fala o protocolo, mas
   não tem mãos: `Read`/`Edit`/`Bash` e o `can_use_tool` não existem.
 - **Estado persistente** ([12](12-estado-persistente.md)) e **especulação MTP**

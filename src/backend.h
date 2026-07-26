@@ -20,7 +20,7 @@
 
 #include <stdint.h>
 
-#define TT_BACKEND_ABI 1
+#define TT_BACKEND_ABI 2
 
 /* Identificador opaco de um tensor ja residente na VRAM. */
 typedef uint32_t tt_dev_tensor;
@@ -52,6 +52,15 @@ typedef struct {
 
     /* Barreira: garante que tudo o que foi enfileirado terminou. */
     void (*sync)(void);
+
+    /* Milissegundos por chamada do KERNEL, sem transferencia -- `reps` vezes,
+     * cronometrado no device.
+     *
+     * `matmul` mede o ida-e-volta inteiro, e o piso de ~0,15 ms de lancamento
+     * mais copia nao tem nada a ver com a velocidade do kernel.  Como o desenho
+     * do M2 e uma camada inteira no device, decidir pela medida do ida-e-volta
+     * seria decidir pelo numero errado.  Devolve -1 se nao souber medir. */
+    double (*bench)(tt_dev_tensor w, int reps);
 } tt_backend;
 
 /* Assinatura do simbolo exportado pela DLL. */

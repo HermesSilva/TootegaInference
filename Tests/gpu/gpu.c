@@ -45,12 +45,14 @@ int main(int argc, char **argv)
 {
     const char *path = NULL, *dll = "tootega_cuda.dll";
     int reps = 200, threads = 20;
+    double cpu_stream = 68.7;          /* GB/s de RAM, medidos por Tests/bench */
 
     for (int i = 1; i < argc; i++) {
         const char *a = argv[i];
         const int has = (i + 1 < argc);
         if      (!strcmp(a, "--dll") && has)     dll = argv[++i];
         else if (!strcmp(a, "--reps") && has)    reps = atoi(argv[++i]);
+        else if (!strcmp(a, "--cpu-gbs") && has) cpu_stream = atof(argv[++i]);
         else if (!strcmp(a, "--threads") && has) threads = atoi(argv[++i]);
         else if (!strcmp(a, "-v"))               tt_verbose(1);
         else if (a[0] == '-') { fprintf(stderr, "opcao desconhecida: %s\n", a); return 2; }
@@ -83,10 +85,15 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    printf("\n  %-46s %9s %9s %7s %10s\n", "tensor", "CPU ms", "GPU ms",
-           "ganho", "erro rel");
+    /* Tres colunas de tempo, nao duas.  `GPU ms` inclui H2D, lancamento, D2H e
+     * sincronizacao -- um piso que existe so porque a interface atual manda um
+     * matmul por vez.  `kernel ms` e o kernel sozinho, cronometrado no device,
+     * e e o numero que diz se vale escrever o `run_layer` do M2 (e se vale
+     * comprar placa maior). */
+    printf("\n  %-36s %8s %8s %8s %8s %8s %9s\n", "tensor", "CPU ms",
+           "CPU GB/s", "GPU ms", "kernel", "GB/s", "erro rel");
 
-    double sum_cpu = 0, sum_gpu = 0;
+    double sum_cpu = 0, sum_gpu = 0, sum_ker = 0, sum_bytes = 0;
     int measured = 0;
 
     for (int i = 0; i < N_TARGETS; i++) {
@@ -118,14 +125,35 @@ int main(int argc, char **argv)
         be->matmul(y2, dev, x);
         be->sync();
 
-        const double c0 = tt_now();
-        for (int r = 0; r < reps; r++) tt_matmul(y1, t, x);
-        const double cpu_ms = (tt_now() - c0) * 1000.0 / reps;
+        /* MELHOR caso, nao media.
+         *
+         * A media mede a maquina, nao o kernel: com o editor compilando ao
+         * lado, o mesmo matmul de CPU mediu 0,033 ms e 0,612 ms na mesma
+         * sessao -- 18x de diferenca vinda de fora.  O kernel e determinista,
+         * entao o menor tempo observado E o custo dele; interferencia so
+         * adiciona. */
+        double cpu_ms = 1e9, gpu_ms = 1e9;
+        for (int r = 0; r < reps; r++) {
+            const double c0 = tt_now();
+            tt_matmul(y1, t, x);
+            const double dt = (tt_now() - c0) * 1000.0;
+            if (dt < cpu_ms) cpu_ms = dt;
+        }
+        for (int r = 0; r < reps; r++) {
+            const double g0 = tt_now();
+            be->matmul(y2, dev, x);
+            be->sync();
+            const double dt = (tt_now() - g0) * 1000.0;
+            if (dt < gpu_ms) gpu_ms = dt;
+        }
 
-        const double g0 = tt_now();
-        for (int r = 0; r < reps; r++) be->matmul(y2, dev, x);
-        be->sync();
-        const double gpu_ms = (tt_now() - g0) * 1000.0 / reps;
+        /* Kernel puro.  Backend antigo (ABI 1) nao tem isto e devolve -1. */
+        const double ker_ms = be->bench ? be->bench(dev, reps * 5) : -1.0;
+
+        /* Trafego do kernel: o tensor inteiro mais escalas.  E o denominador
+         * honesto -- este e um matmul memory-bound dos dois lados. */
+        const double bytes = (double)t->data_bytes + (double)t->scales_bytes;
+        const double gbs = ker_ms > 0 ? bytes / (ker_ms * 1e-3) / 1e9 : 0.0;
 
         double num = 0, den = 0;
         for (int64_t r = 0; r < t->rows; r++) {
@@ -135,11 +163,13 @@ int main(int argc, char **argv)
         }
         const double rel = den > 0 ? sqrt(num / den) : 0.0;
 
-        printf("  %-46.46s %9.3f %9.3f %6.2fx %9.4f%%\n", TARGETS[i],
-               cpu_ms, gpu_ms, gpu_ms > 0 ? cpu_ms / gpu_ms : 0.0, rel * 100.0);
+        const double cpu_gbs = cpu_ms > 0 ? bytes / (cpu_ms * 1e-3) / 1e9 : 0.0;
+        printf("  %-36.36s %8.3f %8.1f %8.3f %8.3f %8.1f %8.4f%%\n", TARGETS[i],
+               cpu_ms, cpu_gbs, gpu_ms, ker_ms, gbs, rel * 100.0);
 
-        sum_cpu += cpu_ms;
-        sum_gpu += gpu_ms;
+        sum_cpu   += cpu_ms;
+        sum_gpu   += gpu_ms;
+        if (ker_ms > 0) { sum_ker += ker_ms; sum_bytes += bytes; }
         measured++;
 
         be->release(dev);
@@ -147,21 +177,63 @@ int main(int argc, char **argv)
     }
 
     if (measured) {
-        const double ganho = sum_gpu > 0 ? sum_cpu / sum_gpu : 0.0;
-        printf("\n  agregado: %.2fx  (%.3f ms contra %.3f ms)\n",
-               ganho, sum_cpu, sum_gpu);
+        const double ida_volta = sum_gpu > 0 ? sum_cpu / sum_gpu : 0.0;
+        const double ganho     = sum_ker > 0 ? sum_cpu / sum_ker : ida_volta;
+        const double gbs       = sum_ker > 0
+                               ? sum_bytes / (sum_ker * 1e-3) / 1e9 : 0.0;
 
-        /* O veredito do portao.  A partir do ganho por matmul da para estimar
-         * o teto do split: se `f` da fracao do trabalho vai para a GPU, o
-         * tempo cai para (1-f) + f/ganho. */
-        printf("\n  o que isso implica para o M2:\n");
-        for (double f = 0.3; f <= 0.71; f += 0.2) {
-            const double t_rel = (1.0 - f) + f / (ganho > 0 ? ganho : 1.0);
-            printf("    %2.0f%% do trabalho na GPU -> %.2fx no total"
-                   " -> %.1f tok/s (base 13,5)\n",
-                   f * 100.0, 1.0 / t_rel, 13.5 / t_rel);
+        const double cpu_gbs = sum_cpu > 0 ? sum_bytes / (sum_cpu * 1e-3) / 1e9 : 0;
+
+        /* Banda de STREAMING da CPU, medida por Tests/bench (docs/19).
+         *
+         * O `CPU GB/s` da tabela acima e otimista de proposito de ninguem:
+         * depois de 400 repeticoes o tensor esta no L3 de 36 MB, e o decode
+         * real nao tem essa sorte -- ele toca 2,87 GB por token, vindos da RAM.
+         * Comparar a GPU (lendo da VRAM de verdade) contra a CPU (lendo do L3)
+         * seria comparar coisas diferentes, entao a projecao usa a banda de
+         * RAM. */
+        const double ganho_real = cpu_stream > 0 ? gbs / cpu_stream : ganho;
+
+        printf("\n  CPU quente (L3)       : %.3f ms -- %.0f GB/s\n",
+               sum_cpu, cpu_gbs);
+        printf("  CPU streaming (RAM)   : %.1f GB/s  (medido por bench)\n",
+               cpu_stream);
+        printf("  ida e volta por matmul : %.2fx  (%.3f ms)\n",
+               ida_volta, sum_gpu);
+        if (sum_ker > 0)
+            printf("  kernel sozinho        : %.2fx  (%.3f ms) -- %.0f GB/s\n",
+                   ganho, sum_ker, gbs);
+
+        /* O piso por chamada e o que o `run_layer` do M2 elimina; medi-lo
+         * separado transforma "a GPU e lenta" em "a INTERFACE e lenta", que sao
+         * decisoes de projeto diferentes. */
+        if (sum_ker > 0 && measured)
+            printf("  piso por chamada      : %.3f ms (H2D + lancamento + D2H)\n",
+                   (sum_gpu - sum_ker) / measured);
+
+        /* Se `f` da fracao do trafego vai para a GPU, o tempo cai para
+         * (1-f) + f/ganho.  O ganho usado e o do KERNEL: e o que um
+         * `run_layer` entregaria. */
+        printf("\n  ganho que vale para o decode: %.0f / %.1f = %.2fx\n",
+               gbs, cpu_stream, ganho_real);
+        printf("\n  o que isso implica para o M2 (%.2fx):\n", ganho_real);
+        /* As fracoes sao de TRAFEGO POR TOKEN, nao de VRAM: um expert so ajuda
+         * se a camada inteira dele (os 64) estiver residente, porque qualquer
+         * um pode ser roteado.  A conta esta em docs/18. */
+        static const struct { const char *nome; double f; } P[] = {
+            { "8 GB  atencao + 15 das 46 camadas MoE",  0.57 },
+            { "12 GB atencao + 27 das 46 camadas MoE",  0.73 },
+            { "16 GB atencao + 42 das 46 camadas MoE",  0.92 },
+            { "24 GB tudo residente (18,5 + 1,8 de KV)", 1.00 },
+        };
+        for (int p = 0; p < 4; p++) {
+            const double t_rel = (1.0 - P[p].f)
+                               + P[p].f / (ganho_real > 0 ? ganho_real : 1.0);
+            printf("    %-42s %.2fx -> %.1f tok/s\n",
+                   P[p].nome, 1.0 / t_rel, 13.5 / t_rel);
         }
-        printf("\n  criterio de docs/05: abaixo de 16,2 tok/s o M2 e cancelado.\n\n");
+        printf("\n  criterio de docs/05: abaixo de 16,2 tok/s o M2 e cancelado.\n"
+               "  as fracoes vem da tabela de trafego de docs/18.\n\n");
     }
 
     tt_backend_unload();

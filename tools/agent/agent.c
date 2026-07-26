@@ -211,6 +211,43 @@ static int http_post_sse(const agent *a, const char *body,
     return 0;
 }
 
+/* Pergunta ao servidor qual e a janela de contexto.
+ *
+ * A UI mostra um medidor de contexto, e sem este numero ela assume o default do
+ * Claude -- 200k sobre uma janela que aqui e de 16k, e a barra nunca sai de 1%.
+ * Devolve 0 se o servidor nao responder: melhor a UI usar o default dela do que
+ * o agente nao subir por causa de um medidor. */
+static long long ask_context_window(const agent *a)
+{
+    tt_socket s;
+    if (tt_connect(&s, a->host, a->port) != 0) return 0;
+
+    char req[256];
+    const int n = snprintf(req, sizeof(req),
+        "GET /stats HTTP/1.1\r\nHost: %s:%d\r\nConnection: close\r\n\r\n",
+        a->host, a->port);
+    if (tt_send_all(&s, req, (size_t)n) < 0) { tt_socket_close(&s); return 0; }
+
+    sb acc = {0};
+    char chunk[2048];
+    for (;;) {
+        const long k = tt_recv(&s, chunk, sizeof(chunk));
+        if (k <= 0) break;
+        sb_put(&acc, chunk, (size_t)k);
+        if (acc.len > (64u << 10)) break;
+    }
+    tt_socket_close(&s);
+
+    long long ctx = 0;
+    const char *body = acc.p ? strstr(acc.p, "\r\n\r\n") : NULL;
+    if (body) {
+        const char *at = strstr(body, "\"ctx\":");
+        if (at) ctx = atoll(at + 6);
+    }
+    sb_free(&acc);
+    return ctx;
+}
+
 /* ------------------------------------------------ eventos do stream-json */
 
 /* Um turno em andamento.  O modelo emite o raciocinio primeiro e fecha com
@@ -1724,7 +1761,14 @@ int main(int argc, char **argv)
             ? "\",\"tools\":[]"
             : "\",\"tools\":[\"Read\",\"Write\",\"Edit\",\"Glob\",\"Grep\","
               "\"Bash\"]");
-        sb_str(&e, ",\"mcp_servers\":[],\"apiKeySource\":\"none\"}");
+        sb_str(&e, ",\"mcp_servers\":[],\"apiKeySource\":\"none\"");
+        const long long ctx = ask_context_window(&a);
+        if (ctx > 0) {
+            char cw[64];
+            snprintf(cw, sizeof(cw), ",\"context_window\":%lld", ctx);
+            sb_str(&e, cw);
+        }
+        sb_str(&e, "}");
         emit(&e);
         sb_free(&e);
     }

@@ -6,6 +6,7 @@ rem serve.cmd -- sobe o servidor e abre o chat no navegador.
 rem
 rem   serve.cmd                          padroes
 rem   serve.cmd --port 9000 --ctx 32768  passa qualquer opcao adiante
+rem   serve.cmd --verbose                mostra o que entra e sai no console
 rem   serve.cmd --help                   opcoes do engine
 rem
 rem O container e o tokenizer sao procurados; nada de caminho fixo. Para usar
@@ -13,7 +14,12 @@ rem outro modelo, defina TOOTEGA_MODEL antes de chamar.
 
 set "EXE=%~dp0tootega.exe"
 set "PORT=8080"
-set "CTX=16384"
+rem 150.000 posicoes: 16,2 GB de KV sobre os 18,5 GB de pesos, deixando ~15 GB
+rem livres nesta maquina. E o teto de MEMORIA -- o do modelo e 202.752.
+rem
+rem Nao e o teto util: a 11 tok/s de prefill, encher 150k levaria 3,8 h. Serve
+rem para nunca esbarrar no limite, nao para ser preenchido.
+set "CTX=150000"
 
 if "%~1"=="--help" goto :help
 if "%~1"=="-h"     goto :help
@@ -84,20 +90,17 @@ if not errorlevel 1 (
     exit /b 1
 )
 
-rem --- navegador -----------------------------------------------------------
-rem Aberto em paralelo, com atraso: o servidor le e aquece ~18 GB antes de
-rem aceitar conexao, e uma aba que abre cedo demais mostra erro de conexao.
-
-if not "%TOOTEGA_NO_BROWSER%"=="1" (
-    start "tootega-browser" /min cmd /c "timeout /t 25 /nobreak >nul & start http://127.0.0.1:%PORT%/"
-)
+rem O navegador NAO e aberto: o servidor tambem atende o Cockpit e clientes
+rem OpenAI, e abrir uma aba a forca atrapalha quem nao quer a UI web. Para
+rem usa-la, abra http://127.0.0.1:PORTA/ a mao.
 
 echo.
 echo   modelo     %MODEL%
 echo   tokenizer  %TOK%
+echo   contexto   %CTX% posicoes
 echo   endereco   http://127.0.0.1:%PORT%/
 echo.
-echo   Aquecendo os pesos; o navegador abre sozinho em ~25 s.
+echo   Aquecendo os pesos; leva ~25 s antes do primeiro pedido.
 echo   Ctrl-C encerra. A conversa nao sobrevive ao processo.
 echo.
 
@@ -112,7 +115,8 @@ echo   serve.cmd [opcoes do engine]
 echo.
 echo   Variaveis:
 echo     TOOTEGA_MODEL        caminho do container (default: o mais recente)
-echo     TOOTEGA_NO_BROWSER   =1 para nao abrir o navegador
+echo.
+echo   A UI web fica em http://127.0.0.1:8080/ -- abra a mao se quiser.
 echo.
 "%EXE%" serve
 exit /b 0

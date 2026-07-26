@@ -29,6 +29,7 @@
 #include "compat.h"
 #include "json.h"
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -125,6 +126,23 @@ typedef struct {
  * assinatura de tudo. */
 static int g_tty;
 
+/* `--verbose` -- que a UI sempre passa -- escreve o rastro no stderr, que e
+ * onde o Cockpit ja captura.  Sem isto, "nao aconteceu nada" e indistinguivel
+ * de "travou no connect", "travou esperando resposta" e "o servidor recusou". */
+static int g_verbose;
+
+static void trace(const char *fmt, ...)
+{
+    if (!g_verbose) return;
+    va_list ap;
+    va_start(ap, fmt);
+    fputs("[agent] ", stderr);
+    vfprintf(stderr, fmt, ap);
+    fputc('\n', stderr);
+    va_end(ap);
+    fflush(stderr);
+}
+
 /* Uma linha NDJSON no stdout.  Sempre com flush: a UI le por linha e um buffer
  * segurando eventos parece travamento do agente.
  *
@@ -147,8 +165,20 @@ static int http_post_sse(const agent *a, const char *body,
                          void *ud)
 {
     tt_socket s;
-    if (tt_connect(&s, a->host, a->port) != 0) return -1;
+    trace("conectando em %s:%d (%zu bytes de corpo)", a->host, a->port,
+          strlen(body));
+    if (tt_connect(&s, a->host, a->port) != 0) {
+        trace("connect FALHOU -- o servidor esta no ar em %s:%d?",
+              a->host, a->port);
+        return -1;
+    }
     tt_socket_nodelay(&s);
+
+    /* Sem timeout, um servidor ocupado (ele atende um pedido por vez) deixa o
+     * agente pendurado para sempre, e do lado de fora isso e indistinguivel de
+     * "nao fez nada".  Dez minutos e generoso a 13 tok/s e ainda assim um
+     * teto. */
+    tt_socket_timeout(&s, 600);
 
     sb req = {0};
     char head[512];
@@ -170,16 +200,24 @@ static int http_post_sse(const agent *a, const char *body,
 
     const long sent = tt_send_all(&s, req.p, req.len);
     sb_free(&req);
-    if (sent < 0) { tt_socket_close(&s); return -1; }
+    if (sent < 0) {
+        trace("envio FALHOU");
+        tt_socket_close(&s);
+        return -1;
+    }
+    trace("pedido enviado, esperando resposta");
 
     sb acc = {0};
     char chunk[8192];
     size_t scanned = 0;
-    int in_body = 0;
+    int in_body = 0, frames = 0;
 
     for (;;) {
         const long k = tt_recv(&s, chunk, sizeof(chunk));
-        if (k <= 0) break;
+        if (k <= 0) {
+            if (!in_body) trace("conexao fechou sem resposta (k=%ld)", k);
+            break;
+        }
         sb_put(&acc, chunk, (size_t)k);
 
         if (!in_body) {
@@ -197,10 +235,13 @@ static int http_post_sse(const agent *a, const char *body,
             const size_t n = (size_t)(end - line);
             scanned += n + 2;
 
-            if (n > 6 && !strncmp(line, "data: ", 6))
+            if (n > 6 && !strncmp(line, "data: ", 6)) {
+                if (!frames++) trace("primeiro quadro recebido");
                 on_frame(line + 6, n - 6, ud);
+            }
         }
     }
+    trace("resposta terminada, %d quadros", frames);
 
     /* Resposta nao-SSE (erro do servidor, por exemplo) chega sem quadro. */
     if (in_body && scanned < acc.len && acc.len - scanned > 2)
@@ -1581,7 +1622,14 @@ static void handle_line(agent *a, const char *line, size_t n)
 
     if (tt_json_str_eq(tt_json_get(root, "type"), "user")) {
         sb text = {0};
-        if (user_text_of(root, &text) > 0) run_turn(a, text.p, text.len);
+        if (user_text_of(root, &text) > 0) {
+            trace("turno do usuario: %zu caracteres", text.len);
+            run_turn(a, text.p, text.len);
+        } else {
+            /* Mensagem sem texto extraivel e o modo silencioso de nao
+             * acontecer nada: o agente fica parado e ninguem sabe por que. */
+            trace("mensagem de usuario SEM texto -- linha: %.200s", line);
+        }
         sb_free(&text);
     } else if (tt_json_str_eq(tt_json_get(root, "type"), "control_request")) {
         /* O handshake `initialize` e os pedidos que ainda nao atendemos sao
@@ -1674,6 +1722,7 @@ int main(int argc, char **argv)
         else if (!strcmp(g, "--think"))    a.think = 1;
         else if (!strcmp(g, "--no-think")) a.think = 0;
         else if (!strcmp(g, "--tty") || !strcmp(g, "-i")) g_tty = 1;
+        else if (!strcmp(g, "--verbose")) g_verbose = 1;
         else if (!strcmp(g, "--no-tools")) a.no_tools = 1;
         else if (!strcmp(g, "--yes"))      a.yes = 1;
         else if (!strcmp(g, "--max-steps") && has) a.max_steps = atoi(argv[++i]);
@@ -1775,9 +1824,14 @@ int main(int argc, char **argv)
 
     /* Uma linha NDJSON por evento da UI.  Linha longa (prompt colado com
      * arquivo inteiro) cresce o buffer em vez de ser cortada. */
+    trace("pronto, lendo stdin (servidor %s:%d, cwd %s)",
+          a.host, a.port, a.cwd_abs);
     sb line = {0};
     while (read_line(&line)) {
-        if (line.len) handle_line(&a, line.p, line.len);
+        if (line.len) {
+            trace("stdin: %.160s", line.p);
+            handle_line(&a, line.p, line.len);
+        }
 
         /* O que chegou enquanto uma aprovacao estava pendente entra agora, na
          * ordem em que o usuario mandou. */

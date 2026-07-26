@@ -13,6 +13,7 @@
 #include "tokenizer.h"
 #include "webui.h"
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,6 +32,58 @@
 /* Id do modelo no protocolo.  Um so lugar: `/v1/models` e as respostas tem de
  * concordar, senao cliente que valida o campo rejeita a resposta. */
 #define TT_MODEL_ID "glm-4.7-flash"
+
+/* ------------------------------------------------------------ verbose */
+
+/* `--verbose` mostra no console o que entra e o que sai, em portugues e nao em
+ * JSON cru.
+ *
+ * Existe porque depurar um cliente contra este servidor era adivinhacao: o log
+ * dizia "17 tokens (0 do cache) em 3,29 s" e nada sobre QUEM pediu, com quais
+ * ferramentas, o que o modelo respondeu ou por que o cache nao bateu.  JSON
+ * cru resolveria para uma maquina; para uma pessoa lendo o console as 2 da
+ * manha, nao. */
+static int g_verbose;
+
+static void vlog(const char *fmt, ...)
+{
+    if (!g_verbose) return;
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    fputc('\n', stderr);
+    va_end(ap);
+    fflush(stderr);
+}
+
+/* Um trecho de texto numa linha: sem quebras, cortado, com as reticencias
+ * dizendo que foi cortado. */
+static const char *snippet(const char *s, size_t n, char *dst, size_t cap)
+{
+    size_t w = 0;
+    int space = 0;
+    for (size_t i = 0; i < n && w + 5 < cap; i++) {
+        const unsigned char c = (unsigned char)s[i];
+        if (c == '\n' || c == '\r' || c == '\t' || c == ' ') {
+            if (space || !w) continue;      /* colapsa em um espaco so */
+            space = 1;
+            dst[w++] = ' ';
+            continue;
+        }
+        space = 0;
+        dst[w++] = (char)c;
+    }
+    /* Nao corta no meio de um caractere UTF-8: byte de continuacao e 10xxxxxx,
+     * e deixar meio caractere no console vira lixo. */
+    if (w + 5 >= cap) {
+        while (w && ((unsigned char)dst[w - 1] & 0xC0) == 0x80) w--;
+        if (w) w--;
+        memcpy(dst + w, "...", 3);
+        w += 3;
+    }
+    dst[w] = '\0';
+    return dst;
+}
 
 typedef struct {
     tt_model     *model;
@@ -599,6 +652,56 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
     const int64_t room = s->ctx - s->n_conv - 1;
     if (max_new <= 0 || max_new > room) max_new = room;
 
+    if (g_verbose) {
+        char buf[400];
+        (void)buf;
+        /* Quem falou o que: a forma da conversa importa mais que o conteudo
+         * dela para entender um cliente que se comporta mal. */
+        int n_user = 0, n_asst = 0, n_tool = 0, n_sys = 0;
+        const tt_json *last_user = NULL;
+        for (const tt_json *m = messages->child; m; m = m->next) {
+            const tt_json *role = tt_json_get(m, "role");
+            if      (tt_json_str_eq(role, "user"))      { n_user++; last_user = m; }
+            else if (tt_json_str_eq(role, "assistant")) n_asst++;
+            else if (tt_json_str_eq(role, "tool"))      n_tool++;
+            else if (tt_json_str_eq(role, "system"))    n_sys++;
+        }
+
+        vlog("");
+        vlog("--- pedido -----------------------------------------------");
+        vlog("  conversa    %llu mensagens: %d sistema, %d usuario, "
+             "%d assistente, %d ferramenta",
+             (unsigned long long)messages->count, n_sys, n_user, n_asst, n_tool);
+
+        if (tools) {
+            char names[240];
+            size_t w = 0;
+            for (const tt_json *t = tools->child; t; t = t->next) {
+                const tt_json *fn = tt_json_get(t, "function");
+                char nm[64] = "";
+                if (tt_json_strcpy(tt_json_get(fn ? fn : t, "name"), nm,
+                                   sizeof(nm)) == 0 && w + strlen(nm) + 3 < sizeof(names))
+                    w += (size_t)snprintf(names + w, sizeof(names) - w, "%s%s",
+                                          w ? ", " : "", nm);
+            }
+            names[w] = '\0';
+            vlog("  ferramentas %llu declaradas: %s",
+                 (unsigned long long)tools->count, names);
+        }
+
+        vlog("  opcoes      raciocinio %s, temperatura %.2f, top_p %.2f, "
+             "top_k %d, %s", think ? "LIGADO" : "desligado", temp, top_p, top_k,
+             stream ? "streaming" : "resposta unica");
+
+        if (last_user) {
+            size_t un = 0;
+            const char *ut = tt_json_str(tt_json_get(last_user, "content"), &un);
+            if (ut) vlog("  usuario     \"%s\"", snippet(ut, un, buf, sizeof(buf)));
+        }
+        vlog("  contexto    %lld tokens montados, sobram %lld posicoes",
+             (long long)s->n_conv, (long long)room);
+    }
+
     /* Casamento de prefixo: o que ja esta no KV nao volta a ser computado.
      * Em conversa continuada, so os tokens novos entram no prefill. */
     const int64_t reused = tt_state_match_prefix(s->state, s->conv, s->n_conv);
@@ -614,6 +717,11 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
 
     tt_log("  %lld tokens (%lld do cache) em %.2f s", (long long)s->n_conv,
            (long long)reused, t_prefill);
+    vlog("  prefill     %lld de %lld tokens vieram do cache (%.0f%%), "
+         "%.2f s%s", (long long)reused, (long long)s->n_conv,
+         s->n_conv ? 100.0 * (double)reused / (double)s->n_conv : 0.0,
+         t_prefill,
+         reused ? "" : "  <- cache frio: recomputou o prompt inteiro");
 
     tt_sampler sampler;
     tt_sampler_init(&sampler, temp, top_p, top_k, (uint64_t)(tt_now() * 1e6));
@@ -685,6 +793,14 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
      * E informacao acionavel: o usuario precisa de `--ctx` maior. */
     const char *reason = done_call ? "tool_calls" : (hit_eos ? "stop" : "length");
 
+    /* Copia do texto CRU antes de qualquer corte: logo abaixo `full` perde o
+     * trecho da chamada de ferramenta, e o log verboso quer justamente ele. */
+    char *raw = NULL;
+    if (g_verbose && full) {
+        raw = (char *)malloc(full_len + 1);
+        if (raw) { memcpy(raw, full, full_len); raw[full_len] = '\0'; }
+    }
+
     char *calls = NULL;
     if (done_call && full) {
         calls = (char *)malloc(64u << 10);
@@ -706,6 +822,67 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
                 full_len = (size_t)(cut - full);
             }
         }
+    }
+
+    if (g_verbose) {
+        char buf[400];
+        /* O que o modelo produziu, do jeito que uma pessoa le: primeiro o
+         * raciocinio (se houve), depois a resposta, depois as chamadas. */
+        const char *body = raw ? raw : "";
+        const char *close = strstr(body, "</think>");
+        if (close) {
+            vlog("  raciocinio  %s",
+                 snippet(body, (size_t)(close - body), buf, sizeof(buf)));
+            body = close + 8;
+        }
+        /* A resposta e o que vem ANTES da primeira chamada -- o resto e
+         * marcacao, e ela sai renderizada logo abaixo. */
+        const char *tc = strstr(body, "<tool_call>");
+        const size_t answer_len = tc ? (size_t)(tc - body) : strlen(body);
+        if (answer_len) vlog("  resposta    \"%s\"",
+                             snippet(body, answer_len, buf, sizeof(buf)));
+        /* Uma linha por chamada, no formato `Nome(chave=valor, ...)`.  O JSON
+         * cru cabia na linha, mas ninguem le `{"id":"call_0","type":...}` para
+         * descobrir que o modelo pediu `pwd`. */
+        for (const char *p = strstr(body, "<tool_call>"); p;
+             p = strstr(p, "<tool_call>")) {
+            p += 11;
+            const char *end = strstr(p, "</tool_call>");
+            if (!end) break;
+
+            char line[512];
+            size_t w = 0;
+            const char *ne = strstr(p, "<arg_key>");
+            if (!ne || ne > end) ne = end;
+            size_t nn = (size_t)(ne - p);
+            while (nn && (p[nn - 1] == '\n' || p[nn - 1] == ' ')) nn--;
+            w = jw_put(line, sizeof(line), 0, p, nn);
+            w = jw_put(line, sizeof(line), w, "(", 1);
+
+            int first = 1;
+            for (const char *k = strstr(p, "<arg_key>"); k && k < end;
+                 k = strstr(k, "<arg_key>")) {
+                k += 9;
+                const char *ke = strstr(k, "</arg_key>");
+                const char *v  = ke ? strstr(ke, "<arg_value>") : NULL;
+                const char *ve = v ? strstr(v, "</arg_value>") : NULL;
+                if (!ke || !v || !ve || ve > end) break;
+                v += 11;
+                if (!first) w = jw_put(line, sizeof(line), w, ", ", 2);
+                first = 0;
+                w = jw_put(line, sizeof(line), w, k, (size_t)(ke - k));
+                w = jw_put(line, sizeof(line), w, "=", 1);
+                w = jw_put(line, sizeof(line), w, v, (size_t)(ve - v));
+                k = ve;
+            }
+            line[jw_put(line, sizeof(line), w, ")", 1)] = '\0';
+            vlog("  chamada     %s", snippet(line, strlen(line), buf, sizeof(buf)));
+            p = end + 12;
+        }
+
+        vlog("  fim         %s -- %lld tokens em %.1f s (%.1f tok/s)%s",
+             reason, (long long)made, t_dec, made ? (double)made / t_dec : 0.0,
+             !strcmp(reason, "length") ? "  <- CONTEXTO CHEIO" : "");
     }
 
     char usage[256];
@@ -762,6 +939,7 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
         }
     }
 
+    free(raw);
     free(calls);
     free(full);
     tt_arena_free(&dom);
@@ -798,6 +976,11 @@ static void handle(server *s, const tt_socket *c, const char *peer)
             return;
         }
     }
+
+    /* Rota de tudo o que chega -- `/stats` fica de fora porque a UI web o
+     * consulta a cada 3 s e afogaria o console. */
+    if (g_verbose && strcmp(r.path, "/stats") != 0)
+        vlog("[%s] %s %s  (%zu bytes)", peer, r.method, r.path, r.body_len);
 
     if (!strcmp(r.method, "OPTIONS")) {
         send_status(c, 204, "No Content", "text/plain", "", 0);
@@ -870,6 +1053,7 @@ int tt_cmd_serve(int argc, char **argv)
         else if (!strcmp(a, "--threads") && has)   threads = atoi(argv[++i]);
         else if (!strcmp(a, "--ram-gb") && has)    ram_gb = atof(argv[++i]);
         else if (!strcmp(a, "--no-warm"))          no_warm = 1;
+        else if (!strcmp(a, "--verbose") || !strcmp(a, "-v")) g_verbose = 1;
         else if (!strcmp(a, "--vram-gb") && has)   vram_gb = atof(argv[++i]);
         else if (!strcmp(a, "--gpu"))
             /* `--gpu` sozinho usa o nome padrao; com argumento, o caminho da
@@ -890,7 +1074,8 @@ int tt_cmd_serve(int argc, char **argv)
 
     if (!path || !tok_path)
         return tt_fail("uso: tootega serve <modelo.tootega> --tokenizer "
-                       "<tokenizer.json> [--port 8080] [--ctx 8192]");
+                       "<tokenizer.json> [--port 8080] [--ctx 8192] "
+                       "[--verbose] [--gpu] [--no-warm]");
 
     /* Expor na rede exige as duas coisas.  Um servidor de inferencia aberto e
      * acesso remoto ao modelo e ao disco desta maquina; recusar aqui custa uma

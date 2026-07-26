@@ -67,6 +67,43 @@ float                 *g_y = nullptr; /* alocar por chamada custaria mais que */
 size_t                 g_x_cap = 0;   /* o proprio matmul */
 size_t                 g_y_cap = 0;
 
+/* Staging PAGE-LOCKED do lado do host.
+ *
+ * `cudaMemcpy` a partir de memoria paginavel nao vai direto: o driver copia
+ * para um buffer pinado interno e so entao para o device -- e para 8 KB esse
+ * protocolo custa mais que a transferencia.  Era o grosso do piso de 20 us por
+ * chamada, e num decode com 235 matmuls de atencao por token isso somava 7 ms:
+ * o ganho inteiro do kernel ia embora antes de comecar.
+ *
+ * Aqui o `memcpy` para o buffer pinado e trabalho de CPU puro (~1 us para
+ * 8 KB) e a copia para a VRAM vira DMA assincrono de verdade. */
+float                 *g_hx = nullptr, *g_hy = nullptr;
+size_t                 g_hx_cap = 0, g_hy_cap = 0;
+cudaStream_t           g_stream = nullptr;
+
+int ensure_host(float **p, size_t *cap, size_t need)
+{
+    if (*cap >= need) return 0;
+    if (*p) cudaFreeHost(*p);
+    *p = nullptr;
+    *cap = 0;
+    if (cudaHostAlloc((void **)p, need, cudaHostAllocDefault) != cudaSuccess)
+        return -1;
+    *cap = need;
+    return 0;
+}
+
+int ensure_dev(float **p, size_t *cap, size_t need)
+{
+    if (*cap >= need) return 0;
+    if (*p) cudaFree(*p);
+    *p = nullptr;
+    *cap = 0;
+    if (cudaMalloc((void **)p, need) != cudaSuccess) return -1;
+    *cap = need;
+    return 0;
+}
+
 /* --------------------------------------------------------------- kernels */
 
 /* int4, meia/meia dentro do grupo (docs/14).  Um vetor de 16 bytes cabe
@@ -275,6 +312,14 @@ int launch(const DevTensor &t, float *dy, const float *dx)
 
 int be_init(int device)
 {
+    /* Espera ATIVA na sincronizacao.
+     *
+     * O default (`ScheduleAuto`) devolve a thread ao SO enquanto o kernel roda,
+     * e acordar de volta custa dezenas de microssegundos -- mais que o proprio
+     * matmul de 8 KB de ativacao.  Num decode com centenas de matmuls por
+     * token, e a diferenca entre ganho e prejuizo.  Queima um core, e a
+     * maquina tem vinte. */
+    cudaSetDeviceFlags(cudaDeviceScheduleSpin);
     if (cudaSetDevice(device) != cudaSuccess) return -1;
 
     cudaDeviceProp prop;
@@ -288,6 +333,11 @@ int be_init(int device)
     g_iface.vram_total = totalB;
     g_iface.vram_free  = freeB;
 
+    /* Stream proprio: o default sincroniza com tudo o que o processo fizer com
+     * CUDA, e nao queremos que uma ferramenta de medicao rodando ao lado mude
+     * o tempo do decode. */
+    if (cudaStreamCreate(&g_stream) != cudaSuccess) return -1;
+
     g_tensors.clear();
     g_tensors.push_back(DevTensor{});      /* slot 0 = TT_DEV_NONE */
     return 0;
@@ -300,8 +350,11 @@ void be_shutdown(void)
         if (t.scales) cudaFree(t.scales);
     }
     g_tensors.clear();
-    if (g_x) { cudaFree(g_x); g_x = nullptr; g_x_cap = 0; }
-    if (g_y) { cudaFree(g_y); g_y = nullptr; g_y_cap = 0; }
+    if (g_x)  { cudaFree(g_x);      g_x = nullptr;  g_x_cap = 0; }
+    if (g_y)  { cudaFree(g_y);      g_y = nullptr;  g_y_cap = 0; }
+    if (g_hx) { cudaFreeHost(g_hx); g_hx = nullptr; g_hx_cap = 0; }
+    if (g_hy) { cudaFreeHost(g_hy); g_hy = nullptr; g_hy_cap = 0; }
+    if (g_stream) { cudaStreamDestroy(g_stream); g_stream = nullptr; }
     cudaDeviceReset();
 }
 
@@ -361,19 +414,18 @@ int be_matmul(float *y, tt_dev_tensor id, const float *x)
     const size_t xb = (size_t)t.cols * sizeof(float);
     const size_t yb = (size_t)t.rows * sizeof(float);
 
-    if (g_x_cap < xb) {
-        if (g_x) cudaFree(g_x);
-        if (cudaMalloc(&g_x, xb) != cudaSuccess) { g_x_cap = 0; return -1; }
-        g_x_cap = xb;
-    }
-    if (g_y_cap < yb) {
-        if (g_y) cudaFree(g_y);
-        if (cudaMalloc(&g_y, yb) != cudaSuccess) { g_y_cap = 0; return -1; }
-        g_y_cap = yb;
-    }
+    if (ensure_dev(&g_x, &g_x_cap, xb) != 0) return -1;
+    if (ensure_dev(&g_y, &g_y_cap, yb) != 0) return -1;
 
     /* A unica travessia do PCIe: 8 KB de ativacao para la, `rows` floats de
-     * volta. */
+     * volta.
+     *
+     * `cudaMemcpy` sincrono e paginavel, de proposito.  A versao com buffer
+     * pinado e `cudaMemcpyAsync` num stream proprio foi escrita, medida e
+     * DESCARTADA: o piso por chamada subiu de 0,019 para 0,068 ms.  Para 8 KB,
+     * o caminho rapido interno do driver ganha do protocolo assincrono, e
+     * `cudaDeviceScheduleSpin` nao mudou nada.  Fica registrado para nao ser
+     * "otimizado" de novo. */
     if (cudaMemcpy(g_x, x, xb, cudaMemcpyHostToDevice) != cudaSuccess) return -1;
     if (launch(t, g_y, g_x) != 0) return -1;
     if (cudaMemcpy(y, g_y, yb, cudaMemcpyDeviceToHost) != cudaSuccess) return -1;
@@ -397,17 +449,8 @@ double be_bench(tt_dev_tensor id, int reps)
 
     const size_t xb = (size_t)t.cols * sizeof(float);
     const size_t yb = (size_t)t.rows * sizeof(float);
-    if (g_x_cap < xb) {
-        if (g_x) cudaFree(g_x);
-        if (cudaMalloc(&g_x, xb) != cudaSuccess) { g_x_cap = 0; return -1.0; }
-        g_x_cap = xb;
-        cudaMemset(g_x, 0, xb);
-    }
-    if (g_y_cap < yb) {
-        if (g_y) cudaFree(g_y);
-        if (cudaMalloc(&g_y, yb) != cudaSuccess) { g_y_cap = 0; return -1.0; }
-        g_y_cap = yb;
-    }
+    if (ensure_dev(&g_x, &g_x_cap, xb) != 0) return -1.0;
+    if (ensure_dev(&g_y, &g_y_cap, yb) != 0) return -1.0;
 
     for (int i = 0; i < 8; i++) launch(t, g_y, g_x);   /* aquece o clock */
     cudaDeviceSynchronize();
@@ -425,6 +468,56 @@ double be_bench(tt_dev_tensor id, int reps)
     cudaEventDestroy(a);
     cudaEventDestroy(b);
     return (double)ms / reps;
+}
+
+/* `n` matmuls sobre a mesma entrada, uma ida so.
+ *
+ * O ganho nao esta em fundir kernels -- sao os mesmos -- e sim em pagar o
+ * protocolo uma vez: um H2D, `n` lancamentos assincronos sem barreira entre
+ * eles, e um bloco de D2H.  Numa camada MoE isso troca 15 idas e voltas por
+ * uma. */
+int be_matmul_many(float *const *y, const tt_dev_tensor *ids, int n,
+                   const float *x)
+{
+    if (n <= 0 || n > 64) return -1;
+
+    /* Todos compartilham `x`, entao `cols` tem de bater. */
+    const DevTensor &first = g_tensors[ids[0]];
+    const size_t xb = (size_t)first.cols * sizeof(float);
+    size_t yb_total = 0;
+    for (int i = 0; i < n; i++) {
+        if (ids[i] == TT_DEV_NONE || ids[i] >= g_tensors.size()) return -1;
+        const DevTensor &t = g_tensors[ids[i]];
+        if (!t.data || t.cols != first.cols) return -1;
+        yb_total += (size_t)t.rows * sizeof(float);
+    }
+
+    if (ensure_dev(&g_x, &g_x_cap, xb) != 0) return -1;
+    if (ensure_dev(&g_y, &g_y_cap, yb_total) != 0) return -1;
+    if (ensure_host(&g_hy, &g_hy_cap, yb_total) != 0) return -1;
+
+    if (cudaMemcpy(g_x, x, xb, cudaMemcpyHostToDevice) != cudaSuccess) return -1;
+
+    size_t off = 0;
+    for (int i = 0; i < n; i++) {
+        const DevTensor &t = g_tensors[ids[i]];
+        if (launch(t, g_y + off / sizeof(float), g_x) != 0) return -1;
+        off += (size_t)t.rows * sizeof(float);
+    }
+
+    /* Uma copia so para todos os resultados: eles saem contiguos na VRAM.
+     * Aqui o buffer pinado paga a pena porque a copia e grande (a camada MoE
+     * inteira de uma vez) e ela SUBSTITUI n copias pequenas. */
+    if (cudaMemcpy(g_hy, g_y, yb_total, cudaMemcpyDeviceToHost) != cudaSuccess)
+        return -1;
+
+    off = 0;
+    for (int i = 0; i < n; i++) {
+        const size_t nb = (size_t)g_tensors[ids[i]].rows * sizeof(float);
+        memcpy(y[i], (const char *)g_hy + off, nb);
+        off += nb;
+    }
+    return 0;
 }
 
 void be_sync(void) { cudaDeviceSynchronize(); }
@@ -452,6 +545,7 @@ TT_EXPORT const tt_backend *tootega_backend(void)
     g_iface.matmul   = be_matmul;
     g_iface.sync     = be_sync;
     g_iface.bench    = be_bench;
+    g_iface.matmul_many = be_matmul_many;
     snprintf(g_iface.name, sizeof(g_iface.name), "CUDA (nao inicializado)");
     return &g_iface;
 }

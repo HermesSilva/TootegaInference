@@ -20,7 +20,7 @@
 
 #include <stdint.h>
 
-#define TT_BACKEND_ABI 2
+#define TT_BACKEND_ABI 3
 
 /* Identificador opaco de um tensor ja residente na VRAM. */
 typedef uint32_t tt_dev_tensor;
@@ -61,6 +61,18 @@ typedef struct {
      * do M2 e uma camada inteira no device, decidir pela medida do ida-e-volta
      * seria decidir pelo numero errado.  Devolve -1 se nao souber medir. */
     double (*bench)(tt_dev_tensor w, int reps);
+
+    /* `n` matmuls INDEPENDENTES sobre a mesma entrada, numa ida so.
+     *
+     * O piso de ~20 us por chamada de `matmul` (H2D + lancamento + D2H +
+     * sincronizacao) e o que come o ganho: uma camada MoE faz 15 matmuls e
+     * pagaria 300 us de protocolo para 400 us de trabalho.  Aqui `x` sobe uma
+     * vez, os `n` kernels sao enfileirados sem barreira entre eles, e so os
+     * resultados descem -- juntos.
+     *
+     * `y[i]` tem `rows` do tensor `w[i]`.  Devolve 0 em sucesso. */
+    int (*matmul_many)(float *const *y, const tt_dev_tensor *w, int n,
+                       const float *x);
 } tt_backend;
 
 /* Assinatura do simbolo exportado pela DLL. */

@@ -4,6 +4,7 @@
 #include "common.h"
 #include "compat.h"
 #include "forward.h"
+#include "offload.h"
 #include "json.h"
 #include "kernels.h"
 #include "model.h"
@@ -854,7 +855,8 @@ int tt_cmd_serve(int argc, char **argv)
     const char *path = NULL, *tok_path = NULL, *host = NULL, *key = NULL;
     int port = 8080, threads = 20, no_warm = 0;
     int64_t ctx = 8192;
-    double ram_gb = 0;
+    double ram_gb = 0, vram_gb = 0;
+    const char *gpu_dll = NULL;
 
     for (int i = 0; i < argc; i++) {
         const char *a = argv[i];
@@ -867,6 +869,12 @@ int tt_cmd_serve(int argc, char **argv)
         else if (!strcmp(a, "--threads") && has)   threads = atoi(argv[++i]);
         else if (!strcmp(a, "--ram-gb") && has)    ram_gb = atof(argv[++i]);
         else if (!strcmp(a, "--no-warm"))          no_warm = 1;
+        else if (!strcmp(a, "--vram-gb") && has)   vram_gb = atof(argv[++i]);
+        else if (!strcmp(a, "--gpu"))
+            /* `--gpu` sozinho usa o nome padrao; com argumento, o caminho da
+             * DLL.  O proximo token so e consumido se nao for outra opcao. */
+            gpu_dll = (has && argv[i + 1][0] != '-') ? argv[++i]
+                                                     : "tootega_cuda.dll";
         else if (a[0] == '-') return tt_fail("serve: opcao desconhecida '%s'", a);
         else if (!path) path = a;
         else return tt_fail("serve: argumento extra '%s'", a);
@@ -907,6 +915,14 @@ int tt_cmd_serve(int argc, char **argv)
     /* Aquece antes de aceitar conexao. Sem isto o primeiro usuario paga a
      * leitura de 18 GB do disco espalhada pelo laco de decode -- 5x mais lento
      * por token -- e nao ha nada na tela que explique a espera. */
+    /* GPU antes do aquecimento: o que subir para a VRAM nao precisa ser
+     * tocado na RAM depois. */
+    tt_gpu_plan gplan;
+    if (gpu_dll) {
+        tt_gpu_place(&model.c, gpu_dll, vram_gb, &gplan);
+        tt_gpu_print(&gplan);
+    }
+
     if (!no_warm) {
         char wb[64];
         const double tw = tt_now();

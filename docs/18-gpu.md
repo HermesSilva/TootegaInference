@@ -172,10 +172,62 @@ Ela assume que a eficiência de 41% se mantém na placa nova e que a atenção, 
 softmax e o roteamento também migram. O que está **medido** é a linha da 2060
 SUPER, e mesmo essa em kernel isolado — não em decode completo.
 
+## A GPU ligada ao engine — e o resultado negativo
+
+O kernel rápido foi ligado ao caminho do forward: `src/offload.c` sobe tensores
+para a VRAM por prioridade de tráfego, `tt_matmul` e `tt_matmul_batch` seguem o
+tensor, e `--gpu` liga tudo. Funciona, é opcional, e **é mais lento que não
+usar GPU nenhuma**:
+
+```
+CPU pura                                14,30 e 14,47 tok/s
+--gpu, tudo o que couber (6,14 GB)      13,67 e 13,72 tok/s
+--gpu, so tensores grandes (6,40 GB)    12,00 e 12,26 tok/s   VRAM esgotada
+--gpu, com 1,6 GB de folga (5,71 GB)    13,58 e 11,74 tok/s
+```
+
+Mesmo prompt, mesmo container, `temperature 0`. **Nenhuma configuração ganha
+da CPU.**
+
+### Por quê
+
+O piso de **17 µs por chamada** contra o que a GPU economiza em cada matmul:
+
+| tensor | CPU | GPU | economia | veredito |
+|---|---|---|---|---|
+| expert 1,5 MB | 22 µs | 9 µs | 13 µs | **prejuízo** |
+| q_b 2,0 MB | 29 µs | 11 µs | 18 µs | empate |
+| o_proj 5,2 MB | 76 µs | 30 µs | 46 µs | ganho |
+
+A atenção faz ~5 matmuls por camada, chamados **um a um** porque são
+sequenciais (`q_a → q_b`): 235 chamadas por token, 4 ms só de protocolo. Os
+experts escapam — os 15 de uma camada vão num `matmul_many` e pagam o protocolo
+uma vez —, mas em 8 GB só cabem 13 das 46 camadas.
+
+Tentativas medidas e descartadas, cada uma registrada no código para não serem
+"otimizadas" de novo:
+
+- **Buffer pinado + `cudaMemcpyAsync`**: o piso *subiu* de 0,019 para 0,068 ms.
+  Para 8 KB, o caminho rápido interno do driver ganha do protocolo assíncrono.
+- **`cudaDeviceScheduleSpin`**: nenhuma diferença.
+- **Filtro de tamanho mínimo** para o que sobe: piorou, porque encheu a VRAM
+  com tensores grandes e o driver começou a paginar.
+
+### O que isso não invalida
+
+O kernel continua **2,6× mais rápido que a CPU** e o portão continua passando.
+O que a medição mostra é que **a granularidade está errada**, não que a GPU não
+sirva: com um matmul por chamada, o protocolo custa mais que o trabalho que ele
+carrega.
+
+É a mesma lição de `docs/17` numa forma nova — a peça isolada ficou rápida e o
+sistema ficou mais lento, porque o gargalo mudou de lugar e ninguém tinha
+medido o novo.
+
 ## O que ainda precisa ser escrito
 
-O ganho acima **não existe hoje**: com a interface atual, um matmul por
-chamada, o ida-e-volta come quase tudo (1,11×).
+O ganho projetado **não existe hoje**: com um matmul por chamada, o ida-e-volta
+come tudo (1,11× no portão, e prejuízo no decode real).
 
 1. **`run_layer` no device.** Uma camada inteira por lançamento, ativação
    cruzando o PCIe duas vezes por camada em vez de trinta. É o desenho de

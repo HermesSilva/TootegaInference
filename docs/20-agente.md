@@ -274,23 +274,56 @@ mostra zero.
 Não é falha: rodar local não custa nem tem cota. O medidor que continua fazendo
 sentido é o de **contexto**, e esse alimentamos bem.
 
-## O custo de desligar o raciocínio
+## O custo de desligar o raciocínio — medido
 
 `</think>` fechado antes de começar não é truque: é a mesma construção que o
 template usa para turnos de assistente já concluídos, então o modelo a viu no
-treino. Medido no mesmo prompt (`17 × 23`, mostre a conta):
+treino.
 
-| | tempo | tokens | rascunho | resposta |
+`Tests/gentest.exe --think` / `--no-think`, 12 prompts, amostragem gulosa:
+
+| orçamento | | rep4 | **parou** | tempo |
 |---|---|---|---|---|
-| `think=true` | 40,3 s | 527 | 1471 caracteres | 391 correta |
-| `think=false` | 8,1 s | 112 | 0 | 391 correta |
+| 96 tokens | com raciocínio | 5,3% | **0/12** | — |
+| | sem | 0,9% | 9/12 | — |
+| 400 tokens | com raciocínio | **13,8%** | **4/12** | 354 s |
+| | sem | 1,7% | **12/12** | 78 s |
 
-**5× mais rápido, 4,7× menos tokens.** Um prompt de aritmética não é amostra —
-mede que o mecanismo funciona, não o que se perde. A quantificação honesta é o
-`Tests/gentest.exe` nos 12 prompts com e sem, comparando `match@ref` e `rep4`.
+**Com 400 tokens o raciocínio ainda não termina 8 dos 12 prompts**, repete 8×
+mais 4-gramas — 13,8% encosta no limiar de degeneração de 15% — e custa 4,5×
+o tempo.
 
-No agente o default é **desligado**: 3× menos tokens por turno, e a 13 tok/s
-essa é a diferença entre uma tarefa de 7 e uma de 20 minutos.
+O texto explica o número. Para *"Qual é a capital do Brasil? Responda em uma
+frase"*:
+
+```
+1.  **Analyze the Request:** ... Constraint: "Responda em uma frase."
+2.  **Identify the Fact:** The capital of Brazil is Brasília.
+3.  **Draft the Response (Internal Monologue/Drafting):**
+    *Draft 1:* A capital do Brasil é Brasília.
+    *Draft 2:* Brasília é a capital do Brasil.
+    *Draft 3:* A cidade de Brasília é a capital do Brasil.
+4.  **Select the Best Option:** ...
+5.  **Final Polish (Portuguese):** ...
+6.  **Check Constraints:** Is it one sente          <- cortado aqui
+```
+
+Seis etapas em inglês e três rascunhos alternativos para um fato de uma
+palavra, e cortado antes de responder. O rascunho deste modelo é
+performático — enumera, escreve versões, se autoavalia — em vez de calcular.
+
+Duas ressalvas: os 12 prompts são curtos e diretos, que é o regime em que
+raciocinar é conhecido por não ajudar; e isto mede a *implementação* de
+raciocínio deste modelo, não a ideia. Falta o teste oposto — problema de
+vários passos com estado intermediário — e escolher esse conjunto agora, depois
+de ver o resultado, seria escolher o teste pela resposta.
+
+Para chat e agente, o default **desligado** está certo, e agora com número.
+
+Uma nota de método que caiu junto: até esta medição o `gentest` tinha `<think>`
+**fixo no código**. Todos os números de qualidade de geração do projeto eram
+com raciocínio, enquanto o chat e o agente rodam sem — medindo um regime e
+entregando outro.
 
 ## O que ainda não existe
 

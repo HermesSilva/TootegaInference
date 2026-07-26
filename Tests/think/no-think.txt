@@ -1,0 +1,139 @@
+
+12 prompts, ate 96 tokens cada, amostragem gulosa
+engine avx2+fma, 20 threads, kv f32, build 118ac8a1a06f
+
+  BF16 (referencia) (9365 tensores em BF16) ............  123 s
+  models\glm47flash-v3\model.tootega     ............  78 s
+
+  container                              match@ref     rep4    parou    tok/s
+  BF16 (referencia) (9365 tensores em BF16)      40.6     0.7%      9/12     3.97
+  models\glm47flash-v3\model.tootega          10.5     0.9%      9/12     6.40
+
+  match@ref: tokens iniciais iguais aos do BF16 antes de divergir
+  rep4:      4-gramas repetidos; acima de ~15% e degeneracao
+  parou:     prompts que terminaram em EOS dentro do orcamento
+
+  --- Qual e a capital do Brasil? Responda em uma frase.
+  [BF16 (referencia) (9365 tensores em BF16)] A capital do Brasil é Brasília.
+  [models\glm47flash-v3\model.tootega] A capital do Brasil é Brasília.
+
+  --- Quanto e 17 vezes 23? Mostre a conta.
+  [BF16 (referencia) (9365 tensores em BF16)] A conta é a seguinte:
+
+$$
+\begin{array}{r}
+  \phantom{0}23 \\
+\times \phantom{0}17 \\
+\hline
+  161 \quad (\text{7 vezes 23}) \\
+ 230 \quad (\text{1 vez 23, deslocado para a esquerda}) \\
+\hline
+ 391
+\end{array}
+$$
+
+**Resultado:** 391
+  [models\glm47flash-v3\model.tootega] A conta é:
+
+$$17 \times 23 = 391$$
+
+**Explicação passo a passo:**
+
+1.  Multiplica 17 por 3 (as unidades):
+    $$17 \times 3 = 51$$
+2.  Multiplica 17 por 2 (as dezenas):
+    $$17 \times 2 = 34$$
+3.  Soma os resultados, lembrando de colocar o zero no final
+
+  --- Escreva uma frase curta sobre o mar.
+  [BF16 (referencia) (9365 tensores em BF16)] O mar é um vasto oceano de infinitas possibilidades.
+  [models\glm47flash-v3\model.tootega] O mar é um vasto oceano de infinitas possibilidades.
+
+  --- Liste tres cores primarias, uma por linha.
+  [BF16 (referencia) (9365 tensores em BF16)] Vermelho
+Azul
+Amarelo
+  [models\glm47flash-v3\model.tootega] Vermelho
+Azul
+Amarelo
+
+  --- Explique em duas frases o que e memoria cache.
+  [BF16 (referencia) (9365 tensores em BF16)] A memória cache é um banco de dados temporário e rápido que armazena dados frequentemente usados para acelerar o acesso a eles. Ela funciona como um intermediário entre a memória principal e o processador, reduzindo o tempo de espera para carregar informações.
+  [models\glm47flash-v3\model.tootega] A memória cache é um banco de dados temporário e rápido localizado dentro do processador que armazena dados frequentemente usados para acelerar o acesso e reduzir o tempo de resposta. Ela funciona como um "atalho" inteligente, mantendo as informações mais importantes à mão para que o computador não precise buscar tudo no armazenamento principal.
+
+  --- Traduza para o ingles: o gato dorme no sofa.
+  [BF16 (referencia) (9365 tensores em BF16)] The cat sleeps on the sofa.
+  [models\glm47flash-v3\model.tootega] The cat sleeps on the sofa.
+
+  --- What is the capital of France? Answer in one sentence.
+  [BF16 (referencia) (9365 tensores em BF16)] The capital of France is Paris.
+  [models\glm47flash-v3\model.tootega] The capital of France is Paris.
+
+  --- Write a Python function that reverses a string.
+  [BF16 (referencia) (9365 tensores em BF16)] Here are two common ways to write this function in Python.
+
+### Option 1: Using Slicing (The Pythonic Way)
+This is the most concise and efficient method in Python.
+
+```python
+def reverse_string(s):
+    return s[::-1]
+
+# Example usage:
+text = "Hello World"
+print(reverse_string(text))  # Output: dlroW olleH
+```
+
+### Option 2: Using a Loop
+This method is useful if you are learning
+  [models\glm47flash-v3\model.tootega] Here is a simple and efficient Python function to reverse a string.
+
+In Python, strings are **immutable**, meaning you cannot change them in place. The most "Pythonic" way to do this is using slicing.
+
+```python
+def reverse_string(text):
+    """
+    Reverses the input string.
+    
+    Args:
+        text (str): The string to be reversed.
+        
+    Returns:
+        str: The reversed string.
+    """
+    return text[::-1]
+
+#
+
+  --- Name three prime numbers greater than 10.
+  [BF16 (referencia) (9365 tensores em BF16)] Here are three prime numbers greater than 10:
+
+1.  **11**
+2.  **13**
+3.  **17**
+  [models\glm47flash-v3\model.tootega] Here are three prime numbers greater than 10:
+
+1.  **11**
+2.  **13**
+3.  **17**
+
+  --- Explique por que o ceu e azul, em uma frase.
+  [BF16 (referencia) (9365 tensores em BF16)] O céu é azul porque a atmosfera da Terra dispersa a luz solar, fazendo com que a luz azul seja a que mais se espalha pelo ar.
+  [models\glm47flash-v3\model.tootega] O céu é azul porque a atmosfera da Terra dispersa a luz solar, fazendo com que o azul seja a cor que mais se destaca ao nosso redor.
+
+  --- Complete: era uma vez uma casa
+  [BF16 (referencia) (9365 tensores em BF16)] Aqui estão algumas opções para completar a história, dependendo do tom que você deseja:
+
+**Opção 1 (Clássica e Mágica):**
+> Era uma vez uma casa encantada, escondida no meio de uma floresta densa e misteriosa. Ela tinha janelas que pareciam olhos e portas que balançavam ao vento. Ninguém ousava entrar, mas um dia,
+  [models\glm47flash-v3\model.tootega] Aqui estão algumas opções para completar essa frase, dependendo do tipo de história que você quer contar:
+
+**A) A versão clássica (Conto de fadas)**
+> Era uma vez uma casa **que parecia um castelo**, com telhados vermelhos e janelas arredondadas. Dentro dela, vivia um velho sapato que cuidava de todos os animais que passavam por ali.
+
+
+
+  --- Qual a diferenca entre RAM e disco? Uma frase.
+  [BF16 (referencia) (9365 tensores em BF16)] RAM é memória volátil de acesso rápido usada para processamento temporário, enquanto o disco é armazenamento não volátil para dados permanentes.
+  [models\glm47flash-v3\model.tootega] RAM é memória volátil usada para processamento rápido, enquanto o disco é armazenamento permanente para guardar dados.
+

@@ -1,0 +1,120 @@
+
+12 prompts, ate 400 tokens cada, amostragem gulosa
+engine avx2+fma, 20 threads, kv f32, build 118ac8a1a06f
+
+  models\glm47flash-v3\model.tootega     ............  78 s
+
+  container                              match@ref     rep4    parou    tok/s
+  models\glm47flash-v3\model.tootega             -     1.7%     12/12    11.12
+
+  match@ref: tokens iniciais iguais aos do BF16 antes de divergir
+  rep4:      4-gramas repetidos; acima de ~15% e degeneracao
+  parou:     prompts que terminaram em EOS dentro do orcamento
+
+  --- Qual e a capital do Brasil? Responda em uma frase.
+  [models\glm47flash-v3\model.tootega] A capital do Brasil é Brasília.
+
+  --- Quanto e 17 vezes 23? Mostre a conta.
+  [models\glm47flash-v3\model.tootega] A conta é:
+
+$$17 \times 23 = 391$$
+
+**Explicação passo a passo:**
+
+1.  Multiplica 17 por 3 (as unidades):
+    $$17 \times 3 = 51$$
+2.  Multiplica 17 por 2 (as dezenas):
+    $$17 \times 2 = 34$$
+3.  Soma os resultados, lembrando de colocar o zero no final (deslocando uma casa para a esquerda):
+    $$510 + 340 = 391$$
+
+  --- Escreva uma frase curta sobre o mar.
+  [models\glm47flash-v3\model.tootega] O mar é um vasto oceano de infinitas possibilidades.
+
+  --- Liste tres cores primarias, uma por linha.
+  [models\glm47flash-v3\model.tootega] Vermelho
+Azul
+Amarelo
+
+  --- Explique em duas frases o que e memoria cache.
+  [models\glm47flash-v3\model.tootega] A memória cache é um banco de dados temporário e rápido localizado dentro do processador que armazena dados frequentemente usados para acelerar o acesso e reduzir o tempo de resposta. Ela funciona como um "atalho" inteligente, mantendo as informações mais importantes à mão para que o computador não precise buscar tudo no armazenamento principal.
+
+  --- Traduza para o ingles: o gato dorme no sofa.
+  [models\glm47flash-v3\model.tootega] The cat sleeps on the sofa.
+
+  --- What is the capital of France? Answer in one sentence.
+  [models\glm47flash-v3\model.tootega] The capital of France is Paris.
+
+  --- Write a Python function that reverses a string.
+  [models\glm47flash-v3\model.tootega] Here is a simple and efficient Python function to reverse a string.
+
+In Python, strings are **immutable**, meaning you cannot change them in place. The most "Pythonic" way to do this is using slicing.
+
+```python
+def reverse_string(text):
+    """
+    Reverses the input string.
+    
+    Args:
+        text (str): The string to be reversed.
+        
+    Returns:
+        str: The reversed string.
+    """
+    return text[::-1]
+
+# Example usage:
+original = "Hello, World!"
+reversed_text = reverse_string(original)
+
+print(f"Original: {original}")
+print(f"Reversed: {reversed_text}")
+```
+
+### How it works:
+The syntax `text[::-1]` is a slice notation.
+*   The first colon (`:`) tells Python to take the whole string.
+*   The second colon (`:`) indicates a step.
+*   `-1` tells Python to step backwards through the string, effectively reversing it.
+
+### Alternative (Using a Loop)
+If you are doing this for a homework assignment that requires you to understand the logic behind the scenes, here is how you would do it using a `for` loop:
+
+```python
+def reverse_string_loop(text):
+    reversed_text = ""
+    for char in text:
+        reversed_text = char + reversed_text
+    return reversed_text
+```
+
+  --- Name three prime numbers greater than 10.
+  [models\glm47flash-v3\model.tootega] Here are three prime numbers greater than 10:
+
+1.  **11**
+2.  **13**
+3.  **17**
+
+  --- Explique por que o ceu e azul, em uma frase.
+  [models\glm47flash-v3\model.tootega] O céu é azul porque a atmosfera da Terra dispersa a luz solar, fazendo com que o azul seja a cor que mais se destaca ao nosso redor.
+
+  --- Complete: era uma vez uma casa
+  [models\glm47flash-v3\model.tootega] Aqui estão algumas opções para completar essa frase, dependendo do tipo de história que você quer contar:
+
+**A) A versão clássica (Conto de fadas)**
+> Era uma vez uma casa **que parecia um castelo**, com telhados vermelhos e janelas arredondadas. Dentro dela, vivia um velho sapato que cuidava de todos os animais que passavam por ali.
+
+**B) A versão divertida (Humor)**
+> Era uma vez uma casa **que tinha três andares, mas só tinha uma porta**. Todo mundo entrava e saía pela janela.
+
+**C) A versão misteriosa (Suspense)**
+> Era uma vez uma casa **que estava sempre fechada e ninguém tinha entrado nela há mais de cinquenta anos**. Até que, numa noite de tempestade, a porta se abriu sozinha...
+
+**D) A versão poética**
+> Era uma vez uma casa **de madeira, onde o vento cantava no telhado** e o cheiro de pão quente saía pela chaminé.
+
+Qual delas você prefere?
+
+  --- Qual a diferenca entre RAM e disco? Uma frase.
+  [models\glm47flash-v3\model.tootega] RAM é memória volátil usada para processamento rápido, enquanto o disco é armazenamento permanente para guardar dados.
+

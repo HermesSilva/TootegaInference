@@ -105,6 +105,9 @@ void tt_net_shutdown(void);
 int  tt_listen(tt_socket *s, const char *host, int port, int backlog);
 int  tt_accept(const tt_socket *server, tt_socket *client, char *peer, size_t peer_len);
 
+/* Lado cliente: o agente fala com o servidor por HTTP.  So IP literal. */
+int  tt_connect(tt_socket *s, const char *host, int port);
+
 /* Retornam bytes movidos, 0 no fim da conexao, -1 em erro. */
 long tt_recv(const tt_socket *s, void *buf, size_t n);
 long tt_send_all(const tt_socket *s, const void *buf, size_t n);

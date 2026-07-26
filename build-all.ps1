@@ -142,7 +142,59 @@ function Test-Stale($t) {
     return $false
 }
 
+# ------------------------------------------------------- sintaxe da UI
+
+# A UI web e um literal de string C. Um `\n` a mais no lugar errado vira
+# backslash-n DENTRO do codigo JS, o script inteiro deixa de ser parseado e a
+# pagina serve 200 com todos os listeners mortos -- foi o que aconteceu com a
+# tela inicial. O compilador nao ve, o teste de HTTP tampouco: os bytes chegam.
+#
+# Entao o unico jeito de pegar isto no build e parsear o JS. Se `node` nao
+# existir, o build segue -- e checagem extra, nao dependencia.
+function Test-WebUi([string]$root) {
+    $node = Get-Command node -ErrorAction SilentlyContinue
+    if (-not $node) { return $true }
+
+    $src = Get-Content (Join-Path $root 'src\webui.h') -Raw
+    $src = $src.Substring($src.IndexOf('TT_WEBUI_HTML'))
+
+    $sb = [System.Text.StringBuilder]::new()
+    foreach ($m in [regex]::Matches($src, '"((?:[^"\\]|\\.)*)"')) {
+        [void]$sb.Append([regex]::Replace($m.Groups[1].Value, '\\(.)', {
+            param($e)
+            switch ($e.Groups[1].Value) {
+                'n'  { "`n" } 't' { "`t" } 'r' { "`r" }
+                '"'  { '"' }  "'" { "'" }  '\' { '\' }
+                default { '\' + $e.Groups[1].Value }
+            }
+        }))
+    }
+    $html = $sb.ToString()
+
+    $i = $html.IndexOf('<script>') + 8
+    $j = $html.IndexOf('</script>')
+    if ($i -lt 8 -or $j -lt $i) {
+        Write-Host '  webui: nao achei o <script>' -ForegroundColor Red
+        return $false
+    }
+
+    $tmp = Join-Path $env:TEMP 'tt_webui_check.js'
+    Set-Content $tmp -Value $html.Substring($i, $j - $i) -Encoding utf8 -NoNewline
+    $out = & node --check $tmp 2>&1
+    Remove-Item $tmp -ErrorAction SilentlyContinue
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host ''
+        Write-Host '=== webui ' .PadRight(64, '=') -ForegroundColor Red
+        Write-Host '  JS embutido nao compila -- a pagina abriria inerte:' -ForegroundColor Red
+        $out | Select-Object -First 6 | ForEach-Object { Write-Host "  $_" }
+        return $false
+    }
+    return $true
+}
+
 # ---------------------------------------------------------------- build
+
+if (-not (Test-WebUi $Root)) { $script:webuiBad = $true }
 
 $forward = @()
 if ($Dbg) { $forward += '-Dbg' }
@@ -199,6 +251,10 @@ if ($stale) {
 }
 
 $total = [math]::Round(((Get-Date) - $t0).TotalSeconds, 1)
+if ($script:webuiBad) {
+    Write-Host "UI web com erro de sintaxe -- veja acima ($total s)" -ForegroundColor Red
+    exit 1
+}
 if ($failed) {
     Write-Host "$failed alvo(s) falharam em $total s" -ForegroundColor Red
     exit 1

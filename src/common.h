@@ -69,4 +69,9 @@ const char *tt_bytes(char *buf, size_t buflen, uint64_t bytes);
  * relatorio, a divergencia fica visivel. */
 const char *tt_build_id(void);
 
+/* Versao do engine. Fica aqui, e nao no `main.c`, porque o servidor a publica
+ * em `/stats` e a UI a mostra no cabecalho -- duas copias da mesma constante
+ * divergiriam no primeiro bump. */
+#define TT_VERSION "0.1.0-m1"
+
 #endif /* TOOTEGA_COMMON_H */

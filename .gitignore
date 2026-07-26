@@ -33,6 +33,11 @@ ppl*.txt
 serve.log
 serve.out
 
+# Saidas de servidor/agente disparados a mao durante o desenvolvimento.
+*.log
+srv.out
+srv.err
+
 # Corpus derivado dos proprios docs -- regenera com um comando, e mudaria a
 # cada edicao de documentacao.
 corpus.txt

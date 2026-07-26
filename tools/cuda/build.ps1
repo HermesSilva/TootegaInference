@@ -76,7 +76,9 @@ Write-Host "host compiler: $vsPath"
 # lugar. Compilando sozinho isto nunca aparece; dentro do `build-all.ps1`, o
 # engine ja passou por aqui e o nvcc acaba achando o toolset de 2026.
 foreach ($v in 'VSCMD_VER', 'VSCMD_ARG_TGT_ARCH', 'VSCMD_ARG_HOST_ARCH',
-                'VCToolsVersion', 'VCINSTALLDIR', 'VCToolsInstallDir') {
+                'VCToolsVersion', 'VCINSTALLDIR', 'VCToolsInstallDir',
+                'INCLUDE', 'LIB', 'LIBPATH', '__VSCMD_PREINIT_PATH',
+                'VSINSTALLDIR', 'VisualStudioVersion', 'WindowsSdkDir') {
     Remove-Item "env:$v" -ErrorAction SilentlyContinue
 }
 

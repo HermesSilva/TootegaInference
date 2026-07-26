@@ -27,6 +27,10 @@
 #define CHAT_ASSIST "<|assistant|>"
 #define CHAT_THINK  "<think>"
 
+/* Id do modelo no protocolo.  Um so lugar: `/v1/models` e as respostas tem de
+ * concordar, senao cliente que valida o campo rejeita a resposta. */
+#define TT_MODEL_ID "glm-4.7-flash"
+
 typedef struct {
     tt_model     *model;
     tt_state     *state;
@@ -43,6 +47,7 @@ typedef struct {
 
     const char *key;         /* NULL quando so no loopback */
     uint64_t    served;
+    double      started;
 } server;
 
 /* ------------------------------------------------------------- HTTP */
@@ -123,11 +128,17 @@ static void send_status(const tt_socket *c, int code, const char *reason,
                         const char *ctype, const char *body, size_t len)
 {
     char head[512];
+    /* CORS aberto porque o servidor e local e ja tem a chave para o que custa.
+     * Sem isto, cliente que roda DENTRO de um navegador -- e o Copilot do VS
+     * Code e um -- nao consegue nem o preflight. */
     const int n = snprintf(head, sizeof(head),
         "HTTP/1.1 %d %s\r\n"
         "Content-Type: %s\r\n"
         "Content-Length: %zu\r\n"
         "Cache-Control: no-store\r\n"
+        "Access-Control-Allow-Origin: *\r\n"
+        "Access-Control-Allow-Headers: Authorization, Content-Type\r\n"
+        "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n"
         "Connection: close\r\n\r\n",
         code, reason, ctype, len);
     tt_send_all(c, head, (size_t)n);
@@ -153,29 +164,203 @@ static int64_t append_text(server *s, const char *text)
     return n;
 }
 
+static size_t json_escape(const char *src, size_t n, char *dst, size_t cap);
+
+/* ------------------------------------------------------- ferramentas */
+
+/* Anexa bytes com corte no limite.  Devolve o novo comprimento. */
+static size_t jw_put(char *dst, size_t cap, size_t w, const char *s, size_t n)
+{
+    for (size_t i = 0; i < n && w + 1 < cap; i++) dst[w++] = s[i];
+    return w;
+}
+
+/* Serializa um no do DOM de volta para JSON.
+ *
+ * Necessario porque o template do modelo despeja cada ferramenta como JSON
+ * dentro do prompt (`{{ tool | tojson }}`), e o nosso DOM e zero-copia: guarda
+ * ponteiros para os pedacos, nao o texto original do objeto. */
+static size_t json_write(const tt_json *n, char *dst, size_t cap, size_t w)
+{
+    char num[64];
+    if (!n) return jw_put(dst, cap, w, "null", 4);
+
+    switch (n->type) {
+    case TT_JSON_NULL:   return jw_put(dst, cap, w, "null", 4);
+    case TT_JSON_BOOL:   return n->v.boolean ? jw_put(dst, cap, w, "true", 4)
+                                             : jw_put(dst, cap, w, "false", 5);
+    case TT_JSON_INT:
+        return jw_put(dst, cap, w, num,
+                      (size_t)snprintf(num, sizeof(num), "%lld",
+                                       (long long)n->v.i));
+    case TT_JSON_REAL:
+        return jw_put(dst, cap, w, num,
+                      (size_t)snprintf(num, sizeof(num), "%.17g", n->v.r));
+    case TT_JSON_STRING: {
+        w = jw_put(dst, cap, w, "\"", 1);
+        if (w + 1 < cap) w += json_escape(n->v.str.ptr, n->v.str.len,
+                                          dst + w, cap - w);
+        return jw_put(dst, cap, w, "\"", 1);
+    }
+    case TT_JSON_ARRAY:
+        w = jw_put(dst, cap, w, "[", 1);
+        for (const tt_json *e = n->child; e; e = e->next) {
+            if (e != n->child) w = jw_put(dst, cap, w, ",", 1);
+            w = json_write(e, dst, cap, w);
+        }
+        return jw_put(dst, cap, w, "]", 1);
+    case TT_JSON_OBJECT:
+        w = jw_put(dst, cap, w, "{", 1);
+        for (const tt_json *m = n->child; m; m = m->next) {
+            if (m != n->child) w = jw_put(dst, cap, w, ",", 1);
+            w = jw_put(dst, cap, w, "\"", 1);
+            if (w + 1 < cap) w += json_escape(m->key, m->key_len, dst + w, cap - w);
+            w = jw_put(dst, cap, w, "\":", 2);
+            w = json_write(m, dst, cap, w);
+        }
+        return jw_put(dst, cap, w, "}", 1);
+    }
+    return w;
+}
+
+/* Bloco de sistema com as ferramentas, byte a byte como `chat_template.jinja`.
+ *
+ * Fica no inicio do prefixo de proposito: e a parte que NAO muda entre turnos,
+ * e a regra de ordenacao de docs/03 (estavel primeiro) e o que faz o cache de
+ * prefixo valer alguma coisa numa sessao de agente. */
+static int append_tools(server *s, const tt_json *tools)
+{
+    if (append_text(s, CHAT_SYSTEM "\n# Tools\n\n"
+        "You may call one or more functions to assist with the user query.\n\n"
+        "You are provided with function signatures within <tools></tools> "
+        "XML tags:\n<tools>\n") < 0) return -1;
+
+    char *one = (char *)malloc(64u << 10);
+    if (!one) return tt_fail("sem memoria");
+    for (const tt_json *t = tools->child; t; t = t->next) {
+        const size_t n = json_write(t, one, 64u << 10, 0);
+        one[n] = '\0';
+        if (append_text(s, one) < 0 || append_text(s, "\n") < 0) {
+            free(one);
+            return -1;
+        }
+    }
+    free(one);
+
+    const int64_t got = append_text(s,
+        "</tools>\n\nFor each function call, output the "
+        "function name and arguments within the following XML format:\n"
+        "<tool_call>{function-name}<arg_key>{arg-key-1}</arg_key>"
+        "<arg_value>{arg-value-1}</arg_value><arg_key>{arg-key-2}</arg_key>"
+        "<arg_value>{arg-value-2}</arg_value>...</tool_call>");
+    return got < 0 ? -1 : 0;
+}
+
+/* Chamadas que o assistente ja fez, no formato que o modelo emitiu.
+ * `arguments` chega como string JSON (OpenAI) ou objeto; os dois viram pares
+ * <arg_key>/<arg_value>. */
+static int append_tool_calls(server *s, const tt_json *calls, tt_arena *dom)
+{
+    for (const tt_json *tc = calls->child; tc; tc = tc->next) {
+        const tt_json *fn = tt_json_get(tc, "function");
+        if (!fn) fn = tc;
+
+        char name[128];
+        if (tt_json_strcpy(tt_json_get(fn, "name"), name, sizeof(name)) != 0)
+            continue;
+        if (append_text(s, "<tool_call>") < 0 || append_text(s, name) < 0)
+            return -1;
+
+        const tt_json *args = tt_json_get(fn, "arguments");
+        size_t alen = 0;
+        const char *atext = tt_json_str(args, &alen);
+        if (atext) args = tt_json_parse(atext, alen, dom);  /* string JSON */
+
+        if (args && args->type == TT_JSON_OBJECT) {
+            char val[8192];
+            for (const tt_json *a = args->child; a; a = a->next) {
+                char key[128];
+                const size_t kn = a->key_len < sizeof(key) - 1
+                                ? a->key_len : sizeof(key) - 1;
+                memcpy(key, a->key, kn);
+                key[kn] = '\0';
+
+                /* String vai crua; o resto vai como JSON -- e o que o template
+                 * faz com `tojson if v is not string else v`. */
+                size_t vn = 0;
+                const char *vs = tt_json_str(a, &vn);
+                if (vs) {
+                    if (vn >= sizeof(val)) vn = sizeof(val) - 1;
+                    memcpy(val, vs, vn);
+                    val[vn] = '\0';
+                } else {
+                    val[json_write(a, val, sizeof(val), 0)] = '\0';
+                }
+
+                if (append_text(s, "<arg_key>") < 0 ||
+                    append_text(s, key) < 0 ||
+                    append_text(s, "</arg_key><arg_value>") < 0 ||
+                    append_text(s, val) < 0 ||
+                    append_text(s, "</arg_value>") < 0) return -1;
+            }
+        }
+        if (append_text(s, "</tool_call>") < 0) return -1;
+    }
+    return 0;
+}
+
 /* Monta o prefixo da conversa a partir das mensagens do pedido.
  *
  * A UI manda a conversa inteira a cada turno (e o que um cliente OpenAI faz).
  * Reconstruimos os ids do zero e deixamos o casamento de prefixo decidir o que
  * recomputar -- e por isso que o segundo turno custa so os tokens novos. */
-static int build_conversation(server *s, const tt_json *messages)
+static int build_conversation(server *s, const tt_json *messages, int think,
+                              const tt_json *tools, tt_arena *dom)
 {
     s->n_conv = 0;
     if (append_text(s, CHAT_PREFIX) < 0) return -1;
+    if (tools && tools->type == TT_JSON_ARRAY && tools->count &&
+        append_tools(s, tools) != 0) return -1;
 
     for (const tt_json *m = messages->child; m; m = m->next) {
         const tt_json *role = tt_json_get(m, "role");
         const tt_json *content = tt_json_get(m, "content");
         size_t clen = 0;
         const char *ctext = tt_json_str(content, &clen);
-        if (!ctext) continue;
+
+        /* Resultado de ferramenta: `<|observation|>` uma vez, um
+         * `<tool_response>` por resultado.  E o unico papel em que a mensagem
+         * NAO e do modelo nem do usuario -- e o mundo respondendo. */
+        if (tt_json_str_eq(role, "tool")) {
+            if (!ctext) continue;
+            char *tmp = (char *)malloc(clen + 1);
+            if (!tmp) return tt_fail("sem memoria");
+            memcpy(tmp, ctext, clen);
+            tmp[clen] = '\0';
+            const int bad = append_text(s, "<|observation|><tool_response>") < 0
+                         || append_text(s, tmp) < 0
+                         || append_text(s, "</tool_response>") < 0;
+            free(tmp);
+            if (bad) return -1;
+            continue;
+        }
 
         const int assistant = tt_json_str_eq(role, "assistant");
+        const tt_json *calls = assistant ? tt_json_get(m, "tool_calls") : NULL;
+        if (!ctext && !calls) continue;
+
         const char *marker = CHAT_USER;
         if (tt_json_str_eq(role, "system")) marker = CHAT_SYSTEM;
         else if (assistant)                 marker = CHAT_ASSIST;
 
         if (append_text(s, marker) < 0) return -1;
+
+        /* Turno de assistente que so chamou ferramenta nao tem texto. */
+        if (!ctext) {
+            if (append_text(s, "</think>") < 0) return -1;
+            if (append_tool_calls(s, calls, dom) != 0) return -1;
+            continue;
+        }
 
         /* `tt_encode` precisa de terminador; o DOM nao tem. */
         char *tmp = (char *)malloc(clen + 1);
@@ -202,10 +387,20 @@ static int build_conversation(server *s, const tt_json *messages)
         const int64_t got = append_text(s, body);
         free(tmp);
         if (got < 0) return -1;
+
+        /* Texto E chamadas no mesmo turno: o modelo explica e depois chama. */
+        if (calls && append_tool_calls(s, calls, dom) != 0) return -1;
     }
 
     if (append_text(s, CHAT_ASSIST) < 0) return -1;
-    if (append_text(s, CHAT_THINK) < 0) return -1;
+
+    /* `<think>` abre o rascunho; `</think>` o fecha antes de comecar, e o
+     * modelo vai direto a resposta.
+     *
+     * Nao e truque: e a mesma construcao que o template usa para turnos de
+     * assistente JA concluidos, entao o modelo a viu no treino. O custo esta
+     * em outro lugar -- ver docs/20. */
+    if (append_text(s, think ? CHAT_THINK : "</think>") < 0) return -1;
     return 0;
 }
 
@@ -236,6 +431,126 @@ static size_t json_escape(const char *src, size_t n, char *dst, size_t cap)
     return w;
 }
 
+/* --------------------------------------- saida do modelo -> tool_calls */
+
+/* Tipo declarado do argumento no schema que o CLIENTE mandou.
+ *
+ * O modelo emite `<arg_value>3</arg_value>` sem dizer se e o numero 3 ou a
+ * string "3"; OpenAI exige `arguments` como JSON tipado.  Sem consultar o
+ * schema, toda ferramenta com argumento numerico ou booleano chega errada do
+ * outro lado. */
+static char arg_kind(const tt_json *tools, const char *fname, const char *key)
+{
+    for (const tt_json *t = tools ? tools->child : NULL; t; t = t->next) {
+        const tt_json *fn = tt_json_get(t, "function");
+        if (!fn) fn = t;
+        if (!tt_json_str_eq(tt_json_get(fn, "name"), fname)) continue;
+
+        const tt_json *props = tt_json_get(tt_json_get(fn, "parameters"),
+                                           "properties");
+        const tt_json *p = tt_json_get(props, key);
+        if (!p) return '?';
+        if (tt_json_str_eq(tt_json_get(p, "type"), "string")) return 's';
+        return 'j';                                   /* number, bool, array… */
+    }
+    return '?';
+}
+
+/* Um `<arg_value>` cru vira JSON.  `kind` decide; `?` (schema silencioso)
+ * aceita o valor cru so quando ele JA e JSON valido. */
+static size_t arg_value_json(const char *v, size_t n, char kind,
+                             char *dst, size_t cap)
+{
+    int looks_json = 0;
+    if (n) {
+        const char c0 = v[0];
+        looks_json = (c0 == '{' || c0 == '[' || c0 == '-' ||
+                      (c0 >= '0' && c0 <= '9') ||
+                      !strncmp(v, "true", 4) || !strncmp(v, "false", 5) ||
+                      !strncmp(v, "null", 4));
+    }
+    if (kind == 'j' || (kind == '?' && looks_json))
+        return jw_put(dst, cap, 0, v, n);
+
+    size_t w = jw_put(dst, cap, 0, "\"", 1);
+    w += json_escape(v, n, dst + w, cap - w);
+    return jw_put(dst, cap, w, "\"", 1);
+}
+
+/* Extrai todas as chamadas do texto gerado e monta o array `tool_calls` da
+ * OpenAI.  Devolve quantas achou. */
+static int parse_tool_calls(const char *text, const tt_json *tools,
+                            char *dst, size_t cap)
+{
+    size_t w = jw_put(dst, cap, 0, "[", 1);
+    int found = 0;
+
+    for (const char *p = strstr(text, "<tool_call>"); p;
+         p = strstr(p, "<tool_call>")) {
+        p += 11;
+        const char *end = strstr(p, "</tool_call>");
+        if (!end) break;
+
+        const char *name_end = strstr(p, "<arg_key>");
+        if (!name_end || name_end > end) name_end = end;
+
+        char fname[128];
+        size_t nn = (size_t)(name_end - p);
+        while (nn && (p[nn - 1] == '\n' || p[nn - 1] == ' ')) nn--;
+        if (nn >= sizeof(fname)) nn = sizeof(fname) - 1;
+        memcpy(fname, p, nn);
+        fname[nn] = '\0';
+
+        char args[16384];
+        size_t aw = jw_put(args, sizeof(args), 0, "{", 1);
+        int nargs = 0;
+
+        for (const char *k = strstr(p, "<arg_key>"); k && k < end;
+             k = strstr(k, "<arg_key>")) {
+            k += 9;
+            const char *ke = strstr(k, "</arg_key>");
+            if (!ke || ke > end) break;
+            const char *v = strstr(ke, "<arg_value>");
+            if (!v || v > end) break;
+            v += 11;
+            const char *ve = strstr(v, "</arg_value>");
+            if (!ve || ve > end) break;
+
+            char key[128];
+            size_t kn = (size_t)(ke - k);
+            if (kn >= sizeof(key)) kn = sizeof(key) - 1;
+            memcpy(key, k, kn);
+            key[kn] = '\0';
+
+            if (nargs++) aw = jw_put(args, sizeof(args), aw, ",", 1);
+            aw = jw_put(args, sizeof(args), aw, "\"", 1);
+            aw += json_escape(key, kn, args + aw, sizeof(args) - aw);
+            aw = jw_put(args, sizeof(args), aw, "\":", 2);
+            aw += arg_value_json(v, (size_t)(ve - v),
+                                 arg_kind(tools, fname, key),
+                                 args + aw, sizeof(args) - aw);
+            k = ve;
+        }
+        args[jw_put(args, sizeof(args), aw, "}", 1)] = '\0';
+
+        char one[17408];
+        const int n = snprintf(one, sizeof(one),
+            "%s{\"id\":\"call_%d\",\"type\":\"function\","
+            "\"function\":{\"name\":\"%s\",\"arguments\":\"",
+            found ? "," : "", found, fname);
+        w = jw_put(dst, cap, w, one, (size_t)n);
+        /* `arguments` e STRING no protocolo -- o JSON vai escapado dentro. */
+        w += json_escape(args, strlen(args), dst + w, cap - w);
+        w = jw_put(dst, cap, w, "\"}}", 3);
+
+        found++;
+        p = end + 12;
+    }
+
+    dst[jw_put(dst, cap, w, "]", 1)] = '\0';
+    return found;
+}
+
 /* ------------------------------------------------------ /v1/chat/... */
 
 static int handle_chat(server *s, const tt_socket *c, const request *r)
@@ -253,7 +568,17 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
         return 0;
     }
 
+    const tt_json *tools = tt_json_get(root, "tools");
+    if (tools && (tools->type != TT_JSON_ARRAY || !tools->count)) tools = NULL;
+    /* `tool_choice: "none"` desliga as ferramentas para ESTE pedido. */
+    if (tt_json_str_eq(tt_json_get(root, "tool_choice"), "none")) tools = NULL;
+
     const int stream = tt_json_bool(tt_json_get(root, "stream"), 1);
+    /* `think` e nosso; `chat_template_kwargs.enable_thinking` e o que vLLM e
+     * SGLang popularizaram e o que um cliente de terceiro manda. */
+    const int think = tt_json_bool(tt_json_get(root, "think"),
+        tt_json_bool(tt_json_get(tt_json_get(root, "chat_template_kwargs"),
+                                 "enable_thinking"), 1));
     const float temp = (float)tt_json_real(tt_json_get(root, "temperature"), 0.8);
     const float top_p = (float)tt_json_real(tt_json_get(root, "top_p"), 0.95);
     const int   top_k = (int)tt_json_int(tt_json_get(root, "top_k"), 40);
@@ -262,14 +587,11 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
      * rascunho como se fosse resposta. */
     int64_t max_new = tt_json_int(tt_json_get(root, "max_tokens"), 0);
 
-    if (build_conversation(s, messages) != 0) {
+    /* A arena do pedido sobrevive ate o fim: `tools` e consultado depois da
+     * geracao, para tipar os argumentos da chamada. */
+    if (build_conversation(s, messages, think, tools, &dom) != 0 ||
+        s->n_conv + 8 >= s->ctx) {
         tt_arena_free(&dom);
-        send_json_error(c, 400, "conversa nao cabe no contexto");
-        return 0;
-    }
-    tt_arena_free(&dom);
-
-    if (s->n_conv + 8 >= s->ctx) {
         send_json_error(c, 400, "conversa nao cabe no contexto");
         return 0;
     }
@@ -283,6 +605,7 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
     const double t0 = tt_now();
     for (int64_t i = reused; i < s->n_conv; i++)
         if (tt_forward(s->state, s->conv[i], NULL) != 0) {
+            tt_arena_free(&dom);
             send_json_error(c, 500, tt_error());
             return 0;
         }
@@ -304,11 +627,15 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
     }
 
     char piece[512], esc[2048], frame[4096];
-    char *full = stream ? NULL : (char *)malloc(1u << 20);
+    /* O texto inteiro e acumulado mesmo em streaming: as chamadas de
+     * ferramenta so podem ser extraidas do conjunto, e nao de um pedaco. */
+    const size_t full_cap = 1u << 20;
+    char *full = (char *)malloc(full_cap);
     size_t full_len = 0;
+    if (full) full[0] = '\0';
 
     int64_t made = 0;
-    int hit_eos = 0;
+    int hit_eos = 0, in_call = 0, done_call = 0;
     const double t1 = tt_now();
 
     while (made < max_new && s->n_conv < s->ctx) {
@@ -318,21 +645,34 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
         const int64_t w = tt_decode(s->tok, &next, 1, piece, sizeof(piece) - 1);
         if (w > 0) {
             piece[w] = '\0';
-            json_escape(piece, (size_t)w, esc, sizeof(esc));
+            if (!strcmp(piece, "<tool_call>")) in_call = 1;
 
-            if (stream) {
+            if (full && full_len + (size_t)w + 1 < full_cap) {
+                memcpy(full + full_len, piece, (size_t)w);
+                full_len += (size_t)w;
+                full[full_len] = '\0';
+            }
+
+            /* Dentro de uma chamada, o texto NAO e conteudo: vai no
+             * `tool_calls` do quadro final, como o protocolo pede. */
+            if (stream && !in_call) {
+                json_escape(piece, (size_t)w, esc, sizeof(esc));
                 const int n = snprintf(frame, sizeof(frame),
                     "data: {\"choices\":[{\"delta\":{\"content\":\"%s\"},"
                     "\"index\":0}]}\n\n", esc);
                 if (tt_send_all(c, frame, (size_t)n) < 0) break;  /* aba fechou */
-            } else if (full && full_len + (size_t)w + 1 < (1u << 20)) {
-                memcpy(full + full_len, piece, (size_t)w);
-                full_len += (size_t)w;
             }
         }
 
         s->conv[s->n_conv++] = next;
         made++;
+
+        /* `</tool_call>` fecha o turno: esperar o EOS depois disso e queimar
+         * tokens a 13 tok/s para receber texto que o cliente descarta. */
+        if (in_call && w > 0 && !strcmp(piece, "</tool_call>")) {
+            done_call = 1;
+            break;
+        }
         if (tt_forward(s->state, next, NULL) != 0) break;
     }
 
@@ -340,24 +680,59 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
     tt_log("  %lld tokens gerados, %.2f tok/s", (long long)made,
            made ? (double)made / t_dec : 0.0);
 
-    if (stream) {
-        char tail[256];
-        /* `length` significa contexto cheio, nao cota de resposta -- nao ha
-         * cota. E informacao acionavel: o usuario precisa de `--ctx` maior. */
-        const int n = snprintf(tail, sizeof(tail),
-            "data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"%s\","
-            "\"index\":0}],\"usage\":{\"prompt_tokens\":%lld,"
-            "\"completion_tokens\":%lld,\"prefill_cached\":%lld,"
-            "\"context_left\":%lld,\"tokens_per_second\":%.2f}}\n\n"
-            "data: [DONE]\n\n",
-            hit_eos ? "stop" : "length",
-            (long long)s->n_conv - made, (long long)made, (long long)reused,
-            (long long)(s->ctx - s->n_conv),
-            made ? (double)made / t_dec : 0.0);
-        tt_send_all(c, tail, (size_t)n);
-    } else if (full) {
-        full[full_len] = '\0';
+    /* `length` significa contexto cheio, nao cota de resposta -- nao ha cota.
+     * E informacao acionavel: o usuario precisa de `--ctx` maior. */
+    const char *reason = done_call ? "tool_calls" : (hit_eos ? "stop" : "length");
 
+    char *calls = NULL;
+    if (done_call && full) {
+        calls = (char *)malloc(64u << 10);
+        if (calls && parse_tool_calls(full, tools, calls, 64u << 10) == 0) {
+            /* `</tool_call>` sem chamada extraivel: o modelo emitiu lixo.
+             * Melhor devolver o texto do que uma lista vazia que o cliente
+             * trata como "nada a fazer" e o laco morre em silencio. */
+            free(calls);
+            calls = NULL;
+            reason = "stop";
+        } else if (calls) {
+            /* O texto da chamada nao e conteudo: ja foi para `tool_calls`.
+             * Deixa-lo em `content` faria o cliente exibir a marcacao crua e,
+             * pior, reenviar tudo no proximo turno. */
+            char *cut = strstr(full, "<tool_call>");
+            if (cut) {
+                while (cut > full && (cut[-1] == '\n' || cut[-1] == ' ')) cut--;
+                *cut = '\0';
+                full_len = (size_t)(cut - full);
+            }
+        }
+    }
+
+    char usage[256];
+    snprintf(usage, sizeof(usage),
+        "\"usage\":{\"prompt_tokens\":%lld,\"completion_tokens\":%lld,"
+        "\"total_tokens\":%lld,\"prefill_cached\":%lld,\"context_left\":%lld,"
+        "\"tokens_per_second\":%.2f}",
+        (long long)(s->n_conv - made), (long long)made,
+        (long long)s->n_conv, (long long)reused,
+        (long long)(s->ctx - s->n_conv), made ? (double)made / t_dec : 0.0);
+
+    if (stream) {
+        const size_t cap = (calls ? strlen(calls) : 0) + 1024;
+        char *tail = (char *)malloc(cap);
+        if (tail) {
+            const int n = snprintf(tail, cap,
+                "data: {\"id\":\"chatcmpl-%llu\",\"object\":"
+                "\"chat.completion.chunk\",\"created\":%lld,\"model\":\"%s\","
+                "\"choices\":[{\"delta\":{%s%s%s},\"finish_reason\":\"%s\","
+                "\"index\":0}],%s}\n\n"
+                "data: [DONE]\n\n",
+                (unsigned long long)s->served, (long long)tt_now(), TT_MODEL_ID,
+                calls ? "\"tool_calls\":" : "", calls ? calls : "",
+                calls ? "" : "", reason, usage);
+            tt_send_all(c, tail, (size_t)n);
+            free(tail);
+        }
+    } else if (full) {
         /* Escape pode sextuplicar (`\u00XX` por byte de controle), entao os
          * dois buffers saem do tamanho do PIOR caso.  A versao anterior
          * dimensionava o corpo por `full_len * 2` e truncava respostas longas
@@ -366,23 +741,29 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
         char *big = (char *)malloc(esc_cap);
         if (big) {
             const size_t esc_len = json_escape(full, full_len, big, esc_cap);
-            const size_t body_cap = esc_len + 512;
+            const size_t body_cap = esc_len + (calls ? strlen(calls) : 0) + 640;
             char *body = (char *)malloc(body_cap);
             if (body) {
                 const int n = snprintf(body, body_cap,
-                    "{\"choices\":[{\"message\":{\"role\":\"assistant\","
-                    "\"content\":\"%s\"},\"finish_reason\":\"stop\",\"index\":0}],"
-                    "\"usage\":{\"completion_tokens\":%lld,"
-                    "\"tokens_per_second\":%.2f}}",
-                    big, (long long)made, made ? (double)made / t_dec : 0.0);
+                    "{\"id\":\"chatcmpl-%llu\",\"object\":\"chat.completion\","
+                    "\"created\":%lld,\"model\":\"%s\","
+                    "\"choices\":[{\"message\":{\"role\":\"assistant\","
+                    "\"content\":\"%s\"%s%s},\"finish_reason\":\"%s\","
+                    "\"index\":0}],%s}",
+                    (unsigned long long)s->served, (long long)tt_now(),
+                    TT_MODEL_ID, big,
+                    calls ? ",\"tool_calls\":" : "", calls ? calls : "",
+                    reason, usage);
                 send_status(c, 200, "OK", "application/json", body, (size_t)n);
                 free(body);
             }
             free(big);
         }
-        free(full);
     }
 
+    free(calls);
+    free(full);
+    tt_arena_free(&dom);
     s->served++;
     return 0;
 }
@@ -417,15 +798,38 @@ static void handle(server *s, const tt_socket *c, const char *peer)
         }
     }
 
-    if (!strcmp(r.method, "GET") &&
+    if (!strcmp(r.method, "OPTIONS")) {
+        send_status(c, 204, "No Content", "text/plain", "", 0);
+    } else if (!strcmp(r.method, "GET") &&
         (!strcmp(r.path, "/") || !strcmp(r.path, "/index.html"))) {
         send_status(c, 200, "OK", "text/html; charset=utf-8",
                     TT_WEBUI_HTML, sizeof(TT_WEBUI_HTML) - 1);
+    } else if (!strcmp(r.method, "GET") && !strcmp(r.path, "/stats")) {
+        /* O que um desenvolvedor precisa ver sem abrir o console do servidor:
+         * onde a memoria esta, quanto do contexto sobrou, e se os kernels
+         * vetorizados estao mesmo ativos. */
+        char body[768];
+        const int n = snprintf(body, sizeof(body),
+            "{\"version\":\"" TT_VERSION "\","
+            "\"build\":\"%s\",\"kernel\":\"%s\",\"threads\":%d,"
+            "\"attn\":\"%s\",\"ctx\":%lld,\"ctx_used\":%lld,"
+            "\"weights\":%llu,\"kv_per_token\":%llu,\"kv_total\":%llu,"
+            "\"rss_gb\":%.2f,\"budget_gb\":%.1f,\"ram_free_gb\":%.1f,"
+            "\"served\":%llu,\"uptime\":%.0f}",
+            tt_build_id(), tt_kernels_impl_name(), tt_pool_threads(s->pool),
+            s->model->attn == TT_ATTN_ABSORBED ? "absorvida" : "expandida",
+            (long long)s->ctx, (long long)s->state->len,
+            (unsigned long long)tt_model_weight_bytes(s->model),
+            (unsigned long long)tt_kv_bytes(s->model, 1),
+            (unsigned long long)tt_kv_bytes(s->model, s->ctx),
+            tt_rss_gb(), s->plan->budget_gb, tt_ram_avail_gb(),
+            (unsigned long long)s->served, tt_now() - s->started);
+        send_status(c, 200, "OK", "application/json", body, (size_t)n);
     } else if (!strcmp(r.method, "GET") && !strcmp(r.path, "/v1/models")) {
         char body[512];
         const int n = snprintf(body, sizeof(body),
             "{\"object\":\"list\",\"data\":[{\"id\":\"%s\",\"object\":\"model\","
-            "\"owned_by\":\"tootega\"}]}", "glm-4.7-flash");
+            "\"owned_by\":\"tootega\"}]}", TT_MODEL_ID);
         send_status(c, 200, "OK", "application/json", body, (size_t)n);
     } else if (!strcmp(r.method, "POST") &&
                !strcmp(r.path, "/v1/chat/completions")) {
@@ -529,6 +933,7 @@ int tt_cmd_serve(int argc, char **argv)
     s.plan = &plan;
     s.ctx = ctx;
     s.key = key;
+    s.started = tt_now();
     s.conv = (int32_t *)malloc((size_t)ctx * sizeof(int32_t));
 
     const tt_json *ej = tt_json_get(model.c.config, "eos_token_id");

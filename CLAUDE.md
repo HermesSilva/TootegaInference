@@ -32,7 +32,8 @@ O `build.ps1` de cada ferramenta só delega para `tools/shared/build-tool.ps1`,
 passando o próprio caminho — por isso o mesmo script serve às duas árvores.
 
 Hoje: `Tests/` tem `ablate` (perplexidade e ablação), `gentest` (qualidade de
-geração) e `bench` (tempo, memória, roofline). `tools/` tem `convert`.
+geração), `bench` (tempo, memória, roofline) e `gpu` (portão do M2). `tools/`
+tem `convert`, `agent` (cliente agêntico) e `cuda` (backend).
 
 ### O que separa Tests de tools
 

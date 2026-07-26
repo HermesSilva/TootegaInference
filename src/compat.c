@@ -353,6 +353,32 @@ int tt_listen(tt_socket *s, const char *host, int port, int backlog)
     return 0;
 }
 
+int tt_connect(tt_socket *s, const char *host, int port)
+{
+    s->fd = TT_INVALID_SOCKET;
+
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons((unsigned short)port);
+
+    /* So endereco literal: quem se conecta aqui e o agente, e o servidor mora
+     * em `127.0.0.1`.  Resolver nome traria DNS -- e latencia e falha -- para
+     * dentro de um caminho que nunca sai da maquina. */
+    if (!host || !*host) host = "127.0.0.1";
+    if (inet_pton(AF_INET, host, &addr.sin_addr) != 1) return -1;
+
+    const intptr_t fd = (intptr_t)socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (fd == (intptr_t)TT_BAD_SOCK) return -1;
+    s->fd = fd;
+
+    if (connect(TT_SOCK(s), (struct sockaddr *)&addr, sizeof(addr)) != 0) {
+        tt_socket_close(s);
+        return -1;
+    }
+    return 0;
+}
+
 int tt_accept(const tt_socket *server, tt_socket *client, char *peer, size_t peer_len)
 {
     struct sockaddr_in addr;

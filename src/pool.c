@@ -55,7 +55,7 @@ static void wait_for_work(struct tt_pool *p, int32_t last, int *spins)
      * conferencia e o bloqueio, ele ja vera o contador e acordara. */
     tt_at32_add(&p->sleepers, 1);
     if (tt_at32_load(&p->generation) == last)
-        tt_futex_wait(&p->generation.v, last, 50);
+        tt_futex_wait((const volatile int32_t *)&p->generation.v, last, 50);
     tt_at32_add(&p->sleepers, -1);
 }
 
@@ -153,7 +153,7 @@ void tt_pool_destroy(tt_pool *p)
     if (!p) return;
     tt_at32_store(&p->stop, 1);
     tt_at32_add(&p->generation, 1);
-    tt_futex_wake(&p->generation.v);
+    tt_futex_wake((const volatile int32_t *)&p->generation.v);
     for (int i = 0; i + 1 < p->n; i++) tt_thread_join(&p->th[i]);
     free(p);
 }
@@ -182,7 +182,7 @@ void tt_pool_run(tt_pool *p, tt_task_fn fn, void *arg, int64_t rows, int64_t gra
 
     /* Syscall so quando ha alguem dormindo -- no caminho quente o contador e
      * zero e isto e uma leitura atomica. */
-    if (tt_at32_load(&p->sleepers) > 0) tt_futex_wake(&p->generation.v);
+    if (tt_at32_load(&p->sleepers) > 0) tt_futex_wake((const volatile int32_t *)&p->generation.v);
 
     drain(p);
 

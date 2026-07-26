@@ -71,6 +71,8 @@ ordem de acumulação.
 | amostragem greedy/temp/top-k/top-p | `src/sample.c` |
 | orçamentos e `--plan` | `src/budget.c` |
 | servidor HTTP, SSE, UI web embutida | `src/server.c`, `webui.h` |
+| ferramentas no protocolo OpenAI (`tools`, `tool_calls`, `role:tool`) | `src/server.c`, [20](20-agente.md) |
+| agente falando o contrato do Claude Code CLI (fase A) | `tools/agent/` |
 | interface de backend, `LoadLibrary`/`dlopen` | `src/backend.c` |
 | conversor BF16 → `.tootega` | `tools/convert/` |
 | backend CUDA (kernels int4/int8/f32) | `tools/cuda/` |
@@ -83,8 +85,10 @@ ordem de acumulação.
 - **Partição GPU por camada** (M2). O backend existe e mede `0,24×` porque a
   interface força ida e volta pelo PCIe por matmul. O desenho de
   [03](03-arquitetura.md) pede um `run_layer` no device — não escrito.
-- **Estado persistente** ([12](12-estado-persistente.md)), **agente** (M4),
-  **especulação MTP** (M5).
+- **Ferramentas locais no agente** (M4 fase B) — o laço fala o protocolo, mas
+  não tem mãos: `Read`/`Edit`/`Bash` e o `can_use_tool` não existem.
+- **Estado persistente** ([12](12-estado-persistente.md)) e **especulação MTP**
+  (M5).
 - **Build no Linux** — o `Makefile` existe e nunca foi compilado.
 
 ## Pendências de medição

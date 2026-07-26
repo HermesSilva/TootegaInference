@@ -20,8 +20,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define TT_VERSION "0.1.0-m1"
-
 static int cmd_version(int argc, char **argv)
 {
     (void)argc; (void)argv;

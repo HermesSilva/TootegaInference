@@ -308,19 +308,35 @@ typedef struct {
 
     /* Chamadas que o servidor devolveu neste turno, cruas como vieram. */
     sb     calls_json;
+    char   msg_id[64];
 } turn;
+
+/* Id da mensagem deste passo.
+ *
+ * A UI indexa a bolha por ele: o `message_start` do streaming e o `assistant`
+ * completo TEM de trazer o mesmo id -- se diferirem, o texto e emitido duas
+ * vezes -- e passos diferentes TEM de trazer ids diferentes, senao o segundo
+ * escreve por cima do primeiro e a tela parece parada. */
+static const char *turn_msg_id(turn *t)
+{
+    static int seq;
+    if (!t->msg_id[0])
+        snprintf(t->msg_id, sizeof(t->msg_id), "msg_%s_%d", t->a->session, ++seq);
+    return t->msg_id;
+}
 
 static void ev_stream_start(turn *t)
 {
     if (t->started) return;
     t->started = 1;
 
+    char h[200];
     sb e = {0};
     sb_str(&e, "{\"type\":\"stream_event\",\"session_id\":\"");
     sb_str(&e, t->a->session);
-    sb_str(&e, "\",\"event\":{\"type\":\"message_start\",\"message\":"
-               "{\"id\":\"msg_");
-    sb_str(&e, t->a->session);
+    snprintf(h, sizeof(h), "\",\"event\":{\"type\":\"message_start\",\"message\":"
+                           "{\"id\":\"%s", turn_msg_id(t));
+    sb_str(&e, h);
     sb_str(&e, "\",\"role\":\"assistant\",\"model\":\"");
     sb_str(&e, t->a->model);
     sb_str(&e, "\"}}}");
@@ -1507,8 +1523,9 @@ static void run_turn(agent *a, const char *user_text, size_t n)
             sb e = {0};
             sb_str(&e, "{\"type\":\"assistant\",\"session_id\":\"");
             sb_str(&e, a->session);
-            sb_str(&e, "\",\"message\":{\"id\":\"msg_");
-            sb_str(&e, a->session);
+            snprintf(h, sizeof(h), "\",\"message\":{\"id\":\"%s",
+                     turn_msg_id(&t));
+            sb_str(&e, h);
             sb_str(&e, "\",\"role\":\"assistant\",\"model\":\"");
             sb_str(&e, a->model);
             sb_str(&e, "\",\"content\":[");

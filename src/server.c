@@ -534,7 +534,7 @@ static size_t arg_value_json(const char *v, size_t n, char kind,
 /* Extrai todas as chamadas do texto gerado e monta o array `tool_calls` da
  * OpenAI.  Devolve quantas achou. */
 static int parse_tool_calls(const char *text, const tt_json *tools,
-                            char *dst, size_t cap)
+                            char *dst, size_t cap, uint64_t seq)
 {
     size_t w = jw_put(dst, cap, 0, "[", 1);
     int found = 0;
@@ -587,11 +587,17 @@ static int parse_tool_calls(const char *text, const tt_json *tools,
         }
         args[jw_put(args, sizeof(args), aw, "}", 1)] = '\0';
 
+        /* O id carrega o numero do PEDIDO, nao so o indice dentro dele.
+         *
+         * Com `call_0` em toda resposta, um cliente que deduplica por id --
+         * e o Cockpit deduplica -- mostra o cartao do primeiro passo e
+         * descarta todos os seguintes como repetidos. O laco funcionava e a
+         * tela ficava parada. */
         char one[17408];
         const int n = snprintf(one, sizeof(one),
-            "%s{\"id\":\"call_%d\",\"type\":\"function\","
+            "%s{\"id\":\"call_%llu_%d\",\"type\":\"function\","
             "\"function\":{\"name\":\"%s\",\"arguments\":\"",
-            found ? "," : "", found, fname);
+            found ? "," : "", (unsigned long long)seq, found, fname);
         w = jw_put(dst, cap, w, one, (size_t)n);
         /* `arguments` e STRING no protocolo -- o JSON vai escapado dentro. */
         w += json_escape(args, strlen(args), dst + w, cap - w);
@@ -804,7 +810,8 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
     char *calls = NULL;
     if (done_call && full) {
         calls = (char *)malloc(64u << 10);
-        if (calls && parse_tool_calls(full, tools, calls, 64u << 10) == 0) {
+        if (calls && parse_tool_calls(full, tools, calls, 64u << 10,
+                                      s->served) == 0) {
             /* `</tool_call>` sem chamada extraivel: o modelo emitiu lixo.
              * Melhor devolver o texto do que uma lista vazia que o cliente
              * trata como "nada a fazer" e o laco morre em silencio. */

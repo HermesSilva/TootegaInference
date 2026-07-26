@@ -112,7 +112,7 @@ echo   Aquecendo os pesos; leva ~25 s antes do primeiro pedido.
 echo   Ctrl-C encerra. A conversa nao sobrevive ao processo.
 echo.
 
-"%EXE%" serve "%MODEL%" --tokenizer "%TOK%" --port %PORT% --ctx %CTX% %VERBOSE% %*
+"%EXE%" serve "%MODEL%"  --threads 24 --tokenizer "%TOK%" --port %PORT% --ctx %CTX% %VERBOSE% %*
 exit /b %errorlevel%
 
 :help

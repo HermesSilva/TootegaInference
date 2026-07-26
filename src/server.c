@@ -13,6 +13,7 @@
 #include "tokenizer.h"
 #include "webui.h"
 
+#include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,14 +37,15 @@
 
 /* ------------------------------------------------------------ verbose */
 
-/* `--verbose` mostra no console o que entra e o que sai, em portugues e nao em
- * JSON cru.
+/* `--verbose` mostra a FORMA do que entra e sai, e as estatisticas -- nunca o
+ * conteudo.
  *
- * Existe porque depurar um cliente contra este servidor era adivinhacao: o log
- * dizia "17 tokens (0 do cache) em 3,29 s" e nada sobre QUEM pediu, com quais
- * ferramentas, o que o modelo respondeu ou por que o cache nao bateu.  JSON
- * cru resolveria para uma maquina; para uma pessoa lendo o console as 2 da
- * manha, nao. */
+ * O texto do usuario e o do modelo ficaram de fora de proposito: o servidor
+ * roda em terminal aberto, e a conversa de quem o usa pode ter caminho de
+ * cliente, credencial colada num prompt, trecho de codigo fechado.  Nada disso
+ * ajuda a depurar o protocolo -- o que ajuda e quantas mensagens, de que
+ * papel, com quantos tokens, quanto veio do cache e o quao confiante o modelo
+ * estava.  Isso o log tem, e com mais detalhe do que antes. */
 static int g_verbose;
 
 static void vlog(const char *fmt, ...)
@@ -75,33 +77,63 @@ static const char *stamp(char *buf, size_t cap)
     return buf;
 }
 
-/* Um trecho de texto numa linha: sem quebras, cortado, com as reticencias
- * dizendo que foi cortado. */
-static const char *snippet(const char *s, size_t n, char *dst, size_t cap)
+/* ------------------------------------------------- estatistica do passe */
+
+/* O que o modelo achou de cada token que ele proprio escolheu.
+ *
+ * `nll` e a log-verossimilhanca negativa media; `exp(nll)` e a perplexidade --
+ * quantas alternativas o modelo estava efetivamente considerando por posicao.
+ * A entropia mede o espalhamento da distribuicao INTEIRA, e a diferenca entre
+ * as duas separa dois casos que a perplexidade sozinha confunde: modelo
+ * seguro e certeiro (nll baixa, entropia baixa) de modelo seguro por falta de
+ * opcao (nll baixa, entropia alta) -- o segundo e o que antecede repeticao. */
+typedef struct {
+    double  nll;        /* soma de -ln p(escolhido) */
+    double  ent;        /* soma da entropia, em nats */
+    double  top1;       /* soma da probabilidade do mais provavel */
+    double  chosen_p;   /* soma da probabilidade do escolhido */
+    int64_t n;
+} pass_stats;
+
+/* Uma passada estavel sobre os logits: max, soma dos exp, e as tres somas.
+ *
+ * Custa duas varreduras de 154.880 floats por token -- ~0,1 ms contra os 74 ms
+ * do passe.  Barato o bastante para ficar ligado sempre que `--verbose` estiver. */
+static void stat_add(pass_stats *g, const float *logits, int64_t n, int32_t pick)
 {
-    size_t w = 0;
-    int space = 0;
-    for (size_t i = 0; i < n && w + 5 < cap; i++) {
-        const unsigned char c = (unsigned char)s[i];
-        if (c == '\n' || c == '\r' || c == '\t' || c == ' ') {
-            if (space || !w) continue;      /* colapsa em um espaco so */
-            space = 1;
-            dst[w++] = ' ';
-            continue;
-        }
-        space = 0;
-        dst[w++] = (char)c;
+    if (n <= 0 || pick < 0 || pick >= n) return;
+
+    float mx = logits[0];
+    for (int64_t i = 1; i < n; i++) if (logits[i] > mx) mx = logits[i];
+
+    double sum = 0.0, top = 0.0, wsum = 0.0;
+    for (int64_t i = 0; i < n; i++) {
+        const double e = exp((double)logits[i] - (double)mx);
+        sum += e;
+        if (e > top) top = e;
+        /* soma de p*ln(p) sem normalizar; a normalizacao sai depois */
+        wsum += e * ((double)logits[i] - (double)mx);
     }
-    /* Nao corta no meio de um caractere UTF-8: byte de continuacao e 10xxxxxx,
-     * e deixar meio caractere no console vira lixo. */
-    if (w + 5 >= cap) {
-        while (w && ((unsigned char)dst[w - 1] & 0xC0) == 0x80) w--;
-        if (w) w--;
-        memcpy(dst + w, "...", 3);
-        w += 3;
-    }
-    dst[w] = '\0';
-    return dst;
+    if (sum <= 0.0) return;
+
+    const double p = exp((double)logits[pick] - (double)mx) / sum;
+    g->nll      += -log(p);
+    g->top1     += top / sum;
+    g->chosen_p += p;
+    /* H = ln(sum) - (1/sum) * soma(e_i * z_i), com z ja deslocado pelo max. */
+    g->ent      += log(sum) - wsum / sum;
+    g->n++;
+}
+
+static void stat_log(const char *rotulo, const pass_stats *g)
+{
+    if (!g->n) return;
+    const double nll = g->nll / (double)g->n;
+    vlog("  %-11s perplexidade %.2f  nll %.4f  entropia %.2f bits  "
+         "confianca %.1f%% (topo %.1f%%)  em %lld tokens",
+         rotulo, exp(nll), nll, (g->ent / (double)g->n) / 0.693147180559945,
+         100.0 * g->chosen_p / (double)g->n, 100.0 * g->top1 / (double)g->n,
+         (long long)g->n);
 }
 
 typedef struct {
@@ -678,24 +710,26 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
     if (max_new <= 0 || max_new > room) max_new = room;
 
     if (g_verbose) {
-        char buf[400];
-        (void)buf;
-        /* Quem falou o que: a forma da conversa importa mais que o conteudo
-         * dela para entender um cliente que se comporta mal. */
+        /* Quem falou, quanto, e com que forma.  O TEXTO fica de fora: ele nao
+         * ajuda a depurar o protocolo e o console e um lugar publico. */
         int n_user = 0, n_asst = 0, n_tool = 0, n_sys = 0;
-        const tt_json *last_user = NULL;
+        size_t b_user = 0, b_asst = 0, b_tool = 0, b_sys = 0;
         for (const tt_json *m = messages->child; m; m = m->next) {
             const tt_json *role = tt_json_get(m, "role");
-            if      (tt_json_str_eq(role, "user"))      { n_user++; last_user = m; }
-            else if (tt_json_str_eq(role, "assistant")) n_asst++;
-            else if (tt_json_str_eq(role, "tool"))      n_tool++;
-            else if (tt_json_str_eq(role, "system"))    n_sys++;
+            size_t cn = 0;
+            if (!tt_json_str(tt_json_get(m, "content"), &cn)) cn = 0;
+            if      (tt_json_str_eq(role, "user"))      { n_user++; b_user += cn; }
+            else if (tt_json_str_eq(role, "assistant")) { n_asst++; b_asst += cn; }
+            else if (tt_json_str_eq(role, "tool"))      { n_tool++; b_tool += cn; }
+            else if (tt_json_str_eq(role, "system"))    { n_sys++;  b_sys  += cn; }
         }
 
         vlog("--- pedido -----------------------------------------------");
-        vlog("  conversa    %llu mensagens: %d sistema, %d usuario, "
-             "%d assistente, %d ferramenta",
-             (unsigned long long)messages->count, n_sys, n_user, n_asst, n_tool);
+        vlog("  conversa    %llu mensagens  (papel x quantidade x caracteres)",
+             (unsigned long long)messages->count);
+        vlog("              sistema %d/%zu   usuario %d/%zu   "
+             "assistente %d/%zu   ferramenta %d/%zu",
+             n_sys, b_sys, n_user, b_user, n_asst, b_asst, n_tool, b_tool);
 
         if (tools) {
             char names[240];
@@ -717,35 +751,46 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
              "top_k %d, %s", think ? "LIGADO" : "desligado", temp, top_p, top_k,
              stream ? "streaming" : "resposta unica");
 
-        if (last_user) {
-            size_t un = 0;
-            const char *ut = tt_json_str(tt_json_get(last_user, "content"), &un);
-            if (ut) vlog("  usuario     \"%s\"", snippet(ut, un, buf, sizeof(buf)));
-        }
-        vlog("  contexto    %lld tokens montados, sobram %lld posicoes",
-             (long long)s->n_conv, (long long)room);
+        vlog("  contexto    %lld tokens montados, sobram %lld posicoes (%.1f%% "
+             "da janela)", (long long)s->n_conv, (long long)room,
+             100.0 * (double)s->n_conv / (double)s->ctx);
     }
 
     /* Casamento de prefixo: o que ja esta no KV nao volta a ser computado.
      * Em conversa continuada, so os tokens novos entram no prefill. */
     const int64_t reused = tt_state_match_prefix(s->state, s->conv, s->n_conv);
 
+    /* Perplexidade do prompt, medida so na parte RECOMPUTADA.
+     *
+     * O que veio do cache nao tem logits novos -- e justamente por isso que
+     * casou.  Entao o numero e "quao previsivel era o pedaco novo da
+     * conversa", que e o que interessa: o resultado de uma ferramenta com
+     * perplexidade alta e o que empurra o modelo para fora do assunto. */
+    pass_stats st_prompt = {0};
     const double t0 = tt_now();
-    for (int64_t i = reused; i < s->n_conv; i++)
+    for (int64_t i = reused; i < s->n_conv; i++) {
         if (tt_forward(s->state, s->conv[i], NULL) != 0) {
             tt_arena_free(&dom);
             send_json_error(c, 500, tt_error());
             return 0;
         }
+        /* Os logits apos o token i predizem o token i+1. */
+        if (g_verbose && i + 1 < s->n_conv)
+            stat_add(&st_prompt, s->state->logits, s->tok->n_tokens,
+                     s->conv[i + 1]);
+    }
     const double t_prefill = tt_now() - t0;
 
     tt_log("  %lld tokens (%lld do cache) em %.2f s", (long long)s->n_conv,
            (long long)reused, t_prefill);
-    vlog("  prefill     %lld de %lld tokens vieram do cache (%.0f%%), "
-         "%.2f s%s", (long long)reused, (long long)s->n_conv,
+    vlog("  prefill     %lld de %lld do cache (%.0f%%), %lld recomputados em "
+         "%.2f s (%.1f tok/s)%s",
+         (long long)reused, (long long)s->n_conv,
          s->n_conv ? 100.0 * (double)reused / (double)s->n_conv : 0.0,
-         t_prefill,
+         (long long)(s->n_conv - reused), t_prefill,
+         t_prefill > 0 ? (double)(s->n_conv - reused) / t_prefill : 0.0,
          reused ? "" : "  <- cache frio: recomputou o prompt inteiro");
+    stat_log("prompt", &st_prompt);
 
     tt_sampler sampler;
     tt_sampler_init(&sampler, temp, top_p, top_k, (uint64_t)(tt_now() * 1e6));
@@ -771,8 +816,10 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
     int hit_eos = 0, in_call = 0, done_call = 0, streamed = 0;
     const double t1 = tt_now();
 
+    pass_stats st_gen = {0};
     while (made < max_new && s->n_conv < s->ctx) {
         const int32_t next = tt_sample(&sampler, s->state->logits, s->tok->n_tokens);
+        if (g_verbose) stat_add(&st_gen, s->state->logits, s->tok->n_tokens, next);
         if (is_eos(s, next)) { hit_eos = 1; break; }
 
         const int64_t w = tt_decode(s->tok, &next, 1, piece, sizeof(piece) - 1);
@@ -851,61 +898,51 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
     }
 
     if (g_verbose) {
-        char buf[400];
-        /* O que o modelo produziu, do jeito que uma pessoa le: primeiro o
-         * raciocinio (se houve), depois a resposta, depois as chamadas. */
         const char *body = raw ? raw : "";
         const char *close = strstr(body, "</think>");
-        if (close) {
-            vlog("  raciocinio  %s",
-                 snippet(body, (size_t)(close - body), buf, sizeof(buf)));
-            body = close + 8;
+        const char *tc    = strstr(body, "<tool_call>");
+
+        /* Tamanhos, nao texto: quanto foi rascunho e quanto foi resposta e o
+         * que se quer saber para julgar o custo de `think`. */
+        if (close)
+            vlog("  raciocinio  %zu caracteres antes do </think>",
+                 (size_t)(close - body));
+        {
+            const char *ans = close ? close + 8 : body;
+            const size_t alen = tc && tc > ans ? (size_t)(tc - ans) : strlen(ans);
+            vlog("  resposta    %zu caracteres", alen);
         }
-        /* A resposta e o que vem ANTES da primeira chamada -- o resto e
-         * marcacao, e ela sai renderizada logo abaixo. */
-        const char *tc = strstr(body, "<tool_call>");
-        const size_t answer_len = tc ? (size_t)(tc - body) : strlen(body);
-        if (answer_len) vlog("  resposta    \"%s\"",
-                             snippet(body, answer_len, buf, sizeof(buf)));
-        /* Uma linha por chamada, no formato `Nome(chave=valor, ...)`.  O JSON
-         * cru cabia na linha, mas ninguem le `{"id":"call_0","type":...}` para
-         * descobrir que o modelo pediu `pwd`. */
-        for (const char *p = strstr(body, "<tool_call>"); p;
-             p = strstr(p, "<tool_call>")) {
+
+        /* Ferramenta: o NOME e quantos argumentos.  Os valores ficam de fora
+         * -- um `Write` traz o arquivo inteiro no argumento, e um `Bash` traz
+         * o comando, que e a coisa mais sensivel que passa por aqui. */
+        for (const char *p = tc; p; p = strstr(p, "<tool_call>")) {
             p += 11;
             const char *end = strstr(p, "</tool_call>");
             if (!end) break;
 
-            char line[512];
-            size_t w = 0;
             const char *ne = strstr(p, "<arg_key>");
             if (!ne || ne > end) ne = end;
             size_t nn = (size_t)(ne - p);
             while (nn && (p[nn - 1] == '\n' || p[nn - 1] == ' ')) nn--;
-            w = jw_put(line, sizeof(line), 0, p, nn);
-            w = jw_put(line, sizeof(line), w, "(", 1);
 
-            int first = 1;
+            int nargs = 0;
+            size_t vbytes = 0;
             for (const char *k = strstr(p, "<arg_key>"); k && k < end;
                  k = strstr(k, "<arg_key>")) {
-                k += 9;
-                const char *ke = strstr(k, "</arg_key>");
-                const char *v  = ke ? strstr(ke, "<arg_value>") : NULL;
+                const char *v  = strstr(k, "<arg_value>");
                 const char *ve = v ? strstr(v, "</arg_value>") : NULL;
-                if (!ke || !v || !ve || ve > end) break;
-                v += 11;
-                if (!first) w = jw_put(line, sizeof(line), w, ", ", 2);
-                first = 0;
-                w = jw_put(line, sizeof(line), w, k, (size_t)(ke - k));
-                w = jw_put(line, sizeof(line), w, "=", 1);
-                w = jw_put(line, sizeof(line), w, v, (size_t)(ve - v));
+                if (!v || !ve || ve > end) break;
+                nargs++;
+                vbytes += (size_t)(ve - v - 11);
                 k = ve;
             }
-            line[jw_put(line, sizeof(line), w, ")", 1)] = '\0';
-            vlog("  chamada     %s", snippet(line, strlen(line), buf, sizeof(buf)));
+            vlog("  chamada     %.*s -- %d argumento%s, %zu caracteres",
+                 (int)nn, p, nargs, nargs == 1 ? "" : "s", vbytes);
             p = end + 12;
         }
 
+        stat_log("geracao", &st_gen);
         vlog("  fim         %s -- %lld tokens em %.1f s (%.1f tok/s)%s",
              reason, (long long)made, t_dec, made ? (double)made / t_dec : 0.0,
              !strcmp(reason, "length") ? "  <- CONTEXTO CHEIO" : "");
@@ -934,14 +971,12 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
                 calls ? "\"tool_calls\":" : "", calls ? calls : "",
                 calls ? "" : "", reason, usage);
             tt_send_all(c, tail, (size_t)n);
-            /* O que o cliente REALMENTE recebe.  As linhas acima contam o que
-             * o modelo produziu; esta conta o que saiu pelo fio -- e quando um
-             * cliente nao renderiza, a diferenca entre as duas e a pista. */
-            if (g_verbose) {
-                char buf[400];
-                vlog("  devolvido   %d quadros de conteudo + %s",
-                     streamed, snippet(tail, (size_t)n, buf, sizeof(buf)));
-            }
+            /* O que saiu pelo fio, em contagem.  As linhas acima contam o que
+             * o modelo produziu; esta conta o que o cliente recebeu -- e
+             * quando um cliente nao renderiza, a diferenca entre as duas e a
+             * pista.  O corpo em si nao entra: e a mensagem. */
+            vlog("  devolvido   %d quadros de conteudo + 1 final (%d bytes)%s",
+                 streamed, n, calls ? " com tool_calls" : "");
             free(tail);
         }
     } else if (full) {
@@ -967,11 +1002,8 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
                     calls ? ",\"tool_calls\":" : "", calls ? calls : "",
                     reason, usage);
                 send_status(c, 200, "OK", "application/json", body, (size_t)n);
-                if (g_verbose) {
-                    char sb2[400];
-                    vlog("  devolvido   %d bytes: %s", n,
-                         snippet(body, (size_t)n, sb2, sizeof(sb2)));
-                }
+                vlog("  devolvido   resposta unica, %d bytes%s", n,
+                     calls ? " com tool_calls" : "");
                 free(body);
             }
             free(big);
@@ -1101,7 +1133,7 @@ int tt_cmd_serve(int argc, char **argv)
         else if (!strcmp(a, "--ram-gb") && has)    ram_gb = atof(argv[++i]);
         else if (!strcmp(a, "--no-warm"))          no_warm = 1;
         else if (!strcmp(a, "--verbose") || !strcmp(a, "-v")) g_verbose = 1;
-        else if (!strcmp(a, "--kv-prec") && has) {
+        else if ((!strcmp(a, "--kv-prec") || !strcmp(a, "--kv")) && has) {
             if (tt_kv_prec_parse(argv[++i], &kv_prec) != 0) return -1;
         }
         else if (!strcmp(a, "--vram-gb") && has)   vram_gb = atof(argv[++i]);

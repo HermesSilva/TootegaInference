@@ -51,13 +51,26 @@
  * da medicao, nao parametro de um prompt. */
 static tt_kv_prec g_kv_prec = TT_KV_F32;
 
+/* Raciocinio ligado/desligado, escolhido por `--think` / `--no-think`. */
+static int g_think = 1;
+
 #define MAX_MODELS   6
 #define MAX_PROMPTS  24
 #define MAX_GEN      512
 
 /* Marcadores do template, conferidos contra `apply_chat_template`. */
 #define P_PRE  "[gMASK]<sop><|user|>"
-#define P_POST "<|assistant|><think>"
+
+/* `<think>` abre o rascunho; `</think>` o fecha antes de comecar e o modelo vai
+ * direto a resposta.  Nao e truque: e a mesma construcao que o template usa
+ * para turnos de assistente ja concluidos.
+ *
+ * O default segue LIGADO para os numeros antigos continuarem comparaveis --
+ * mas o descompasso importa: ate aqui esta ferramenta so mediu com raciocinio,
+ * enquanto o chat e o agente rodam sem.  Medir um regime e entregar outro e
+ * como nao medir. */
+#define P_THINK   "<|assistant|><think>"
+#define P_NOTHINK "<|assistant|></think>"
 
 /* Conjunto fixo.  Cobre o que o uso real pede: resposta curta e factual,
  * instrucao com formato, raciocinio, codigo, e os dois idiomas.  Prompts
@@ -178,7 +191,8 @@ static int generate_all(run *r, const char *model_path, const st_file *bf16,
     fflush(stdout);
 
     for (int p = 0; p < N_PROMPTS; p++) {
-        snprintf(prompt, 4096, "%s%s%s", P_PRE, PROMPTS[p], P_POST);
+        snprintf(prompt, 4096, "%s%s%s", P_PRE, PROMPTS[p],
+                 g_think ? P_THINK : P_NOTHINK);
         const int64_t n_prompt = tt_encode(tk, prompt, strlen(prompt), ids, ctx);
         if (n_prompt < 0) { r->len[p] = 0; continue; }
 
@@ -245,12 +259,14 @@ int main(int argc, char **argv)
         else if (!strcmp(a, "--tokenizer") && has) tok_path = argv[++i];
         else if (!strcmp(a, "-n") && has)          n_new = atoi(argv[++i]);
         else if (!strcmp(a, "--threads") && has)   threads = atoi(argv[++i]);
-        else if (!strcmp(a, "--kv-prec") && has) {
+        else if ((!strcmp(a, "--kv-prec") || !strcmp(a, "--kv")) && has) {
             if (tt_kv_prec_parse(argv[++i], &g_kv_prec) != 0) return 1;
         }
         else if (!strcmp(a, "--temp") && has)     temp = (float)atof(argv[++i]);
         else if (!strcmp(a, "--seed") && has)     seed = strtoull(argv[++i], NULL, 10);
         else if (!strcmp(a, "--show"))             show = 1;
+        else if (!strcmp(a, "--think"))            g_think = 1;
+        else if (!strcmp(a, "--no-think"))         g_think = 0;
         else if (!strcmp(a, "-v"))                 tt_verbose(1);
         else if (a[0] == '-') { fprintf(stderr, "opcao desconhecida: %s\n", a); return 2; }
         else if (n_models < MAX_MODELS) models[n_models++] = a;
@@ -259,10 +275,13 @@ int main(int argc, char **argv)
     if (!n_models || !tok_path) {
         fprintf(stderr,
             "uso: gentest <a.tootega> [b.tootega ...] --tokenizer <tokenizer.json>\n"
-            "     [--bf16 <pasta>] [-n 96] [--show]\n\n"
-            "  --bf16  gera tambem a referencia com os pesos originais; sem ela\n"
-            "          nao ha `match@ref` e so restam rep4 e taxa de parada\n"
-            "  --show  imprime o texto gerado de cada prompt\n");
+            "     [--bf16 <pasta>] [-n 96] [--show] [--no-think]\n"
+            "     [--kv-prec f32|bf16|int8] [--temp 0] [--seed 1]\n\n"
+            "  --bf16      gera tambem a referencia com os pesos originais; sem\n"
+            "              ela nao ha `match@ref` e so restam rep4 e parada\n"
+            "  --show      imprime o texto gerado de cada prompt\n"
+            "  --no-think  fecha o </think> antes de comecar: o modelo vai\n"
+            "              direto a resposta, como o chat e o agente fazem\n");
         return 2;
     }
     if (n_new > MAX_GEN) n_new = MAX_GEN;

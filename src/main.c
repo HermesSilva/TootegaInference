@@ -186,7 +186,7 @@ static int cmd_forward(int argc, char **argv)
             if (tt_attn_parse(argv[++i], &attn) != 0) return -1;
         }
         else if (!strcmp(a, "--ram-gb") && has_next)      ram_gb = atof(argv[++i]);
-        else if (!strcmp(a, "--kv") && has_next) {
+        else if ((!strcmp(a, "--kv") || !strcmp(a, "--kv-prec")) && has_next) {
             if (tt_kv_prec_parse(argv[++i], &kv_prec) != 0) return -1;
         }
         else if (!strcmp(a, "--kernel") && has_next) {

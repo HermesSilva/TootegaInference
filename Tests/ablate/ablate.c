@@ -246,7 +246,7 @@ int main(int argc, char **argv)
         else if (!strcmp(a, "--corpus") && has)    corpus = argv[++i];
         else if (!strcmp(a, "--tokens") && has)    tokens = atoll(argv[++i]);
         else if (!strcmp(a, "--chunks") && has)    chunks = atoi(argv[++i]);
-        else if (!strcmp(a, "--kv-prec") && has) {
+        else if ((!strcmp(a, "--kv-prec") || !strcmp(a, "--kv")) && has) {
             if (tt_kv_prec_parse(argv[++i], &g_kv_prec) != 0) return 1;
         }
         else if (!strcmp(a, "--threads") && has)   threads = atoi(argv[++i]);

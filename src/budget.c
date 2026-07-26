@@ -120,7 +120,10 @@ int tt_cmd_plan(int argc, char **argv)
         if (!strcmp(a, "--ctx") && has_next)          ctx = atoll(argv[++i]);
         else if (!strcmp(a, "--ram-gb") && has_next)  ram_gb = atof(argv[++i]);
         else if (!strcmp(a, "--threads") && has_next) threads = atoi(argv[++i]);
-        else if (!strcmp(a, "--kv") && has_next) {
+        /* Os dois nomes: `plan` nasceu com `--kv` e os outros comandos com
+         * `--kv-prec`.  Divergencia de nome entre comandos que respondem a
+         * mesma pergunta e armadilha -- aceitar os dois custa uma linha. */
+        else if ((!strcmp(a, "--kv") || !strcmp(a, "--kv-prec")) && has_next) {
             if (tt_kv_prec_parse(argv[++i], &kv_prec) != 0) return -1;
         } else if (!strcmp(a, "--attn") && has_next) {
             if (tt_attn_parse(argv[++i], &attn) != 0) return -1;

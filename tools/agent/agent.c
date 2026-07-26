@@ -1828,8 +1828,10 @@ static void print_help(void)
            "  --yes                 nao pede aprovacao (o sandbox continua)\n"
            "  --max-steps N         teto de voltas do laco (default 16)\n"
            "  --resume ID           retoma a conversa salva desta sessao\n"
-           "  --idle-exit N         sai apos N s sem receber nada (default 15;\n"
-           "                        0 desliga, e o default no --tty)\n"
+           "  --idle-exit N         rede contra orfao: sai apos N s sem nada\n"
+           "                        (default 300; 0 desliga, e e o do --tty).\n"
+           "                        A saida normal e o fim do stdin, quando a\n"
+           "                        aba fecha.\n"
            "  --version             versao e build\n"
            "\nFerramentas: Read, Write, Edit, Glob, Grep, Bash.  As tres que\n"
            "mudam estado (Write, Edit, Bash) pedem aprovacao pela UI; nenhuma\n"
@@ -1925,10 +1927,18 @@ int main(int argc, char **argv)
     }
     path_norm(a.cwd, a.cwd_abs, sizeof(a.cwd_abs));
     if (!a.max_steps) a.max_steps = 16;
-    /* No terminal quem manda e a pessoa, e sair sozinho no meio de uma sessao
-     * seria hostil.  Pela UI, sair e o certo: um processo por aba que nunca
-     * morre vira uma dezena deles. */
-    if (!a.idle_exit && !g_tty) a.idle_exit = 15;
+    /* A saida NORMAL nao e por tempo: e o fim do stdin.  Quando a aba fecha, a
+     * UI encerra o pipe e o agente sai na hora -- e enquanto a aba estiver
+     * aberta ele deve ficar, porque entre duas perguntas passa mais que
+     * qualquer timeout razoavel.
+     *
+     * O relogio existe so para o orfao: extensao que morre sem fechar o pipe
+     * deixava processos vivos para sempre (foram sete de uma vez).  Cinco
+     * minutos e curto o bastante para limpar e longo o bastante para nao
+     * atrapalhar quem esta pensando na proxima pergunta.
+     *
+     * No terminal nao vale: sair sozinho no meio de uma sessao seria hostil. */
+    if (!a.idle_exit && !g_tty) a.idle_exit = 300;
     if (a.session[0]) load_history(&a);
 
     if (tt_net_init() != 0) {

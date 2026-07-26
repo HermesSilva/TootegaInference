@@ -1,17 +1,19 @@
-/* server.h -- HTTP e a UI web, dentro do proprio engine.
+/* server.h -- HTTP and the web UI, inside the engine itself.
  *
- * Nao e um executavel a parte de proposito.  O estado que um chat precisa --
- * KV cache, tokenizer, sampler, casamento de prefixo -- ja vive aqui; um
- * processo separado teria de falar com este por IPC ou carregar os 19 GB de
- * novo.  E a pagina vai EMBUTIDA no binario (`webui.h`), porque docs/10
- * promete um executavel que roda sem instalar nada.
+ * It is deliberately not a separate executable.  The state a chat needs -- KV
+ * cache, tokenizer, sampler, prefix matching -- already lives here; a separate
+ * process would have to talk to this one over IPC or load the 19 GB again.  And
+ * the page is EMBEDDED in the binary (`webui.h`), because docs/10 promises an
+ * executable that runs without installing anything.
  *
- * Concorrencia: um pedido por vez.  O laco de accept e sequencial e o modelo
- * e um so; slots e batching continuo sao o M3 e tem criterio de saida proprio
- * (docs/05). Ate la, uma segunda aba espera -- o que e honesto e visivel.
+ * Concurrency: one request at a time.  The accept loop is sequential and there
+ * is a single model; slots and continuous batching are M3 and have their own
+ * exit criterion (docs/05).  Until then a second tab waits -- which is honest
+ * and visible.
  *
- * Rede: loopback por default.  Expor na rede exige `--host` explicito E uma
- * chave, porque o servidor da acesso ao modelo e ao disco da maquina.
+ * Network: loopback by default.  Exposing it on the network requires an explicit
+ * `--host` AND a key, because the server grants access to the model and to the
+ * machine's disk.
  */
 #ifndef TOOTEGA_SERVER_H
 #define TOOTEGA_SERVER_H

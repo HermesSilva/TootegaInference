@@ -23,23 +23,23 @@
 #define OUT_CHUNK   4096
 
 /* Marcadores do template do modelo -- conferidos byte a byte contra
- * `apply_chat_template` (ver cmd_chat em main.c). */
+ * `apply_chat_template` (see cmd_chat in main.c). */
 #define CHAT_PREFIX "[gMASK]<sop>"
 #define CHAT_SYSTEM "<|system|>"
 #define CHAT_USER   "<|user|>"
 #define CHAT_ASSIST "<|assistant|>"
 #define CHAT_THINK  "<think>"
 
-/* Id do modelo no protocolo.  Um so lugar: `/v1/models` e as respostas tem de
- * concordar, senao cliente que valida o campo rejeita a resposta. */
+/* The model id in the protocol.  One place only: `/v1/models` and the replies
+ * have to agree, or a client that validates the field rejects the answer. */
 #define TT_MODEL_ID "glm-4.7-flash"
 
 /* ------------------------------------------------------------ verbose */
 
-/* `--verbose` mostra a FORMA do que entra e sai, e as estatisticas -- nunca o
+/* `--verbose` shows the SHAPE of what comes in and out, and the statistics --
  * conteudo.
  *
- * O texto do usuario e o do modelo ficaram de fora de proposito: o servidor
+ * The user's text and the model's were left out on purpose: the server
  * roda em terminal aberto, e a conversa de quem o usa pode ter caminho de
  * cliente, credencial colada num prompt, trecho de codigo fechado.  Nada disso
  * ajuda a depurar o protocolo -- o que ajuda e quantas mensagens, de que
@@ -60,8 +60,8 @@ static void vlog(const char *fmt, ...)
 
 /* Data e hora de parede, para casar com o log do cliente.
  *
- * `tt_now()` e monotonico -- serve para medir duracao e nao diz nada sobre
- * QUANDO.  Correlacionar o console do servidor com o Output do Cockpit exige
+ * `tt_now()` is monotonic -- good for measuring duration, and it says nothing
+ * about WHEN.  Correlating the server console with Cockpit's Output needs
  * relogio de parede nos dois. */
 static const char *stamp(char *buf, size_t cap)
 {
@@ -78,14 +78,14 @@ static const char *stamp(char *buf, size_t cap)
 
 /* ------------------------------------------------- estatistica do passe */
 
-/* O que o modelo achou de cada token que ele proprio escolheu.
+/* What the model thought of each token it chose itself.
  *
  * `nll` e a log-verossimilhanca negativa media; `exp(nll)` e a perplexidade --
- * quantas alternativas o modelo estava efetivamente considerando por posicao.
+ * how many alternatives the model was effectively weighing per position.
  * A entropia mede o espalhamento da distribuicao INTEIRA, e a diferenca entre
  * as duas separa dois casos que a perplexidade sozinha confunde: modelo
- * seguro e certeiro (nll baixa, entropia baixa) de modelo seguro por falta de
- * opcao (nll baixa, entropia alta) -- o segundo e o que antecede repeticao. */
+ * confident and right (low nll, low entropy) from confident for lack of
+ * options (low nll, high entropy) -- the second is what precedes repetition. */
 typedef struct {
     double  nll;        /* soma de -ln p(escolhido) */
     double  ent;        /* soma da entropia, em nats */
@@ -96,8 +96,8 @@ typedef struct {
 
 /* Uma passada estavel sobre os logits: max, soma dos exp, e as tres somas.
  *
- * Custa duas varreduras de 154.880 floats por token -- ~0,1 ms contra os 74 ms
- * do passe.  Barato o bastante para ficar ligado sempre que `--verbose` estiver. */
+ * It costs two scans of 154,880 floats per token -- ~0.1 ms against the pass's
+ * 74 ms.  Cheap enough to stay on whenever `--verbose` is. */
 static void stat_add(pass_stats *g, const float *logits, int64_t n, int32_t pick)
 {
     if (n <= 0 || pick < 0 || pick >= n) return;
@@ -110,7 +110,7 @@ static void stat_add(pass_stats *g, const float *logits, int64_t n, int32_t pick
         const double e = exp((double)logits[i] - (double)mx);
         sum += e;
         if (e > top) top = e;
-        /* soma de p*ln(p) sem normalizar; a normalizacao sai depois */
+        /* sum of p*ln(p) unnormalised; normalisation comes later */
         wsum += e * ((double)logits[i] - (double)mx);
     }
     if (sum <= 0.0) return;
@@ -149,7 +149,7 @@ typedef struct {
     int32_t   eos[8];
     int       n_eos;
 
-    const char *key;         /* NULL quando so no loopback */
+    const char *key;         /* NULL when loopback only */
     uint64_t    served;
     double      started;
 } server;
@@ -166,7 +166,7 @@ typedef struct {
 
 static const char *header_value(const char *head, const char *name)
 {
-    /* Cabecalhos HTTP sao case-insensitive; comparamos assim. */
+    /* HTTP headers are case-insensitive; we compare accordingly. */
     const size_t n = strlen(name);
     for (const char *p = head; *p; p++) {
         if (p != head && p[-1] != '\n') continue;
@@ -181,7 +181,7 @@ static const char *header_value(const char *head, const char *name)
     return NULL;
 }
 
-/* Le a requisicao inteira.  Devolve 0 em sucesso. */
+/* Reads the whole request.  Returns 0 on success. */
 static int read_request(const tt_socket *c, char *buf, size_t cap, request *r)
 {
     size_t have = 0;
@@ -213,7 +213,7 @@ static int read_request(const tt_socket *c, char *buf, size_t cap, request *r)
     const char *cl = header_value(buf, "content-length");
     if (cl) want = (size_t)strtoull(cl, NULL, 10);
 
-    /* O corpo pode ter vindo junto com o cabecalho ou nao. */
+    /* The body may or may not have arrived together with the header. */
     size_t body_have = have - head_len;
     while (body_have < want && have + 1 < cap) {
         const long k = tt_recv(c, buf + have, cap - have - 1);
@@ -232,9 +232,9 @@ static void send_status(const tt_socket *c, int code, const char *reason,
                         const char *ctype, const char *body, size_t len)
 {
     char head[512];
-    /* CORS aberto porque o servidor e local e ja tem a chave para o que custa.
-     * Sem isto, cliente que roda DENTRO de um navegador -- e o Copilot do VS
-     * Code e um -- nao consegue nem o preflight. */
+    /* CORS is open because the server is local and already has a key for what
+     * costs.  Without it, a client running INSIDE a browser -- and VS Code's
+     * Copilot is one -- cannot even get through the preflight. */
     const int n = snprintf(head, sizeof(head),
         "HTTP/1.1 %d %s\r\n"
         "Content-Type: %s\r\n"
@@ -272,18 +272,18 @@ static size_t json_escape(const char *src, size_t n, char *dst, size_t cap);
 
 /* ------------------------------------------------------- ferramentas */
 
-/* Anexa bytes com corte no limite.  Devolve o novo comprimento. */
+/* Appends bytes, clipping at the limit.  Returns the new length. */
 static size_t jw_put(char *dst, size_t cap, size_t w, const char *s, size_t n)
 {
     for (size_t i = 0; i < n && w + 1 < cap; i++) dst[w++] = s[i];
     return w;
 }
 
-/* Serializa um no do DOM de volta para JSON.
+/* Serialises a DOM node back into JSON.
  *
- * Necessario porque o template do modelo despeja cada ferramenta como JSON
- * dentro do prompt (`{{ tool | tojson }}`), e o nosso DOM e zero-copia: guarda
- * ponteiros para os pedacos, nao o texto original do objeto. */
+ * Needed because the model template dumps each tool as JSON inside the prompt
+ * (`{{ tool | tojson }}`), and our DOM is zero-copy: it keeps pointers to the
+ * pieces, not the object's original text. */
 static size_t json_write(const tt_json *n, char *dst, size_t cap, size_t w)
 {
     char num[64];
@@ -329,8 +329,8 @@ static size_t json_write(const tt_json *n, char *dst, size_t cap, size_t w)
 
 /* Bloco de sistema com as ferramentas, byte a byte como `chat_template.jinja`.
  *
- * Fica no inicio do prefixo de proposito: e a parte que NAO muda entre turnos,
- * e a regra de ordenacao de docs/03 (estavel primeiro) e o que faz o cache de
+ * It sits at the start of the prefix on purpose: it is the part that does NOT
+ * change between turns, and the docs/03 ordering rule (stable first) is what
  * prefixo valer alguma coisa numa sessao de agente. */
 static int append_tools(server *s, const tt_json *tools)
 {
@@ -340,7 +340,7 @@ static int append_tools(server *s, const tt_json *tools)
         "XML tags:\n<tools>\n") < 0) return -1;
 
     char *one = (char *)malloc(64u << 10);
-    if (!one) return tt_fail("sem memoria");
+    if (!one) return tt_fail("out of memory");
     for (const tt_json *t = tools->child; t; t = t->next) {
         const size_t n = json_write(t, one, 64u << 10, 0);
         one[n] = '\0';
@@ -360,7 +360,7 @@ static int append_tools(server *s, const tt_json *tools)
     return got < 0 ? -1 : 0;
 }
 
-/* Chamadas que o assistente ja fez, no formato que o modelo emitiu.
+/* Calls the assistant has already made, in the format the model emitted.
  * `arguments` chega como string JSON (OpenAI) ou objeto; os dois viram pares
  * <arg_key>/<arg_value>. */
 static int append_tool_calls(server *s, const tt_json *calls, tt_arena *dom)
@@ -389,7 +389,7 @@ static int append_tool_calls(server *s, const tt_json *calls, tt_arena *dom)
                 memcpy(key, a->key, kn);
                 key[kn] = '\0';
 
-                /* String vai crua; o resto vai como JSON -- e o que o template
+                /* A string goes raw; everything else goes as JSON -- which is
                  * faz com `tojson if v is not string else v`. */
                 size_t vn = 0;
                 const char *vs = tt_json_str(a, &vn);
@@ -415,9 +415,9 @@ static int append_tool_calls(server *s, const tt_json *calls, tt_arena *dom)
 
 /* Monta o prefixo da conversa a partir das mensagens do pedido.
  *
- * A UI manda a conversa inteira a cada turno (e o que um cliente OpenAI faz).
+ * The UI sends the whole conversation every turn (that is what an OpenAI
  * Reconstruimos os ids do zero e deixamos o casamento de prefixo decidir o que
- * recomputar -- e por isso que o segundo turno custa so os tokens novos. */
+ * recomputed -- which is why the second turn only costs the new tokens. */
 static int build_conversation(server *s, const tt_json *messages, int think,
                               const tt_json *tools, tt_arena *dom)
 {
@@ -434,11 +434,11 @@ static int build_conversation(server *s, const tt_json *messages, int think,
 
         /* Resultado de ferramenta: `<|observation|>` uma vez, um
          * `<tool_response>` por resultado.  E o unico papel em que a mensagem
-         * NAO e do modelo nem do usuario -- e o mundo respondendo. */
+         * is NOT the model's nor the user's -- it is the world answering. */
         if (tt_json_str_eq(role, "tool")) {
             if (!ctext) continue;
             char *tmp = (char *)malloc(clen + 1);
-            if (!tmp) return tt_fail("sem memoria");
+            if (!tmp) return tt_fail("out of memory");
             memcpy(tmp, ctext, clen);
             tmp[clen] = '\0';
             const int bad = append_text(s, "<|observation|><tool_response>") < 0
@@ -459,27 +459,27 @@ static int build_conversation(server *s, const tt_json *messages, int think,
 
         if (append_text(s, marker) < 0) return -1;
 
-        /* Turno de assistente que so chamou ferramenta nao tem texto. */
+        /* An assistant turn that only called a tool has no text. */
         if (!ctext) {
             if (append_text(s, "</think>") < 0) return -1;
             if (append_tool_calls(s, calls, dom) != 0) return -1;
             continue;
         }
 
-        /* `tt_encode` precisa de terminador; o DOM nao tem. */
+        /* `tt_encode` needs a terminator; the DOM has none. */
         char *tmp = (char *)malloc(clen + 1);
-        if (!tmp) return tt_fail("sem memoria");
+        if (!tmp) return tt_fail("out of memory");
         memcpy(tmp, ctext, clen);
         tmp[clen] = '\0';
 
         /* Turno de assistente JA CONCLUIDO entra como `</think>` mais a
-         * resposta, sem o raciocinio -- e o que `chat_template.jinja` faz, e
+         * answer, without the reasoning -- which is what `chat_template.jinja`
          * so o turno aberto ganha `<think>`.
          *
-         * Fica no servidor e nao no cliente porque o template e do modelo: um
-         * cliente OpenAI qualquer manda `content` puro e tem de funcionar. E
-         * cortar o raciocinio do historico e o que impede o contexto de
-         * inchar a cada volta. */
+         * It lives in the server and not the client because the template is
+         * the model's: any OpenAI client sends plain `content` and has to
+         * work.  And stripping the reasoning from the history is what keeps
+         * the context from swelling every round. */
         const char *body = tmp;
         if (assistant) {
             const char *close = strstr(tmp, "</think>");
@@ -492,18 +492,18 @@ static int build_conversation(server *s, const tt_json *messages, int think,
         free(tmp);
         if (got < 0) return -1;
 
-        /* Texto E chamadas no mesmo turno: o modelo explica e depois chama. */
+        /* Text AND calls in the same turn: the model explains, then calls. */
         if (calls && append_tool_calls(s, calls, dom) != 0) return -1;
     }
 
     if (append_text(s, CHAT_ASSIST) < 0) return -1;
 
-    /* `<think>` abre o rascunho; `</think>` o fecha antes de comecar, e o
-     * modelo vai direto a resposta.
+    /* `<think>` opens the draft; `</think>` closes it before it starts, and the
+     * model goes straight to the answer.
      *
-     * Nao e truque: e a mesma construcao que o template usa para turnos de
-     * assistente JA concluidos, entao o modelo a viu no treino. O custo esta
-     * em outro lugar -- ver docs/20. */
+     * It is not a trick: it is the same construction the template uses for
+     * assistant turns ALREADY completed, so the model saw it in training.  The
+     * cost is elsewhere -- see docs/20. */
     if (append_text(s, think ? CHAT_THINK : "</think>") < 0) return -1;
     return 0;
 }
@@ -514,7 +514,7 @@ static int is_eos(const server *s, int32_t id)
     return 0;
 }
 
-/* Escapa uma string para dentro de JSON. */
+/* Escapes a string for embedding in JSON. */
 static size_t json_escape(const char *src, size_t n, char *dst, size_t cap)
 {
     size_t w = 0;
@@ -535,14 +535,14 @@ static size_t json_escape(const char *src, size_t n, char *dst, size_t cap)
     return w;
 }
 
-/* --------------------------------------- saida do modelo -> tool_calls */
+/* -------------------------------------- model output -> tool_calls */
 
 /* Tipo declarado do argumento no schema que o CLIENTE mandou.
  *
- * O modelo emite `<arg_value>3</arg_value>` sem dizer se e o numero 3 ou a
+ * The model emits `<arg_value>3</arg_value>` without saying whether it is the
  * string "3"; OpenAI exige `arguments` como JSON tipado.  Sem consultar o
- * schema, toda ferramenta com argumento numerico ou booleano chega errada do
- * outro lado. */
+ * the schema, every tool with a numeric or boolean argument arrives wrong on
+ * the other side. */
 static char arg_kind(const tt_json *tools, const char *fname, const char *key)
 {
     for (const tt_json *t = tools ? tools->child : NULL; t; t = t->next) {
@@ -560,8 +560,8 @@ static char arg_kind(const tt_json *tools, const char *fname, const char *key)
     return '?';
 }
 
-/* Um `<arg_value>` cru vira JSON.  `kind` decide; `?` (schema silencioso)
- * aceita o valor cru so quando ele JA e JSON valido. */
+/* A raw `<arg_value>` becomes JSON.  `kind` decides; `?` (a silent schema)
+ * accepts the raw value only when it ALREADY is valid JSON. */
 static size_t arg_value_json(const char *v, size_t n, char kind,
                              char *dst, size_t cap)
 {
@@ -581,8 +581,8 @@ static size_t arg_value_json(const char *v, size_t n, char kind,
     return jw_put(dst, cap, w, "\"", 1);
 }
 
-/* Extrai todas as chamadas do texto gerado e monta o array `tool_calls` da
- * OpenAI.  Devolve quantas achou. */
+/* Extracts every call from the generated text and assembles OpenAI's
+ * `tool_calls` array.  Returns how many it found. */
 static int parse_tool_calls(const char *text, const tt_json *tools,
                             char *dst, size_t cap, uint64_t seq)
 {
@@ -637,11 +637,11 @@ static int parse_tool_calls(const char *text, const tt_json *tools,
         }
         args[jw_put(args, sizeof(args), aw, "}", 1)] = '\0';
 
-        /* O id carrega o numero do PEDIDO, nao so o indice dentro dele.
+        /* The id carries the REQUEST number, not just the index inside it.
          *
-         * Com `call_0` em toda resposta, um cliente que deduplica por id --
-         * e o Cockpit deduplica -- mostra o cartao do primeiro passo e
-         * descarta todos os seguintes como repetidos. O laco funcionava e a
+         * With `call_0` in every response, a client that dedupes by id -- and
+         * Cockpit does dedupe -- shows the first step's card and discards
+         * every following one as a repeat.  The loop worked and the
          * tela ficava parada. */
         char one[17408];
         const int n = snprintf(one, sizeof(one),
@@ -649,7 +649,7 @@ static int parse_tool_calls(const char *text, const tt_json *tools,
             "\"function\":{\"name\":\"%s\",\"arguments\":\"",
             found ? "," : "", (unsigned long long)seq, found, fname);
         w = jw_put(dst, cap, w, one, (size_t)n);
-        /* `arguments` e STRING no protocolo -- o JSON vai escapado dentro. */
+        /* `arguments` is a STRING in the protocol -- the JSON goes escaped inside. */
         w += json_escape(args, strlen(args), dst + w, cap - w);
         w = jw_put(dst, cap, w, "\"}}", 3);
 
@@ -684,8 +684,8 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
     if (tt_json_str_eq(tt_json_get(root, "tool_choice"), "none")) tools = NULL;
 
     const int stream = tt_json_bool(tt_json_get(root, "stream"), 1);
-    /* `think` e nosso; `chat_template_kwargs.enable_thinking` e o que vLLM e
-     * SGLang popularizaram e o que um cliente de terceiro manda. */
+    /* `think` is ours; `chat_template_kwargs.enable_thinking` is what vLLM and
+     * SGLang popularised and what a third-party client sends. */
     const int think = tt_json_bool(tt_json_get(root, "think"),
         tt_json_bool(tt_json_get(tt_json_get(root, "chat_template_kwargs"),
                                  "enable_thinking"), 1));
@@ -693,23 +693,23 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
     const float top_p = (float)tt_json_real(tt_json_get(root, "top_p"), 0.95);
     const int   top_k = (int)tt_json_int(tt_json_get(root, "top_k"), 40);
     /* Sem `max_tokens`, gera ate o EOS.  O unico teto e o contexto -- cortar
-     * por contagem interrompe o modelo no meio do raciocinio e entrega um
+     * by count interrupts the model mid-reasoning and delivers a
      * rascunho como se fosse resposta. */
     int64_t max_new = tt_json_int(tt_json_get(root, "max_tokens"), 0);
 
-    /* A arena do pedido sobrevive ate o fim: `tools` e consultado depois da
+    /* The request arena survives to the end: `tools` is consulted after
      * geracao, para tipar os argumentos da chamada. */
     if (build_conversation(s, messages, think, tools, &dom) != 0 ||
         s->n_conv + 8 >= s->ctx) {
         tt_arena_free(&dom);
-        send_json_error(c, 400, "conversa nao cabe no contexto");
+        send_json_error(c, 400, "conversation does not fit in the context");
         return 0;
     }
     const int64_t room = s->ctx - s->n_conv - 1;
     if (max_new <= 0 || max_new > room) max_new = room;
 
     if (g_verbose) {
-        /* Quem falou, quanto, e com que forma.  O TEXTO fica de fora: ele nao
+        /* Who spoke, how much, and in what shape.  The TEXT stays out: it is
          * ajuda a depurar o protocolo e o console e um lugar publico. */
         int n_user = 0, n_asst = 0, n_tool = 0, n_sys = 0;
         size_t b_user = 0, b_asst = 0, b_tool = 0, b_sys = 0;
@@ -723,11 +723,11 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
             else if (tt_json_str_eq(role, "system"))    { n_sys++;  b_sys  += cn; }
         }
 
-        vlog("--- pedido -----------------------------------------------");
-        vlog("  conversa    %llu mensagens  (papel x quantidade x caracteres)",
+        vlog("--- request ----------------------------------------------");
+        vlog("  conversation %llu messages  (role x count x characters)",
              (unsigned long long)messages->count);
-        vlog("              sistema %d/%zu   usuario %d/%zu   "
-             "assistente %d/%zu   ferramenta %d/%zu",
+        vlog("               system %d/%zu   user %d/%zu   "
+             "assistant %d/%zu   tool %d/%zu",
              n_sys, b_sys, n_user, b_user, n_asst, b_asst, n_tool, b_tool);
 
         if (tools) {
@@ -742,29 +742,29 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
                                           w ? ", " : "", nm);
             }
             names[w] = '\0';
-            vlog("  ferramentas %llu declaradas: %s",
+            vlog("  tools       %llu declared: %s",
                  (unsigned long long)tools->count, names);
         }
 
-        vlog("  opcoes      raciocinio %s, temperatura %.2f, top_p %.2f, "
-             "top_k %d, %s", think ? "LIGADO" : "desligado", temp, top_p, top_k,
-             stream ? "streaming" : "resposta unica");
+        vlog("  options     reasoning %s, temperature %.2f, top_p %.2f, "
+             "top_k %d, %s", think ? "ON" : "off", temp, top_p, top_k,
+             stream ? "streaming" : "single response");
 
-        vlog("  contexto    %lld tokens montados, sobram %lld posicoes (%.1f%% "
-             "da janela)", (long long)s->n_conv, (long long)room,
+        vlog("  context     %lld tokens assembled, %lld positions left (%.1f%% "
+             "of the window)", (long long)s->n_conv, (long long)room,
              100.0 * (double)s->n_conv / (double)s->ctx);
     }
 
-    /* Casamento de prefixo: o que ja esta no KV nao volta a ser computado.
-     * Em conversa continuada, so os tokens novos entram no prefill. */
+    /* Prefix matching: what is already in the KV is not computed again.
+     * In a continued conversation only the new tokens enter the prefill. */
     const int64_t reused = tt_state_match_prefix(s->state, s->conv, s->n_conv);
 
-    /* Perplexidade do prompt, medida so na parte RECOMPUTADA.
+    /* Prompt perplexity, measured only over the RECOMPUTED part.
      *
-     * O que veio do cache nao tem logits novos -- e justamente por isso que
-     * casou.  Entao o numero e "quao previsivel era o pedaco novo da
-     * conversa", que e o que interessa: o resultado de uma ferramenta com
-     * perplexidade alta e o que empurra o modelo para fora do assunto. */
+     * What came from the cache has no new logits -- which is precisely why it
+     * matched.  So the number is "how predictable the new piece of the
+     * conversation was", which is what matters: a tool result with high
+     * perplexity is what pushes the model off topic. */
     pass_stats st_prompt = {0};
     const double t0 = tt_now();
     for (int64_t i = reused; i < s->n_conv; i++) {
@@ -782,7 +782,7 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
 
     tt_log("  %lld tokens (%lld do cache) em %.2f s", (long long)s->n_conv,
            (long long)reused, t_prefill);
-    vlog("  prefill     %lld de %lld do cache (%.0f%%), %lld recomputados em "
+    vlog("  prefill     %lld of %lld from cache (%.0f%%), %lld recomputed in "
          "%.2f s (%.1f tok/s)%s",
          (long long)reused, (long long)s->n_conv,
          s->n_conv ? 100.0 * (double)reused / (double)s->n_conv : 0.0,
@@ -804,8 +804,8 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
     }
 
     char piece[512], esc[2048], frame[4096];
-    /* O texto inteiro e acumulado mesmo em streaming: as chamadas de
-     * ferramenta so podem ser extraidas do conjunto, e nao de um pedaco. */
+    /* The whole text is accumulated even when streaming: tool calls can only
+     * be extracted from the whole, never from a chunk. */
     const size_t full_cap = 1u << 20;
     char *full = (char *)malloc(full_cap);
     size_t full_len = 0;
@@ -832,7 +832,7 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
                 full[full_len] = '\0';
             }
 
-            /* Dentro de uma chamada, o texto NAO e conteudo: vai no
+            /* Inside a call, the text is NOT content: it goes into the
              * `tool_calls` do quadro final, como o protocolo pede. */
             if (stream && !in_call) {
                 json_escape(piece, (size_t)w, esc, sizeof(esc));
@@ -847,8 +847,8 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
         s->conv[s->n_conv++] = next;
         made++;
 
-        /* `</tool_call>` fecha o turno: esperar o EOS depois disso e queimar
-         * tokens a 13 tok/s para receber texto que o cliente descarta. */
+        /* `</tool_call>` closes the turn: waiting for EOS after it is burning
+         * tokens at 13 tok/s to receive text the client throws away. */
         if (in_call && w > 0 && !strcmp(piece, "</tool_call>")) {
             done_call = 1;
             break;
@@ -860,11 +860,11 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
     tt_log("  %lld tokens gerados, %.2f tok/s", (long long)made,
            made ? (double)made / t_dec : 0.0);
 
-    /* `length` significa contexto cheio, nao cota de resposta -- nao ha cota.
-     * E informacao acionavel: o usuario precisa de `--ctx` maior. */
+    /* `length` means the context is full, not an answer quota -- there is no
+     * quota.  It is actionable information: the user needs a bigger `--ctx`. */
     const char *reason = done_call ? "tool_calls" : (hit_eos ? "stop" : "length");
 
-    /* Copia do texto CRU antes de qualquer corte: logo abaixo `full` perde o
+    /* A copy of the RAW text before any trimming: just below, `full` loses the
      * trecho da chamada de ferramenta, e o log verboso quer justamente ele. */
     char *raw = NULL;
     if (g_verbose && full) {
@@ -877,16 +877,16 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
         calls = (char *)malloc(64u << 10);
         if (calls && parse_tool_calls(full, tools, calls, 64u << 10,
                                       s->served) == 0) {
-            /* `</tool_call>` sem chamada extraivel: o modelo emitiu lixo.
-             * Melhor devolver o texto do que uma lista vazia que o cliente
-             * trata como "nada a fazer" e o laco morre em silencio. */
+            /* `</tool_call>` with no extractable call: the model emitted junk.
+             * Better to return the text than an empty list the client treats
+             * as "nothing to do", with the loop dying in silence. */
             free(calls);
             calls = NULL;
             reason = "stop";
         } else if (calls) {
-            /* O texto da chamada nao e conteudo: ja foi para `tool_calls`.
-             * Deixa-lo em `content` faria o cliente exibir a marcacao crua e,
-             * pior, reenviar tudo no proximo turno. */
+            /* The call's text is not content: it already went to `tool_calls`.
+             * Leaving it in `content` would make the client show the raw
+             * markup and, worse, resend it all next turn. */
             char *cut = strstr(full, "<tool_call>");
             if (cut) {
                 while (cut > full && (cut[-1] == '\n' || cut[-1] == ' ')) cut--;
@@ -901,20 +901,20 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
         const char *close = strstr(body, "</think>");
         const char *tc    = strstr(body, "<tool_call>");
 
-        /* Tamanhos, nao texto: quanto foi rascunho e quanto foi resposta e o
+        /* Sizes, not text: how much was draft and how much was answer is what
          * que se quer saber para julgar o custo de `think`. */
         if (close)
-            vlog("  raciocinio  %zu caracteres antes do </think>",
+            vlog("  reasoning   %zu characters before </think>",
                  (size_t)(close - body));
         {
             const char *ans = close ? close + 8 : body;
             const size_t alen = tc && tc > ans ? (size_t)(tc - ans) : strlen(ans);
-            vlog("  resposta    %zu caracteres", alen);
+            vlog("  answer      %zu characters", alen);
         }
 
-        /* Ferramenta: o NOME e quantos argumentos.  Os valores ficam de fora
-         * -- um `Write` traz o arquivo inteiro no argumento, e um `Bash` traz
-         * o comando, que e a coisa mais sensivel que passa por aqui. */
+        /* Tool: the NAME and how many arguments.  The values stay out -- a
+         * `Write` carries the whole file in its argument, and a `Bash` carries
+         * the command, the most sensitive thing that passes through here. */
         for (const char *p = tc; p; p = strstr(p, "<tool_call>")) {
             p += 11;
             const char *end = strstr(p, "</tool_call>");
@@ -936,13 +936,13 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
                 vbytes += (size_t)(ve - v - 11);
                 k = ve;
             }
-            vlog("  chamada     %.*s -- %d argumento%s, %zu caracteres",
+            vlog("  call        %.*s -- %d argument%s, %zu characters",
                  (int)nn, p, nargs, nargs == 1 ? "" : "s", vbytes);
             p = end + 12;
         }
 
-        stat_log("geracao", &st_gen);
-        vlog("  fim         %s -- %lld tokens em %.1f s (%.1f tok/s)%s",
+        stat_log("generation", &st_gen);
+        vlog("  end         %s -- %lld tokens in %.1f s (%.1f tok/s)%s",
              reason, (long long)made, t_dec, made ? (double)made / t_dec : 0.0,
              !strcmp(reason, "length") ? "  <- CONTEXTO CHEIO" : "");
     }
@@ -970,17 +970,17 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
                 calls ? "\"tool_calls\":" : "", calls ? calls : "",
                 calls ? "" : "", reason, usage);
             tt_send_all(c, tail, (size_t)n);
-            /* O que saiu pelo fio, em contagem.  As linhas acima contam o que
-             * o modelo produziu; esta conta o que o cliente recebeu -- e
-             * quando um cliente nao renderiza, a diferenca entre as duas e a
-             * pista.  O corpo em si nao entra: e a mensagem. */
-            vlog("  devolvido   %d quadros de conteudo + 1 final (%d bytes)%s",
+            /* What went out over the wire, as a count.  The lines above count
+             * what the model produced; this one counts what the client
+             * received -- and when a client renders nothing, the difference
+             * between the two is the clue.  The body itself stays out: it is the message. */
+            vlog("  returned    %d content frames + 1 final (%d bytes)%s",
                  streamed, n, calls ? " com tool_calls" : "");
             free(tail);
         }
     } else if (full) {
-        /* Escape pode sextuplicar (`\u00XX` por byte de controle), entao os
-         * dois buffers saem do tamanho do PIOR caso.  A versao anterior
+        /* Escaping can sextuple the size (`\u00XX` per control byte), so both
+         * buffers are sized for the WORST case.  The previous version
          * dimensionava o corpo por `full_len * 2` e truncava respostas longas
          * em silencio -- que e o modo mais chato de errar. */
         const size_t esc_cap = full_len * 6 + 16;
@@ -1001,7 +1001,7 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
                     calls ? ",\"tool_calls\":" : "", calls ? calls : "",
                     reason, usage);
                 send_status(c, 200, "OK", "application/json", body, (size_t)n);
-                vlog("  devolvido   resposta unica, %d bytes%s", n,
+                vlog("  returned    single response, %d bytes%s", n,
                      calls ? " com tool_calls" : "");
                 free(body);
             }
@@ -1017,7 +1017,7 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
     return 0;
 }
 
-/* ------------------------------------------------------------- laco */
+/* ------------------------------------------------------------- loop */
 
 static void handle(server *s, const tt_socket *c, const char *peer)
 {
@@ -1027,12 +1027,12 @@ static void handle(server *s, const tt_socket *c, const char *peer)
     request r;
     if (read_request(c, buf, REQ_MAX, &r) != 0) { free(buf); return; }
 
-    /* A chave protege o que CUSTA -- gerar tokens e mexer no cache --, nao a
+    /* The key protects what COSTS -- generating tokens and touching the cache
      * pagina.
      *
-     * Exigir chave no `GET /` tornaria a UI inabrivel: o navegador nao tem
+     * Requiring a key on `GET /` would make the UI unopenable: the browser has
      * como mandar `Authorization` ao digitar um endereco. A pagina e HTML
-     * publico, sem segredo nenhum; ela pede a chave e a envia nas chamadas de
+     * public, with no secret in it; it asks for the key and sends it on the
      * API. Proteger o HTML daria a sensacao de seguranca sem a coisa. */
     const int needs_key = s->key &&
         (!strcmp(r.path, "/v1/chat/completions") || !strcmp(r.path, "/reset"));
@@ -1040,15 +1040,15 @@ static void handle(server *s, const tt_socket *c, const char *peer)
     if (needs_key) {
         const char *given = strstr(r.auth, "Bearer ");
         if (!given || strcmp(given + 7, s->key) != 0) {
-            tt_log("  %s recusado: chave invalida em %s", peer, r.path);
-            send_json_error(c, 401, "chave invalida");
+            tt_log("  %s refused: invalid key at %s", peer, r.path);
+            send_json_error(c, 401, "invalid key");
             free(buf);
             return;
         }
     }
 
-    /* Rota de tudo o que chega -- `/stats` fica de fora porque a UI web o
-     * consulta a cada 3 s e afogaria o console. */
+    /* Routes everything that arrives -- `/stats` is left out because the web UI
+     * polls it every 3 s and would drown the console. */
     if (g_verbose && strcmp(r.path, "/stats") != 0) {
         char ts[32];
         vlog("");
@@ -1063,9 +1063,9 @@ static void handle(server *s, const tt_socket *c, const char *peer)
         send_status(c, 200, "OK", "text/html; charset=utf-8",
                     TT_WEBUI_HTML, sizeof(TT_WEBUI_HTML) - 1);
     } else if (!strcmp(r.method, "GET") && !strcmp(r.path, "/stats")) {
-        /* O que um desenvolvedor precisa ver sem abrir o console do servidor:
-         * onde a memoria esta, quanto do contexto sobrou, e se os kernels
-         * vetorizados estao mesmo ativos. */
+        /* What a developer needs to see without opening the server console:
+         * where the memory is, how much context is left, and whether the
+         * vectorised kernels really are active. */
         char body[768];
         const int n = snprintf(body, sizeof(body),
             "{\"version\":\"" TT_VERSION "\","
@@ -1094,7 +1094,7 @@ static void handle(server *s, const tt_socket *c, const char *peer)
         handle_chat(s, c, &r);
     } else if (!strcmp(r.method, "POST") && !strcmp(r.path, "/reset")) {
         /* "Sem historico" e o comportamento pedido: esquecer e so mover o
-         * comprimento do KV de volta para zero. */
+         * the KV length back to zero. */
         tt_state_reset(s->state);
         s->n_conv = 0;
         send_status(c, 200, "OK", "application/json", "{\"ok\":true}", 11);
@@ -1113,8 +1113,8 @@ int tt_cmd_serve(int argc, char **argv)
     int port = 8080, threads = 20, no_warm = 0;
     int64_t ctx = 8192;
     double ram_gb = 0;
-    /* A precisao do KV era fixa em f32 aqui: a opcao existia no engine e nao
-     * chegava ao servidor, que e justamente onde o contexto e grande.  int8
+    /* KV precision used to be hard-coded to f32 here: the option existed in
+     * the engine and did not reach the server, which is exactly where the
      * cabe 202.752 posicoes -- o teto do modelo -- em 5,7 GB. */
     tt_kv_prec kv_prec = TT_KV_F32;
 
@@ -1135,7 +1135,7 @@ int tt_cmd_serve(int argc, char **argv)
         }
         else if (a[0] == '-') return tt_fail("serve: opcao desconhecida '%s'", a);
         else if (!path) path = a;
-        else return tt_fail("serve: argumento extra '%s'", a);
+        else return tt_fail("serve: extra argument '%s'", a);
     }
 
     if (!path || !tok_path)
@@ -1144,13 +1144,13 @@ int tt_cmd_serve(int argc, char **argv)
                        "[--kv-prec f32|bf16|int8] [--verbose] [--no-warm]");
 
     /* Expor na rede exige as duas coisas.  Um servidor de inferencia aberto e
-     * acesso remoto ao modelo e ao disco desta maquina; recusar aqui custa uma
-     * linha e evita o acidente silencioso. */
+     * remote access to the model and to this machine's disk; refusing here
+     * costs one line and prevents the silent accident. */
     const int public_bind = host && strcmp(host, "127.0.0.1") != 0 &&
                             strcmp(host, "localhost") != 0;
     if (public_bind && !key)
-        return tt_fail("--host %s expoe o servidor na rede. Passe tambem "
-                       "--key <chave>; sem ela eu nao subo", host);
+        return tt_fail("--host %s exposes the server on the network. Pass "
+                       "--key <key> as well; without it I do not start", host);
 
     tt_tokenizer tok;
     if (tt_tokenizer_load(&tok, tok_path, 154880) != 0) return -1;
@@ -1171,15 +1171,15 @@ int tt_cmd_serve(int argc, char **argv)
     tt_pool *pool = tt_pool_create(threads, TT_AFFINITY_ALL);
     tt_kernels_set_pool(pool);
 
-    /* Aquece antes de aceitar conexao. Sem isto o primeiro usuario paga a
-     * leitura de 18 GB do disco espalhada pelo laco de decode -- 5x mais lento
-     * por token -- e nao ha nada na tela que explique a espera. */
+    /* Warm up before accepting connections.  Without this the first user pays
+     * for the 18 GB disk read spread through the decode loop -- 5x slower per
+     * token -- and nothing on screen explains the wait. */
     if (!no_warm) {
         char wb[64];
         const double tw = tt_now();
-        tt_log("  aquecendo: trazendo os pesos para a RAM ...");
+        tt_log("  warming up: bringing the weights into RAM ...");
         const uint64_t touched = tt_model_warm(&model);
-        tt_log("  %s em %.1f s (%.1f GB/s)",
+        tt_log("  %s in %.1f s (%.1f GB/s)",
                tt_bytes(wb, sizeof(wb), touched), tt_now() - tw,
                (double)touched / (tt_now() - tw) / 1e9);
     }
@@ -1209,28 +1209,28 @@ int tt_cmd_serve(int argc, char **argv)
             s.eos[s.n_eos++] = (int32_t)tt_json_int(x, -1);
 
     if (tt_net_init() != 0 || !s.conv) {
-        tt_log("nao consegui iniciar a rede");
+        tt_log("could not start the network");
         return -1;
     }
 
     tt_socket srv;
     if (tt_listen(&srv, host, port, 16) != 0) {
         tt_net_shutdown();
-        return tt_fail("nao consegui escutar em %s:%d (porta ocupada?)",
+        return tt_fail("could not listen on %s:%d (port in use?)",
                        host ? host : "127.0.0.1", port);
     }
 
     char b[64];
     tt_log("");
     tt_log("  tootega serve  --  http://%s:%d", host ? host : "127.0.0.1", port);
-    tt_log("  modelo   %s", path);
-    tt_log("  memoria  %s de %.1f GB de orcamento",
+    tt_log("  model    %s", path);
+    tt_log("  memory   %s of %.1f GB of budget",
            tt_bytes(b, sizeof(b), plan.total), plan.budget_gb);
-    tt_log("  contexto %lld posicoes, %d threads, %s",
+    tt_log("  context  %lld positions, %d threads, %s",
            (long long)ctx, tt_pool_threads(pool), tt_kernels_impl_name());
-    tt_log("  rede     %s%s", public_bind ? "EXPOSTO na rede" : "so loopback",
-           key ? ", com chave" : "");
-    tt_log("  um pedido por vez; a conversa nao sobrevive ao processo");
+    tt_log("  network  %s%s", public_bind ? "EXPOSED on the network" : "loopback only",
+           key ? ", with a key" : "");
+    tt_log("  one request at a time; the conversation does not survive the process");
     tt_log("");
 
     for (;;) {

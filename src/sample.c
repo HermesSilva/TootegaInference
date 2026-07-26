@@ -13,7 +13,7 @@ void tt_sampler_init(tt_sampler *s, float temperature, float top_p, int top_k,
     s->temperature = temperature;
     s->top_p = top_p;
     s->top_k = top_k;
-    /* xorshift64* nunca pode partir de zero. */
+    /* xorshift64* must never start from zero. */
     s->state = seed ? seed : 0x9E3779B97F4A7C15ull;
 }
 
@@ -24,7 +24,7 @@ static float next_unit(tt_sampler *s)
     x ^= x << 25;
     x ^= x >> 27;
     s->state = x;
-    /* 24 bits de mantissa: o suficiente para escolher entre 256 candidatos e
+    /* 24 mantissa bits: enough to choose among 256 candidates and
      * exatamente representavel em float. */
     return (float)((x * 0x2545F4914F6CDD1Dull) >> 40) / 16777216.0f;
 }
@@ -36,7 +36,7 @@ int32_t tt_sample(tt_sampler *s, float *logits, int64_t limit)
     if (s->temperature <= 0.0f)
         return (int32_t)tt_argmax(logits, limit);
 
-    /* Trabalhar sobre os K melhores em vez de sobre 154.880 logits: top-p sem
+    /* Working over the best K instead of over 154,880 logits: top-p without
      * ordenacao total, e o custo deixa de depender do vocabulario. */
     int k = s->top_k > 0 && s->top_k < TT_MAX_CAND ? s->top_k : TT_MAX_CAND;
     if ((int64_t)k > limit) k = (int)limit;
@@ -45,17 +45,17 @@ int32_t tt_sample(tt_sampler *s, float *logits, int64_t limit)
     float   val[TT_MAX_CAND];
     tt_topk(logits, limit, k, idx, val);
 
-    /* Softmax sobre os candidatos, ja com temperatura.
+    /* Softmax over the candidates, temperature already applied.
      *
-     * `max` e copiado ANTES do laco. Usar `val[0]` dentro dele foi um bug de
-     * verdade: na iteracao 0 o proprio `val[0]` vira exp(0) = 1, e as demais
-     * passam a subtrair 1 em vez do maximo. Com logits da ordem de 100 isso da
+     * `max` is copied BEFORE the loop.  Using `val[0]` inside it was a real
+     * bug: at iteration 0, `val[0]` itself becomes exp(0) = 1, and the rest
+     * then subtract 1 instead of the maximum.  With logits around 100 that
      * exp(330) -> infinito -> soma infinita -> probabilidades NaN -> nenhuma
-     * comparacao do sorteio e verdadeira, e o sampler devolvia sempre o ULTIMO
+     * the draw comparison is always true, and the sampler always returned the
      * candidato do top-k.
      *
-     * Sintoma: temperatura 0 perfeita (retorna antes daqui) e qualquer
-     * temperatura > 0 produzindo texto plausivel palavra a palavra e sem
+     * Symptom: temperature 0 perfect (it returns before here) and any
+     * temperature > 0 producing text plausible word by word and with no
      * sentido nenhum. */
     const float max = val[0];
     const float inv_t = 1.0f / s->temperature;
@@ -66,8 +66,8 @@ int32_t tt_sample(tt_sampler *s, float *logits, int64_t limit)
     }
     for (int i = 0; i < k; i++) val[i] /= sum;
 
-    /* top-p: mantem o menor prefixo cuja massa passa de p.  Sempre ao menos
-     * um candidato, senao um p pequeno demais nao deixaria nada. */
+    /* top-p: keep the shortest prefix whose mass exceeds p.  Always at least
+     * one candidate, or a too-small p would leave nothing. */
     int n = k;
     if (s->top_p > 0.0f && s->top_p < 1.0f) {
         float acc = 0.0f;
@@ -101,35 +101,35 @@ int tt_sample_selftest(void)
     for (int i = 0; i < 8; i++) logits[i] = (float)i * 0.5f;
     logits[3] = 10.0f;
     if (tt_sample(&s, logits, 8) != 3)
-        return tt_fail("sample: greedy nao pegou o maximo");
+        return tt_fail("sample: greedy did not pick the maximum");
 
-    /* Padding nunca sai: o maior logit esta fora do limite. */
+    /* Padding never comes out: the largest logit is beyond the limit. */
     for (int i = 0; i < 8; i++) logits[i] = 1.0f;
     logits[7] = 100.0f;
     tt_sampler_init(&s, 0.0f, 0.0f, 0, 1);
     if (tt_sample(&s, logits, 6) >= 6)
         return tt_fail("sample: amostrou id de padding");
 
-    /* top-k = 1 e determinista mesmo com temperatura. */
+    /* top-k = 1 is deterministic even with temperature. */
     for (int i = 0; i < 8; i++) logits[i] = (float)(8 - i);
     for (int trial = 0; trial < 16; trial++) {
         float tmp[8];
         memcpy(tmp, logits, sizeof(tmp));
         tt_sampler_init(&s, 1.0f, 1.0f, 1, (uint64_t)trial + 1);
         if (tt_sample(&s, tmp, 8) != 0)
-            return tt_fail("sample: top-k=1 nao foi determinista");
+            return tt_fail("sample: top-k=1 was not deterministic");
     }
 
-    /* Temperatura baixa tem de convergir para greedy, e as probabilidades tem
-     * de ser finitas.
+    /* A low temperature has to converge to greedy, and the probabilities have
+     * to be finite.
      *
-     * Este teste existe porque os anteriores nao pegavam o bug que houve aqui:
-     * greedy retorna antes do softmax, e top-k=1 so olha val[0]. O defeito
-     * vivia exatamente entre os dois -- k > 1 com temperatura > 0 -- e com
-     * logits GRANDES, que e o regime real (este modelo produz ~100).
+     * This test exists because the earlier ones did not catch the bug there
+     * was here: greedy returns before the softmax, and top-k=1 only looks at
+     * val[0].  The defect lived exactly between the two -- k > 1 with
+     * temperature > 0 -- and with LARGE logits, the real regime (~100 here).
      *
-     * Com temperatura 0,05 e uma vantagem de 5 no logit, o topo tem de sair
-     * praticamente sempre. */
+     * With temperature 0.05 and a 5-point logit lead, the top has to come out
+     * practically every time. */
     {
         float big[8];
         for (int i = 0; i < 8; i++) big[i] = 100.0f - (float)i * 5.0f;
@@ -142,10 +142,10 @@ int tt_sample_selftest(void)
             const int32_t got = tt_sample(&s, tmp, 8);
             if (got == 0) top++;
             if (got < 0 || got >= 8)
-                return tt_fail("sample: indice %d fora de [0,8)", got);
+                return tt_fail("sample: index %d out of [0,8)", got);
         }
         if (top < 60)
-            return tt_fail("sample: temperatura 0.05 escolheu o topo so "
+            return tt_fail("sample: temperature 0.05 chose the top only "
                            "%d/64 vezes -- softmax ou normalizacao errada", top);
     }
 

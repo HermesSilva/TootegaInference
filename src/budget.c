@@ -8,9 +8,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* docs/09: o default `auto` deixa 8 GB de folga.  Nao e margem de seguranca
- * numerica -- e o espaco em que o SO, o navegador e o compilador da pessoa
- * continuam existindo enquanto o engine roda. */
+/* docs/09: the `auto` default leaves 8 GB of headroom.  It is not a numerical
+ * safety margin -- it is the room in which the OS, the browser and the
+ * person's compiler go on existing while the engine runs. */
 #define TT_RAM_SLACK_GB 8.0
 
 void tt_plan_compute(tt_plan *p, const tt_model *m, int64_t ctx, double ram_gb)
@@ -29,8 +29,8 @@ void tt_plan_compute(tt_plan *p, const tt_model *m, int64_t ctx, double ram_gb)
 
     p->fits = ((double)p->total / 1e9) <= p->budget_gb;
 
-    /* Quanto de contexto o orcamento ainda paga.  E o numero que a mensagem de
-     * recusa precisa ter: dizer "nao cabe" sem dizer o que reduzir transfere o
+    /* How much context the budget still pays for.  It is the number the
+     * refusal message needs: saying "does not fit" without saying what to
      * problema em vez de resolver. */
     const uint64_t kv_per_token = tt_kv_bytes(m, 1);
     const int64_t  budget_bytes = (int64_t)(p->budget_gb * 1e9);
@@ -53,10 +53,10 @@ void tt_plan_print(const tt_plan *p, const tt_model *m, int64_t ctx, int threads
     printf("  pesos        %14s   residentes, mapeados do container\n",
            tt_bytes(b, sizeof(b), p->weights));
     char per[64];
-    printf("  kv           %14s   %s por posicao\n",
+    printf("  kv           %14s   %s per position\n",
            tt_bytes(b, sizeof(b), p->kv),
            tt_bytes(per, sizeof(per), tt_kv_bytes(m, 1)));
-    printf("  scratch      %14s   buffers do passe, alocados uma vez\n",
+    printf("  scratch      %14s   pass buffers, allocated once\n",
            tt_bytes(b, sizeof(b), p->scratch));
     printf("  ------------------------------\n");
     printf("  total        %14s\n\n", tt_bytes(b, sizeof(b), p->total));
@@ -64,7 +64,7 @@ void tt_plan_print(const tt_plan *p, const tt_model *m, int64_t ctx, int threads
     printf("  orcamento    %14.1f GB\n", p->budget_gb);
     printf("  ram          %14.1f GB totais, %.1f GB disponiveis agora\n",
            p->ram_total_gb, p->ram_avail_gb);
-    printf("  contexto max %14lld posicoes dentro deste orcamento\n",
+    printf("  max context  %14lld positions within this budget\n",
            (long long)p->ctx_max);
 
     (void)c;
@@ -76,16 +76,16 @@ int tt_plan_check(const tt_plan *p, int64_t ctx)
 
     char b[64], t[64];
     if (p->ctx_max > 0)
-        return tt_fail("nao cabe: %s pedidos contra %.1f GB de orcamento. "
-                       "Reduza --ctx de %lld para %lld, ou aumente --ram-gb "
-                       "para %.1f",
+        return tt_fail("does not fit: %s requested against %.1f GB of budget. "
+                       "Reduce --ctx from %lld to %lld, or raise --ram-gb "
+                       "to %.1f",
                        tt_bytes(b, sizeof(b), p->total), p->budget_gb,
                        (long long)ctx, (long long)p->ctx_max,
                        (double)p->total / 1e9);
 
-    return tt_fail("nao cabe nem com contexto minimo: os pesos sozinhos sao %s "
-                   "contra %.1f GB de orcamento. Este modelo nao roda com este "
-                   "limite -- aumente --ram-gb para pelo menos %s",
+    return tt_fail("does not fit even at minimum context: the weights alone are %s "
+                   "against %.1f GB of budget. This model does not run under this "
+                   "limit -- raise --ram-gb to at least %s",
                    tt_bytes(b, sizeof(b), p->weights), p->budget_gb,
                    tt_bytes(t, sizeof(t), p->total));
 }
@@ -93,7 +93,7 @@ int tt_plan_check(const tt_plan *p, int64_t ctx)
 int tt_budget_verify(const tt_plan *p)
 {
     /* Estimar e prometer; medir e cumprir.  Se o RSS passou do teto, o plano
-     * estava errado -- e saber disso agora vale mais que descobrir quando o SO
+     * was wrong -- and knowing that now is worth more than finding out when the
      * comecar a paginar. */
     const double rss = tt_rss_gb();
     if (rss > p->budget_gb)
@@ -120,9 +120,9 @@ int tt_cmd_plan(int argc, char **argv)
         if (!strcmp(a, "--ctx") && has_next)          ctx = atoll(argv[++i]);
         else if (!strcmp(a, "--ram-gb") && has_next)  ram_gb = atof(argv[++i]);
         else if (!strcmp(a, "--threads") && has_next) threads = atoi(argv[++i]);
-        /* Os dois nomes: `plan` nasceu com `--kv` e os outros comandos com
-         * `--kv-prec`.  Divergencia de nome entre comandos que respondem a
-         * mesma pergunta e armadilha -- aceitar os dois custa uma linha. */
+        /* Both names: `plan` was born with `--kv` and the other commands with
+         * `--kv-prec`.  A name divergence between commands that answer the
+         * same question is a trap -- accepting both costs one line. */
         else if ((!strcmp(a, "--kv") || !strcmp(a, "--kv-prec")) && has_next) {
             if (tt_kv_prec_parse(argv[++i], &kv_prec) != 0) return -1;
         } else if (!strcmp(a, "--attn") && has_next) {
@@ -138,14 +138,14 @@ int tt_cmd_plan(int argc, char **argv)
         }
     }
 
-    if (!path) return tt_fail("uso: tootega plan <arquivo.tootega> [--ctx N] "
+    if (!path) return tt_fail("usage: tootega plan <file.tootega> [--ctx N] "
                               "[--ram-gb X] [--attn absorbed|expanded]");
-    if (ctx <= 0) return tt_fail("--ctx tem de ser positivo");
+    if (ctx <= 0) return tt_fail("--ctx has to be positive");
 
     tt_model m;
     if (tt_model_open(&m, path, ctx, attn, kv_prec) != 0) return -1;
 
-    /* Quantas threads o pool usaria, sem cria-las. */
+    /* How many threads the pool would use, without creating them. */
     int cpus[128];
     int ncpu = (affinity == TT_AFFINITY_ALL) ? tt_cpu_core_list(cpus, 128)
              : (affinity == TT_AFFINITY_NONE) ? tt_cpu_threads()
@@ -159,7 +159,7 @@ int tt_cmd_plan(int argc, char **argv)
     tt_plan_print(&p, &m, ctx, threads);
 
     int rc = tt_plan_check(&p, ctx);
-    if (rc == 0) printf("\n  cabe.\n\n");
+    if (rc == 0) printf("\n  it fits.\n\n");
     else         printf("\n");
 
     tt_model_close(&m);

@@ -1,8 +1,8 @@
-/* main.c -- entrada e despacho de subcomandos.
+/* main.c -- entry point and subcommand dispatch.
  *
- * Um binario, varios verbos.  A CLI completa (orcamentos, --plan) esta em
- * docs/09-resource-limits.md e entra junto com o forward; por ora existem
- * os verbos que valem sem modelo carregado.
+ * One binary, several verbs.  The complete CLI (budgets, --plan) is in
+ * docs/09-resource-limits.md and lands together with the forward; for now the
+ * verbs that make sense without a loaded model are the ones here.
  */
 #include "budget.h"
 #include "common.h"
@@ -24,8 +24,8 @@ static int cmd_version(int argc, char **argv)
 {
     (void)argc; (void)argv;
     printf("tootega %s  (build %s)\n", TT_VERSION, tt_build_id());
-    printf("  cpu    %d threads logicas\n", tt_cpu_threads());
-    printf("  ram    %.1f GB totais, %.1f GB disponiveis\n",
+    printf("  cpu    %d logical threads\n", tt_cpu_threads());
+    printf("  ram    %.1f GB total, %.1f GB available\n",
            tt_ram_total_gb(), tt_ram_avail_gb());
     return 0;
 }
@@ -39,40 +39,40 @@ static int cmd_chat(int argc, char **argv);
 static void usage(void)
 {
     fprintf(stderr,
-        "tootega " TT_VERSION " -- engine de inferencia para MoE residente\n"
+        "tootega " TT_VERSION " -- inference engine for resident MoE models\n"
         "\n"
-        "uso: tootega <comando> [opcoes]\n"
+        "usage: tootega <command> [options]\n"
         "\n"
-        "comandos:\n"
-        "  inspect <arquivo.tootega>   cabecalho, indice e orcamento do container\n"
-        "  plan <arquivo.tootega>      o que cabe: pesos, KV e scratch contra --ram-gb\n"
-        "  serve <arquivo.tootega>     servidor HTTP + chat web em http://127.0.0.1:8080\n"
-        "  chat <arquivo.tootega>      conversa multi-turno com cache de prefixo\n"
-        "  generate <arquivo.tootega>  gera texto: tokenizer + forward + amostragem\n"
-        "  forward <arquivo.tootega>   passe teacher-forcing sobre ids, para o oraculo\n"
-        "  selftest                    testa kernels e estruturas contra a referencia\n"
-        "  version                     versao e hardware visto\n"
+        "commands:\n"
+        "  inspect <file.tootega>      container header, index and budget\n"
+        "  plan <file.tootega>         what fits: weights, KV and scratch vs --ram-gb\n"
+        "  serve <file.tootega>        HTTP server + web chat at http://127.0.0.1:8080\n"
+        "  chat <file.tootega>         multi-turn conversation with prefix cache\n"
+        "  generate <file.tootega>     generate text: tokenizer + forward + sampling\n"
+        "  forward <file.tootega>      teacher-forced pass over ids, for the oracle\n"
+        "  selftest                    test kernels and structures against the reference\n"
+        "  version                     version and detected hardware\n"
         "\n"
         "forward:\n"
-        "  --ids 1,2,3                 ids de entrada\n"
-        "  --ids-file <arquivo>        idem, de um arquivo de texto\n"
-        "  --ctx N                     capacidade do KV (default: numero de ids)\n"
-        "  --attn absorbed|expanded    formulacao do MLA (default: absorbed)\n"
-        "  --threads N                 default: P-cores fisicos\n"
+        "  --ids 1,2,3                 input ids\n"
+        "  --ids-file <file>           the same, from a text file\n"
+        "  --ctx N                     KV capacity (default: number of ids)\n"
+        "  --attn absorbed|expanded    MLA formulation (default: absorbed)\n"
+        "  --threads N                 default: physical P-cores\n"
         "  --affinity p-cores|all|none default: p-cores\n"
         "  --kernel auto|scalar        default: auto (AVX2+FMA)\n"
-        "  --top N                     quantos candidatos mostrar por posicao\n"
-        "  --dump-logits <arquivo>     logits f32 crus, [posicoes][vocab]\n"
-        "  --dump-hidden <arquivo>     hidden final f32, [posicoes][hidden]\n"
-        "  --dump-layers <arquivo>     hidden por camada, [posicoes][camadas+1][hidden]\n"
+        "  --top N                     how many candidates to show per position\n"
+        "  --dump-logits <file>        raw f32 logits, [positions][vocab]\n"
+        "  --dump-hidden <file>        final f32 hidden, [positions][hidden]\n"
+        "  --dump-layers <file>        hidden per layer, [positions][layers+1][hidden]\n"
         "\n"
-        "opcoes globais:\n"
-        "  -v, --verbose               detalha o que esta sendo feito\n");
+        "global options:\n"
+        "  -v, --verbose               spell out what is being done\n");
 }
 
 int main(int argc, char **argv)
 {
-    /* Opcoes globais antes do verbo, para que `-v` valha em qualquer um. */
+    /* Global options come before the verb, so that `-v` works with any. */
     int i = 1;
     while (i < argc && argv[i][0] == '-') {
         if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--verbose")) {
@@ -104,25 +104,25 @@ int main(int argc, char **argv)
     else if (!strcmp(cmd, "version"))  rc = cmd_version(sub_argc, sub_argv);
     else if (!strcmp(cmd, "help"))     { usage(); return 0; }
     else {
-        fprintf(stderr, "comando desconhecido: %s\n\n", cmd);
+        fprintf(stderr, "unknown command: %s\n\n", cmd);
         usage();
         return 2;
     }
 
     if (rc != 0 && tt_error()[0])
-        fprintf(stderr, "erro: %s\n", tt_error());
+        fprintf(stderr, "error: %s\n", tt_error());
     return rc == 0 ? 0 : 1;
 }
 
 /* ------------------------------------------------------------ forward */
 
-/* Ids separados por qualquer coisa que nao seja digito.  Aceita "1,2,3",
- * "[1, 2, 3]" e uma coluna por linha -- todos aparecem em arquivo de teste. */
+/* Ids separated by anything that is not a digit.  Accepts "1,2,3",
+ * "[1, 2, 3]" and one per line -- all three show up in test files. */
 static int parse_ids(const char *text, int32_t **out, int64_t *n_out)
 {
     int64_t cap = 64, n = 0;
     int32_t *ids = (int32_t *)malloc((size_t)cap * sizeof(int32_t));
-    if (!ids) return tt_fail("sem memoria para os ids");
+    if (!ids) return tt_fail("out of memory for the ids");
 
     for (const char *p = text; *p; ) {
         if (*p < '0' || *p > '9') { p++; continue; }
@@ -131,13 +131,13 @@ static int parse_ids(const char *text, int32_t **out, int64_t *n_out)
         if (n == cap) {
             cap *= 2;
             int32_t *bigger = (int32_t *)realloc(ids, (size_t)cap * sizeof(int32_t));
-            if (!bigger) { free(ids); return tt_fail("sem memoria para os ids"); }
+            if (!bigger) { free(ids); return tt_fail("out of memory for the ids"); }
             ids = bigger;
         }
         ids[n++] = (int32_t)v;
     }
 
-    if (!n) { free(ids); return tt_fail("nenhum id encontrado na entrada"); }
+    if (!n) { free(ids); return tt_fail("no id found in the input"); }
     *out = ids;
     *n_out = n;
     return 0;
@@ -146,14 +146,14 @@ static int parse_ids(const char *text, int32_t **out, int64_t *n_out)
 static char *read_file(const char *path)
 {
     FILE *f = fopen(path, "rb");
-    if (!f) { tt_fail("nao consegui abrir '%s'", path); return NULL; }
+    if (!f) { tt_fail("could not open '%s'", path); return NULL; }
     fseek(f, 0, SEEK_END);
     long len = ftell(f);
     fseek(f, 0, SEEK_SET);
-    if (len < 0) { fclose(f); tt_fail("'%s' ilegivel", path); return NULL; }
+    if (len < 0) { fclose(f); tt_fail("'%s' is unreadable", path); return NULL; }
 
     char *buf = (char *)malloc((size_t)len + 1);
-    if (!buf) { fclose(f); tt_fail("sem memoria para '%s'", path); return NULL; }
+    if (!buf) { fclose(f); tt_fail("out of memory for '%s'", path); return NULL; }
     size_t got = fread(buf, 1, (size_t)len, f);
     fclose(f);
     buf[got] = '\0';
@@ -203,7 +203,7 @@ static int cmd_forward(int argc, char **argv)
         else return tt_fail("forward: argumento extra '%s'", a);
     }
 
-    if (!path) return tt_fail("uso: tootega forward <arquivo.tootega> --ids 1,2,3");
+    if (!path) return tt_fail("usage: tootega forward <file.tootega> --ids 1,2,3");
     if (!ids_text && !ids_file) return tt_fail("forward: faltou --ids ou --ids-file");
 
     char *file_text = NULL;
@@ -234,17 +234,17 @@ static int cmd_forward(int argc, char **argv)
     printf("atencao  %s\n", attn == TT_ATTN_ABSORBED ? "absorvida (KV comprimido)"
                                                      : "expandida (formulacao do oraculo)");
     char buf2[64];
-    printf("kv       %s para %lld posicoes (%s por token)\n",
+    printf("kv       %s for %lld positions (%s per token)\n",
            tt_bytes(buf, sizeof(buf), tt_kv_bytes(&m, ctx)), (long long)ctx,
            tt_bytes(buf2, sizeof(buf2), tt_kv_bytes(&m, 1)));
 
-    /* O orcamento e conferido ANTES de alocar: recusar custa segundos, e
-     * descobrir que nao cabia depois de alocar 20 GB custa a maquina inteira
+    /* The budget is checked BEFORE allocating: refusing costs seconds, and
+     * finding out it did not fit after allocating 20 GB costs the whole machine
      * paginando (docs/09). */
     tt_plan plan;
     tt_plan_compute(&plan, &m, ctx, ram_gb);
     if (tt_plan_check(&plan, ctx) != 0) { tt_model_close(&m); free(ids); return -1; }
-    printf("orcamento %.1f GB, plano usa %.1f GB\n",
+    printf("budget    %.1f GB, plan uses %.1f GB\n",
            plan.budget_gb, (double)plan.total / 1e9);
     printf("abertura %.2f s (indice + IR; os pesos entram sob demanda)\n\n", t_open);
 
@@ -260,29 +260,29 @@ static int cmd_forward(int argc, char **argv)
         tt_model_close(&m); free(ids); return -1;
     }
 
-    /* Traco por camada: [posicoes][camadas+1][hidden].  So com --dump-layers,
-     * porque o custo e uma copia de 8 KB por camada por token. */
+    /* Per-layer trace: [positions][layers+1][hidden].  Only with --dump-layers,
+     * because the cost is an 8 KB copy per layer per token. */
     FILE *fl = NULL, *fh = NULL, *ftr = NULL;
     if (dump_layers) {
         ftr = fopen(dump_layers, "wb");
         if (!ftr) { tt_state_free(&s); tt_kernels_set_pool(NULL);
                     tt_pool_destroy(pool); tt_model_close(&m); free(ids);
-                    return tt_fail("nao consegui escrever '%s'", dump_layers); }
+                    return tt_fail("could not write '%s'", dump_layers); }
         s.trace = (float *)malloc((size_t)(m.cfg.num_hidden_layers + 1) *
                                   (size_t)m.cfg.hidden_size * sizeof(float));
-        if (!s.trace) { fclose(ftr); return tt_fail("sem memoria para o traco"); }
+        if (!s.trace) { fclose(ftr); return tt_fail("out of memory for the trace"); }
     }
     if (dump_logits && !(fl = fopen(dump_logits, "wb"))) {
         tt_state_free(&s); tt_model_close(&m); free(ids);
-        return tt_fail("nao consegui escrever '%s'", dump_logits);
+        return tt_fail("could not write '%s'", dump_logits);
     }
     if (dump_hidden && !(fh = fopen(dump_hidden, "wb"))) {
         if (fl) fclose(fl);
         tt_state_free(&s); tt_model_close(&m); free(ids);
-        return tt_fail("nao consegui escrever '%s'", dump_hidden);
+        return tt_fail("could not write '%s'", dump_hidden);
     }
 
-    printf("  pos    entrada  ->  previsto   logit    margem   candidatos\n");
+    printf("  pos      input  ->  predicted  logit    margin   candidates\n");
 
     int rc = 0;
     for (int64_t i = 0; i < n_ids; i++) {
@@ -296,7 +296,7 @@ static int cmd_forward(int argc, char **argv)
         if (ftr) fwrite(s.trace, sizeof(float),
                         (size_t)(m.cfg.num_hidden_layers + 1) * (size_t)m.cfg.hidden_size, ftr);
 
-        /* top-N por selecao, sem ordenar 154.880 logits. */
+        /* top-N by selection, without sorting 154,880 logits. */
         int32_t idx[8];
         float   val[8];
         int k = topn < 1 ? 1 : (topn > 8 ? 8 : topn);
@@ -315,7 +315,7 @@ static int cmd_forward(int argc, char **argv)
     if (fh) fclose(fh);
     if (ftr) { fclose(ftr); free(s.trace); s.trace = NULL; }
 
-    /* Prometido x medido.  Sem esta linha, `--ram-gb` seria uma estimativa
+    /* Promised vs measured.  Without this line, `--ram-gb` would be an estimate
      * simpatica em vez de um limite. */
     if (rc == 0 && tt_budget_verify(&plan) != 0) rc = -1;
 
@@ -375,7 +375,7 @@ static int cmd_generate(int argc, char **argv)
     if (tt_tokenizer_load(&tk, tok_path, 154880) != 0) return -1;
 
     int32_t *ids = (int32_t *)malloc(65536 * sizeof(int32_t));
-    if (!ids) { tt_tokenizer_free(&tk); return tt_fail("sem memoria"); }
+    if (!ids) { tt_tokenizer_free(&tk); return tt_fail("out of memory"); }
 
     int64_t n_prompt = tt_encode(&tk, prompt, strlen(prompt), ids, 65536);
     if (n_prompt < 0) { free(ids); tt_tokenizer_free(&tk); return -1; }
@@ -400,8 +400,8 @@ static int cmd_generate(int argc, char **argv)
         return -1;
     }
 
-    /* Os ids de fim vem da config do container, nao de constante no codigo:
-     * sao tres neste modelo e mudam com o modelo. */
+    /* The stop ids come from the container's config, not from a constant in
+     * the code: there are three in this model and they change per model. */
     int32_t eos[8];
     int n_eos = 0;
     const tt_json *e = tt_json_get(m.c.config, "eos_token_id");
@@ -444,14 +444,14 @@ static int cmd_generate(int argc, char **argv)
         const double dt = tt_now() - t0;
         if (i < n_prompt) t_prefill += dt; else t_decode += dt;
 
-        /* A ULTIMA posicao do prompt tambem amostra -- e dela que sai o
-         * primeiro token gerado.  Enquanto ainda ha prompt pela frente, o
-         * proximo id ja e conhecido e nao se amostra nada. */
+        /* The LAST prompt position samples too -- it is where the first
+         * generated token comes from.  While there is still prompt ahead, the
+         * next id is already known and nothing is sampled. */
         if (i + 1 < n_prompt) continue;
         if (i + 1 >= n_prompt + n_new) break;
 
-        /* `n_tokens` e o primeiro id inexistente: acima dele so ha padding do
-         * lm_head, que nunca pode ser amostrado (docs/16). */
+        /* `n_tokens` is the first non-existent id: above it there is only
+         * lm_head padding, which must never be sampled (docs/16). */
         int32_t next = tt_sample(&sampler, logits, tk.n_tokens);
 
         int done = 0;
@@ -466,7 +466,7 @@ static int cmd_generate(int argc, char **argv)
         if (i + 1 >= ctx) break;
     }
 
-    /* A ultima posicao do prompt tambem produz um token; o laco acima o
+    /* The last prompt position produces a token as well; the loop above
      * consome ao entrar na fase de decode. */
     if (n_prompt > 0 && t_prefill > 0)
         fprintf(stderr, "\n\nprefill  %lld tokens em %.2f s (%.1f tok/s)\n",
@@ -492,21 +492,21 @@ static int cmd_generate(int argc, char **argv)
 
 /* --------------------------------------------------------------- chat */
 
-/* O template de `chat_template.jinja`, sem Jinja.  Conferido contra o render
+/* The `chat_template.jinja` template, without Jinja.  Checked against the render
  * de `apply_chat_template` do transformers:
  *
  *   [gMASK]<sop><|system|>SYS<|user|>U1<|assistant|></think>A1<|user|>U2<|assistant|><think>
  *
- * Os marcadores sao tokens especiais e o tokenizer ja os reconhece por
- * casamento exato antes do regex -- entao basta concatenar texto.  O turno
- * aberto termina em `<|assistant|><think>`: este modelo comeca pensando. */
+ * The markers are special tokens and the tokenizer already recognises them by
+ * exact match before the regex -- so concatenating text is enough.  The open
+ * turn ends in `<|assistant|><think>`: this model starts by thinking. */
 #define TT_CHAT_PREFIX  "[gMASK]<sop>"
 #define TT_CHAT_SYSTEM  "<|system|>"
 #define TT_CHAT_USER    "<|user|>"
 #define TT_CHAT_ASSIST  "<|assistant|>"
 #define TT_CHAT_THINK   "<think>"
 
-/* Acrescenta ids ao fim de `conv`.  Devolve o novo tamanho, ou -1. */
+/* Appends ids to the end of `conv`.  Returns the new length, or -1. */
 static int64_t chat_append(const tt_tokenizer *tk, const char *text,
                            int32_t *conv, int64_t at, int64_t cap)
 {
@@ -587,7 +587,7 @@ static int cmd_chat(int argc, char **argv)
         free(conv); free(turn); free(line);
         tt_kernels_set_pool(NULL); tt_pool_destroy(pool); tt_state_free(&s);
         tt_model_close(&m); tt_tokenizer_free(&tk);
-        return tt_fail("sem memoria");
+        return tt_fail("out of memory");
     }
 
     int64_t n_conv = 0;
@@ -595,7 +595,7 @@ static int cmd_chat(int argc, char **argv)
              system ? TT_CHAT_SYSTEM : "", system ? system : "");
     n_conv = chat_append(&tk, turn, conv, 0, ctx);
 
-    fprintf(stderr, "chat -- ctx %lld, %d threads, temp %.2f. Linha vazia "
+    fprintf(stderr, "chat -- ctx %lld, %d threads, temp %.2f. An empty line "
             "encerra.\n\n", (long long)ctx, tt_pool_threads(pool), (double)temp);
 
     uint64_t total_prompt = 0, total_cached = 0;
@@ -610,17 +610,17 @@ static int cmd_chat(int argc, char **argv)
         while (len && (line[len - 1] == '\n' || line[len - 1] == '\r')) line[--len] = '\0';
         if (!len) break;
 
-        /* Turno do usuario mais a abertura do turno do assistente.  Os ids sao
-         * ACRESCENTADOS, nunca re-renderizados: re-tokenizar a conversa
-         * inteira nao garante os mesmos ids que foram gerados, e ai o cache de
-         * KV deixaria de casar por um motivo invisivel. */
+        /* The user turn plus the opening of the assistant turn.  The ids are
+         * APPENDED, never re-rendered: re-tokenising the whole conversation does
+         * not guarantee the same ids that were generated, and then the KV cache
+         * would stop matching for an invisible reason. */
         snprintf(turn, 65536, "%s%s%s%s", TT_CHAT_USER, line,
                  TT_CHAT_ASSIST, TT_CHAT_THINK);
         int64_t after = chat_append(&tk, turn, conv, n_conv, ctx);
         if (after < 0) { rc = tt_fail("contexto cheio"); break; }
         n_conv = after;
 
-        /* Casamento de prefixo: o que ja esta no KV nao volta a ser
+        /* Prefix matching: what is already in the KV does not get
          * computado.  Em conversa continuada isto e a diferenca entre prefill
          * zero e recomputar tudo (docs/05, criterio do M4). */
         const int64_t reused = tt_state_match_prefix(&s, conv, n_conv);
@@ -637,8 +637,8 @@ static int cmd_chat(int argc, char **argv)
                 (long long)(n_conv - reused), (long long)n_conv,
                 (long long)reused, t_prefill);
 
-        /* O ultimo token do prompt ja foi processado; os logits dele estao em
-         * s.logits e sao a base do primeiro token gerado. */
+        /* The last prompt token has already been processed; its logits are in
+         * s.logits and they are the basis of the first generated token. */
         int64_t made = 0;
         const double t1 = tt_now();
         while (made < n_new && n_conv < ctx) {
@@ -681,12 +681,12 @@ static int cmd_chat(int argc, char **argv)
 /* ---------------------------------------------------------- tokenize */
 
 /* Compara os ids do engine contra os do `tokenizers` da HF, caso a caso.  E o
- * teste de docs/16 que tem de passar ANTES de qualquer teste de forward. */
+ * the docs/16 test that has to pass BEFORE any forward test. */
 static int tokenize_check(const tt_tokenizer *tk, const char *fixture)
 {
     tt_map map;
     if (tt_map_open(&map, fixture) != 0)
-        return tt_fail("nao consegui abrir '%s'", fixture);
+        return tt_fail("could not open '%s'", fixture);
 
     tt_arena dom;
     if (tt_arena_init(&dom, tt_json_bound((const char *)map.base, map.size),
@@ -699,7 +699,7 @@ static int tokenize_check(const tt_tokenizer *tk, const char *fixture)
     const tt_json *cases = tt_json_get(root, "cases");
     if (!cases || cases->type != TT_JSON_ARRAY) {
         tt_arena_free(&dom); tt_map_close(&map);
-        return tt_fail("'%s' nao tem o array 'cases'", fixture);
+        return tt_fail("'%s' has no 'cases' array", fixture);
     }
 
     int32_t ids[8192];
@@ -737,15 +737,15 @@ static int tokenize_check(const tt_tokenizer *tk, const char *fixture)
             printf("\n");
         }
 
-        /* Round-trip: decode(encode(s)) == s.  Falha aqui e ByteLevel errado,
-         * nao BPE errado -- vale separar os dois sintomas. */
+        /* Round-trip: decode(encode(s)) == s.  A failure here is a wrong
+         * ByteLevel, not wrong BPE -- worth separating the two symptoms. */
         int64_t back = tt_decode(tk, ids, got, text, sizeof(text));
         if (back == (int64_t)tlen && memcmp(text, t, tlen) == 0) rt_ok++;
     }
 
-    printf("\n  %d/%d casos com ids identicos aos do tokenizers da HF\n",
+    printf("\n  %d/%d cases with ids identical to HF tokenizers\n",
            passed, passed + failed);
-    printf("  %d/%d com round-trip exato\n\n", rt_ok, passed + failed);
+    printf("  %d/%d with an exact round-trip\n\n", rt_ok, passed + failed);
 
     tt_arena_free(&dom);
     tt_map_close(&map);
@@ -792,9 +792,10 @@ static int cmd_tokenize(int argc, char **argv)
 
 /* ----------------------------------------------------------- selftest */
 
-/* Cada modulo com invariante verificavel exporta um selftest.  Eles rodam no
- * binario de release, nao num executavel a parte: sao a definicao executavel do
- * modulo e tem de valer no artefato que roda (docs/15, ordem de implementacao). */
+/* Every module with a checkable invariant exports a selftest.  They run in the
+ * release binary, not in a separate executable: they are the module's executable
+ * definition and have to hold in the artefact that ships (docs/15,
+ * implementation order). */
 int tt_json_selftest(void);
 int tt_kernels_selftest(void);
 int tt_tokenizer_selftest(void);

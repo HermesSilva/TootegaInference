@@ -1,16 +1,16 @@
-/* forward.h -- estado de uma sequencia e o passe de um token.
+/* forward.h -- one sequence's state and one token's pass.
  *
- * Um `tt_state` e um slot: cache de KV proprio, buffers de scratch proprios,
- * lista dos ids ja processados.  Toda a memoria sai de duas arenas
- * dimensionadas em `tt_state_init` -- depois disso o laco de token nao chama
- * malloc nem le variavel de ambiente (criterio de saida do M1, docs/05).
+ * A `tt_state` is a slot: its own KV cache, its own scratch buffers, the list of
+ * ids already processed.  All memory comes from two arenas sized in
+ * `tt_state_init` -- after that the token loop calls no malloc and reads no
+ * environment variable (M1 exit criterion, docs/05).
  *
- * O KV do M1 e contiguo por slot e guarda K e V JA EXPANDIDOS.  E consequencia
- * direta de docs/15: a formulacao desabsorvida do MLA e a do oraculo, e ela
- * precisa de K e V completos.  Custa 1,9 MB por token (47 camadas x 20 cabecas
- * x 512 valores x 4 B) -- 7,9 GB a 4k de contexto, que e a configuracao de
- * medida do M1.  Contexto de agente exige a formulacao absorvida ou KV em
- * meia precisao, e isso e M5.
+ * M1's KV is contiguous per slot and stores K and V ALREADY EXPANDED.  That is a
+ * direct consequence of docs/15: the unabsorbed MLA formulation is the oracle's,
+ * and it needs complete K and V.  It costs 1.9 MB per token (47 layers x 20
+ * heads x 512 values x 4 B) -- 7.9 GB at 4k of context, which is M1's
+ * measurement configuration.  Agent-sized context requires the absorbed
+ * formulation or half-precision KV, and that is M5.
  */
 #ifndef TOOTEGA_FORWARD_H
 #define TOOTEGA_FORWARD_H
@@ -20,67 +20,68 @@
 typedef struct {
     const tt_model *m;
 
-    tt_arena kv;               /* cache, vive entre tokens */
-    tt_arena scratch;          /* buffers do passe, resetados por token */
+    tt_arena kv;               /* the cache, lives between tokens */
+    tt_arena scratch;          /* pass buffers, reset every token */
 
-    int64_t  ctx;              /* capacidade em tokens */
-    int64_t  len;              /* tokens ja no cache */
+    int64_t  ctx;              /* capacity in tokens */
+    int64_t  len;              /* tokens already in the cache */
 
-    /* Modo EXPANDED: K e V completos.  Modo ABSORBED: `kvc` no lugar dos dois,
-     * [camada][pos][kv_lora_rank + qk_rope_head_dim]. */
-    float   *k;                /* [camada][pos][H * qk_head_dim] */
-    float   *v;                /* [camada][pos][H * v_head_dim]  */
-    float    *kvc;             /* [camada][pos][576], modo f32 */
-    uint16_t *kvc16;           /* idem em bf16 -- metade do trafego */
-    int8_t   *kvq;             /* idem em int8 g64 -- 3,8x menos */
-    float    *kvq_scales;      /* [camada][pos][576/64] */
-    int32_t *tokens;           /* ids no cache, para casamento de prefixo */
+    /* EXPANDED mode: full K and V.  ABSORBED mode: `kvc` in place of both,
+     * [layer][pos][kv_lora_rank + qk_rope_head_dim]. */
+    float   *k;                /* [layer][pos][H * qk_head_dim] */
+    float   *v;                /* [layer][pos][H * v_head_dim]  */
+    float    *kvc;             /* [layer][pos][576], f32 mode */
+    uint16_t *kvc16;           /* the same in bf16 -- half the traffic */
+    int8_t   *kvq;             /* the same in int8 g64 -- 3.8x less */
+    float    *kvq_scales;      /* [layer][pos][576/64] */
+    int32_t *tokens;           /* ids in the cache, for prefix matching */
 
-    /* scratch, tudo apontando para dentro de `scratch` */
+    /* scratch, everything pointing inside `scratch` */
     float *h, *hn, *resid;
     float *q_lora, *q, *kv_a, *ckv, *kvb, *krot, *attn, *scores;
-    /* [H][kv_lora_rank] cada, so no modo absorvido.  `wrow` e a linha de
-     * `kv_b` desquantizada -- uma por cabeca, porque as cabecas rodam em
-     * paralelo e cada uma percorre as suas 448 linhas. */
+    /* [H][kv_lora_rank] each, absorbed mode only.  `wrow` is the dequantised
+     * row of `kv_b` -- one per head, because the heads run in parallel and each
+     * walks its own 448 rows. */
     float *q_abs, *o_c, *wrow;
     float *gate_buf, *up_buf, *mlp_out, *expert_out;
-    /* MoE fundido: gate+up dos K experts mais o compartilhado, e as saidas
-     * de down antes da combinacao. */
+    /* Fused MoE: gate+up of the K experts plus the shared one, and the down
+     * outputs before combination. */
     float *moe_gu, *moe_down;
     float *router_logits, *router_scores, *router_choice;
     float *logits;
     int32_t *topk_idx;
     float   *topk_w;
 
-    /* Traco de depuracao: se nao for NULL, recebe o estado oculto ao fim de
-     * cada camada -- [num_hidden_layers + 1][hidden_size], sendo a primeira
-     * entrada o embedding.  E o que permite bissecar contra o transformers e
-     * achar a PRIMEIRA camada que diverge, em vez de reler o codigo. */
+    /* Debug trace: if not NULL, receives the hidden state at the end of each
+     * layer -- [num_hidden_layers + 1][hidden_size], with the first entry being
+     * the embedding.  It is what allows bisecting against transformers and
+     * finding the FIRST layer that diverges, instead of rereading the code. */
     float   *trace;
 
-    /* contadores do relatorio */
+    /* report counters */
     uint64_t tokens_processed;
     double   seconds_in_forward;
 } tt_state;
 
 int  tt_state_init(tt_state *s, const tt_model *m, int64_t ctx);
 void tt_state_free(tt_state *s);
-void tt_state_reset(tt_state *s);       /* esquece a sequencia, mantem memoria */
+void tt_state_reset(tt_state *s);       /* forgets the sequence, keeps the memory */
 
-/* Bytes de KV para `ctx` tokens -- o orcamento de docs/09 precisa disto antes
- * de alocar qualquer coisa. */
+/* KV bytes for `ctx` tokens -- the docs/09 budget needs this before anything is
+ * allocated. */
 uint64_t tt_kv_bytes(const tt_model *m, int64_t ctx);
 
-/* Scratch do passe.  Existe separado de `tt_state_init` porque o `--plan` tem
- * de responder "cabe?" sem alocar nada (docs/09). */
+/* The pass's scratch.  It exists separately from `tt_state_init` because
+ * `--plan` has to answer "does it fit?" without allocating (docs/09). */
 uint64_t tt_scratch_bytes(const tt_model *m, int64_t ctx);
 
-/* Processa `token` na posicao s->len, avanca o cache e devolve os logits
- * (ponteiro para dentro do scratch, valido ate o proximo passe). */
+/* Processes `token` at position s->len, advances the cache and returns the
+ * logits (a pointer inside the scratch, valid until the next pass). */
 int tt_forward(tt_state *s, int32_t token, float **logits_out);
 
-/* Casa o maior prefixo comum com o cache e trunca no divergente.  Devolve
- * quantos tokens continuam validos -- o prefill so precisa rodar do resto. */
+/* Matches the longest common prefix with the cache and truncates at the
+ * divergence.  Returns how many tokens remain valid -- the prefill only has to
+ * run over the rest. */
 int64_t tt_state_match_prefix(tt_state *s, const int32_t *ids, int64_t n);
 
 #endif /* TOOTEGA_FORWARD_H */

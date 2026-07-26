@@ -1,8 +1,8 @@
-/* compat.h -- a fina camada entre POSIX e Win32.
+/* compat.h -- the thin layer between POSIX and Win32.
  *
- * Tudo que difere entre os dois SOs mora aqui e em lugar nenhum mais. Ver
- * docs/10-implementation.md: o nucleo e C11 puro, e este arquivo existe para
- * que ele possa continuar sendo.
+ * Everything that differs between the two OSes lives here and nowhere else.
+ * See docs/10-implementation.md: the core is pure C11, and this file exists so
+ * that it can stay that way.
  */
 #ifndef TOOTEGA_COMPAT_H
 #define TOOTEGA_COMPAT_H
@@ -19,7 +19,7 @@
 /* ---------------------------------------------------------------- mmap */
 
 typedef struct {
-    void   *base;      /* inicio do mapeamento, NULL se falhou */
+    void   *base;      /* start of the mapping, NULL on failure */
     size_t  size;
 #if defined(TT_WINDOWS)
     void   *file;      /* HANDLE */
@@ -29,43 +29,43 @@ typedef struct {
 #endif
 } tt_map;
 
-/* Mapeia o arquivo inteiro, somente leitura. base == NULL indica falha. */
+/* Maps the whole file, read-only.  base == NULL means failure. */
 int  tt_map_open(tt_map *m, const char *path);
 void tt_map_close(tt_map *m);
 
-/* Sinaliza que a faixa sera lida em breve e forca residencia.
- * Duas coisas distintas: o hint e assincrono, o toque e sincrono -- ver
- * docs/11-memory.md secao 2. */
+/* Signals that the range will be read soon, and forces residency.
+ * Two distinct things: the hint is asynchronous, the touch is synchronous --
+ * see docs/11-memory.md section 2. */
 void tt_map_willneed(const tt_map *m, size_t offset, size_t length);
 void tt_map_touch(const tt_map *m, size_t offset, size_t length);
 
-/* ------------------------------------------------------------- memoria */
+/* -------------------------------------------------------------- memory */
 
-/* Alocacao alinhada.  `align` e potencia de dois.  Existe aqui porque os tres
- * SOs discordam do nome (`_aligned_malloc`, `aligned_alloc`, `posix_memalign`)
- * e porque o par alocar/liberar tem de casar no Windows. */
+/* Aligned allocation.  `align` is a power of two.  It lives here because the
+ * three OSes disagree on the name (`_aligned_malloc`, `aligned_alloc`,
+ * `posix_memalign`) and because the alloc/free pair has to match on Windows. */
 void *tt_alloc_aligned(size_t bytes, size_t align);
 void  tt_free_aligned(void *p);
 
 double tt_ram_total_gb(void);
 double tt_ram_avail_gb(void);
-double tt_rss_gb(void);            /* residente deste processo */
+double tt_rss_gb(void);            /* this process's resident set */
 
-/* --------------------------------------------------------------- tempo */
+/* ---------------------------------------------------------------- time */
 
-double tt_now(void);               /* segundos, monotonico */
+double tt_now(void);               /* seconds, monotonic */
 
 /* ----------------------------------------------------------------- cpu */
 
-int tt_cpu_threads(void);          /* logicos, incluindo E-cores */
+int tt_cpu_threads(void);          /* logical, E-cores included */
 
-/* Topologia.  O 14900K e hibrido e docs/09 manda pinar nos P-cores por
- * default: espalhar um matmul memory-bound pelos E-cores costuma piorar.
- * Ambas devolvem UM logico por core fisico -- irmaos SMT competem pela mesma
- * unidade de execucao e nao ajudam num laco ja limitado por memoria.
- * Retornam quantos escreveram. */
-int tt_cpu_pcore_list(int *out, int max);   /* so os P-cores */
-int tt_cpu_core_list(int *out, int max);    /* todos os cores fisicos */
+/* Topology.  The 14900K is hybrid and docs/09 mandates pinning to P-cores by
+ * default: spreading a memory-bound matmul across the E-cores usually hurts.
+ * Both return ONE logical core per physical core -- SMT siblings compete for
+ * the same execution unit and do not help a loop that is already memory-bound.
+ * They return how many they wrote. */
+int tt_cpu_pcore_list(int *out, int max);   /* P-cores only */
+int tt_cpu_core_list(int *out, int max);    /* every physical core */
 
 /* ------------------------------------------------------------- threads */
 
@@ -73,57 +73,57 @@ typedef struct { void *handle; } tt_thread;
 
 int  tt_thread_start(tt_thread *t, void (*fn)(void *), void *arg);
 void tt_thread_join(tt_thread *t);
-void tt_thread_pin(int cpu);       /* cpu < 0 nao faz nada */
+void tt_thread_pin(int cpu);       /* cpu < 0 does nothing */
 
-void tt_cpu_relax(void);           /* dica de espera ativa (`pause`) */
-void tt_yield(void);               /* cede o resto do quantum */
-void tt_sleep_ms(int ms);          /* bloqueia de verdade */
+void tt_cpu_relax(void);           /* spin-wait hint (`pause`) */
+void tt_yield(void);               /* gives up the rest of the quantum */
+void tt_sleep_ms(int ms);          /* really blocks */
 
-/* Espera ate que o valor em `addr` deixe de ser `expected`, ou o tempo acabe.
+/* Waits until the value at `addr` stops being `expected`, or time runs out.
  *
- * Dormir por tempo fixo e polling disfarcado: quem acorda tarde atrasa o
- * trabalho, e quem acorda cedo queima CPU. Aqui quem despacha ACORDA os que
- * esperam, e o timeout existe so como rede contra acordar perdido. */
+ * Sleeping for a fixed time is polling in disguise: waking late delays the
+ * work, waking early burns CPU.  Here whoever dispatches WAKES the waiters, and
+ * the timeout exists only as a net against a lost wake-up. */
 void tt_futex_wait(const volatile int32_t *addr, int32_t expected, int timeout_ms);
 void tt_futex_wake(const volatile int32_t *addr);
 
-/* -------------------------------------------------------------- rede */
+/* ------------------------------------------------------------ network */
 
-/* O minimo para um servidor HTTP: escutar, aceitar, ler, escrever.  Winsock e
- * BSD sockets divergem no bastante (inicializacao global, tipo do descritor,
- * nome do close) para que o nucleo nao possa ver nenhum dos dois. */
+/* The minimum for an HTTP server: listen, accept, read, write.  Winsock and BSD
+ * sockets diverge enough (global initialisation, descriptor type, the name of
+ * close) that the core must not see either of them. */
 
 typedef struct { intptr_t fd; } tt_socket;
 
 #define TT_INVALID_SOCKET ((intptr_t)-1)
 
-int  tt_net_init(void);            /* uma vez, antes de qualquer socket */
+int  tt_net_init(void);            /* once, before any socket */
 void tt_net_shutdown(void);
 
-/* `host` NULL ou "127.0.0.1" escuta so no loopback; "0.0.0.0" abre para a
- * rede -- e decisao de quem chama, nunca default (docs/05, M3). */
+/* `host` NULL or "127.0.0.1" listens on loopback only; "0.0.0.0" opens to the
+ * network -- that is the caller's decision, never a default (docs/05, M3). */
 int  tt_listen(tt_socket *s, const char *host, int port, int backlog);
 int  tt_accept(const tt_socket *server, tt_socket *client, char *peer, size_t peer_len);
 
-/* Lado cliente: o agente fala com o servidor por HTTP.  So IP literal. */
+/* Client side: the agent talks to the server over HTTP.  Literal IP only. */
 int  tt_connect(tt_socket *s, const char *host, int port);
 
-/* Retornam bytes movidos, 0 no fim da conexao, -1 em erro. */
+/* Return bytes moved, 0 at end of connection, -1 on error. */
 long tt_recv(const tt_socket *s, void *buf, size_t n);
 long tt_send_all(const tt_socket *s, const void *buf, size_t n);
 
 void tt_socket_close(tt_socket *s);
-void tt_socket_nodelay(const tt_socket *s);   /* streaming token a token */
+void tt_socket_nodelay(const tt_socket *s);   /* token-by-token streaming */
 int  tt_socket_timeout(const tt_socket *s, int seconds);
 
-/* ------------------------------------------------------------ atomicos */
+/* ------------------------------------------------------------- atomics */
 
-/* O minimo que o pool precisa, sem `<stdatomic.h>`: o MSVC so o habilita sob
- * `/experimental:c11atomics`, e depender de flag experimental para o coracao
- * do paralelismo nao vale a economia de trinta linhas.
+/* The minimum the pool needs, without `<stdatomic.h>`: MSVC only enables it
+ * under `/experimental:c11atomics`, and depending on an experimental flag for
+ * the heart of the parallelism is not worth saving thirty lines.
  *
- * Ordem: fetch_add e barreira total nos dois compiladores; load e acquire e
- * store e release, que em x86-64 sao a leitura e a escrita comuns. */
+ * Ordering: fetch_add is a full barrier on both compilers; load is acquire and
+ * store is release, which on x86-64 are the ordinary read and write. */
 
 typedef struct { volatile long      v; } tt_atomic32;
 typedef struct { volatile long long v; } tt_atomic64;

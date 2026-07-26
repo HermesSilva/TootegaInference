@@ -85,11 +85,10 @@ if ($LASTEXITCODE -ne 0) { throw "compilacao falhou ($LASTEXITCODE)" }
 
 # A fonte da ferramenta sai com nome de objeto PROPRIO.
 #
-# Sem isto, uma ferramenta chamada como um arquivo de `src/` -- e `Tests/gpu`
-# contra `src/gpu.c` foi exatamente esse caso -- grava os dois no mesmo
-# `obj\gpu.obj`. O sintoma nao aponta para a causa: o link falha com LNK1169
-# (simbolo duplicado) ou LNK1561 (sem entry point), dependendo de quem
-# sobrescreveu quem.
+# Sem isto, uma ferramenta com o mesmo nome de um arquivo de `src/` grava os
+# dois no mesmo `obj\<nome>.obj`. Ja aconteceu, e o sintoma nao aponta para a
+# causa: o link falha com LNK1169 (simbolo duplicado) ou LNK1561 (sem entry
+# point), dependendo de quem sobrescreveu quem.
 & cl.exe @cflags "/Fo:$Obj\tool_$Name.obj" (Join-Path $Here "$Name.c")
 if ($LASTEXITCODE -ne 0) { throw "compilacao falhou ($LASTEXITCODE)" }
 

@@ -4,7 +4,6 @@
 #include "common.h"
 #include "compat.h"
 #include "forward.h"
-#include "offload.h"
 #include "json.h"
 #include "kernels.h"
 #include "model.h"
@@ -1113,13 +1112,11 @@ int tt_cmd_serve(int argc, char **argv)
     const char *path = NULL, *tok_path = NULL, *host = NULL, *key = NULL;
     int port = 8080, threads = 20, no_warm = 0;
     int64_t ctx = 8192;
-    double ram_gb = 0, vram_gb = 0;
+    double ram_gb = 0;
     /* A precisao do KV era fixa em f32 aqui: a opcao existia no engine e nao
      * chegava ao servidor, que e justamente onde o contexto e grande.  int8
      * cabe 202.752 posicoes -- o teto do modelo -- em 5,7 GB. */
     tt_kv_prec kv_prec = TT_KV_F32;
-    const char *gpu_dll = NULL;
-    tt_offload_mode gpu_mode = TT_OFFLOAD_MOE;
 
     for (int i = 0; i < argc; i++) {
         const char *a = argv[i];
@@ -1136,19 +1133,6 @@ int tt_cmd_serve(int argc, char **argv)
         else if ((!strcmp(a, "--kv-prec") || !strcmp(a, "--kv")) && has) {
             if (tt_kv_prec_parse(argv[++i], &kv_prec) != 0) return -1;
         }
-        else if (!strcmp(a, "--vram-gb") && has)   vram_gb = atof(argv[++i]);
-        else if (!strcmp(a, "--gpu"))
-            /* `--gpu` sozinho usa o nome padrao; com argumento, o caminho da
-             * DLL.  O proximo token so e consumido se nao for outra opcao. */
-            gpu_dll = (has && argv[i + 1][0] != '-') ? argv[++i]
-                                                     : "tootega_cuda.dll";
-        /* `--gpu-all` inclui atencao e lm_head, que sao chamados um a um e
-         * pagam o protocolo inteiro em cada matmul.  Fica como opcao porque em
-         * placa com mais VRAM a conta muda; o default e so MoE. */
-        else if (!strcmp(a, "--gpu-all")) {
-            gpu_mode = TT_OFFLOAD_ALL;
-            if (!gpu_dll) gpu_dll = "tootega_cuda.dll";
-        }
         else if (a[0] == '-') return tt_fail("serve: opcao desconhecida '%s'", a);
         else if (!path) path = a;
         else return tt_fail("serve: argumento extra '%s'", a);
@@ -1157,8 +1141,7 @@ int tt_cmd_serve(int argc, char **argv)
     if (!path || !tok_path)
         return tt_fail("uso: tootega serve <modelo.tootega> --tokenizer "
                        "<tokenizer.json> [--port 8080] [--ctx 8192] "
-                       "[--kv-prec f32|bf16|int8] [--verbose] [--gpu] "
-                       "[--no-warm]");
+                       "[--kv-prec f32|bf16|int8] [--verbose] [--no-warm]");
 
     /* Expor na rede exige as duas coisas.  Um servidor de inferencia aberto e
      * acesso remoto ao modelo e ao disco desta maquina; recusar aqui custa uma
@@ -1191,14 +1174,6 @@ int tt_cmd_serve(int argc, char **argv)
     /* Aquece antes de aceitar conexao. Sem isto o primeiro usuario paga a
      * leitura de 18 GB do disco espalhada pelo laco de decode -- 5x mais lento
      * por token -- e nao ha nada na tela que explique a espera. */
-    /* GPU antes do aquecimento: o que subir para a VRAM nao precisa ser
-     * tocado na RAM depois. */
-    tt_gpu_plan gplan;
-    if (gpu_dll) {
-        tt_gpu_place(&model.c, gpu_dll, vram_gb, gpu_mode, &gplan);
-        tt_gpu_print(&gplan);
-    }
-
     if (!no_warm) {
         char wb[64];
         const double tw = tt_now();

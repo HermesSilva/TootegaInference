@@ -1,5 +1,4 @@
 #include "kernels.h"
-#include "backend.h"
 #include "pool.h"
 
 #include <math.h>
@@ -386,34 +385,6 @@ int tt_matmul_batch(float **y, const tt_tensor **w, int n, const float *x)
     if (n > TT_BATCH_MAX) return tt_fail("batch de %d matmuls, maximo %d",
                                          n, TT_BATCH_MAX);
 
-    /* Residentes na VRAM vao juntos, numa ida so; o resto segue na CPU.
-     *
-     * A separacao e por tensor e nao por camada porque a colocacao e por
-     * prioridade de trafego (docs/18): a atencao de todas as camadas sobe
-     * antes do primeiro expert, entao uma camada pode ter metade de cada
-     * lado. */
-    const tt_backend *be = tt_backend_get();
-    if (be && be->matmul_many) {
-        float        *dev_y[TT_BATCH_MAX];
-        tt_dev_tensor dev_w[TT_BATCH_MAX];
-        const tt_tensor *cpu_w[TT_BATCH_MAX];
-        float           *cpu_y[TT_BATCH_MAX];
-        int nd = 0, nc = 0;
-
-        for (int i = 0; i < n; i++) {
-            if (w[i]->dev) { dev_y[nd] = y[i]; dev_w[nd++] = w[i]->dev; }
-            else           { cpu_y[nc] = y[i]; cpu_w[nc++] = w[i];      }
-        }
-        if (nd) {
-            if (be->matmul_many(dev_y, dev_w, nd, x) != 0)
-                return tt_fail("backend falhou no batch de %d", nd);
-            if (!nc) return 0;
-            y = cpu_y;
-            w = cpu_w;
-            n = nc;
-        }
-    }
-
     batch_job job;
     job.y = y; job.w = w; job.x = x; job.n = n;
     job.start[0] = 0;
@@ -450,14 +421,6 @@ int tt_matmul(float *y, const tt_tensor *t, const float *x)
                        (int)t->name_len, t->name, t->ndim);
     if (t->kind >= TT_KIND_COUNT)
         return tt_fail("matmul: kind %d nao implementado", (int)t->kind);
-
-    /* Residente na VRAM: o peso nem e tocado aqui.  Se o backend falhar, cai
-     * para a CPU em silencio -- uma placa que sumiu no meio da geracao nao
-     * pode derrubar a resposta. */
-    if (t->dev) {
-        const tt_backend *be = tt_backend_get();
-        if (be && be->matmul(y, t->dev, x) == 0) return 0;
-    }
 
     const int threads = tt_pool_threads(g_pool);
     if (!g_pool || threads <= 1 || t->rows * t->cols < TT_PARALLEL_MIN_MACS) {

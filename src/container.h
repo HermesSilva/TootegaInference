@@ -48,13 +48,6 @@ typedef struct {
     uint64_t     scales_off, scales_bytes;
 
     int32_t     group;         /* 0 quando nao ha escala */
-
-    /* Handle do mesmo tensor ja residente na VRAM, ou 0.
-     *
-     * Mora aqui, e nao numa tabela paralela, porque o despacho do matmul
-     * precisa da resposta em O(1) no caminho quente -- uma busca por nome por
-     * matmul custaria mais que a travessia que ela evita. */
-    uint32_t    dev;
 } tt_tensor;
 
 typedef struct {

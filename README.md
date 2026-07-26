@@ -46,8 +46,13 @@ nesse regime rende `N^0,25`: quadruplicar RAM ou concorrência dá ~1,4×. O gar
 não é hardware, é a razão entre o tamanho do modelo e a memória rápida. Um MoE
 moderno e enxuto (GLM-4.7-Flash, 19,3 GB em int4) **cabe inteiro na RAM desta
 máquina**, o disco sai do caminho, e o teto passa a ser banda de memória:
-**17–22 tok/s só na CPU, 25–32 tok/s com partição GPU/CPU** — contra 0,93. O
-TootegaEngine é o engine desenhado para esse regime, não para esconder disco.
+**13,5 tok/s medidos só na CPU**, contra 0,93. O TootegaEngine é o engine
+desenhado para esse regime, não para esconder disco.
+
+A partição GPU/CPU era a aposta seguinte e **foi medida**: o kernel CUDA ficou
+2,6× mais rápido que a CPU e o decode completo, mesmo assim, mais lento — a
+granularidade de um matmul por chamada paga mais protocolo do que economiza.
+Vive na branch `GPU`; a master é CPU pura.
 
 Faixas realistas a contexto curto; a contexto de agente (32k) caem para 10–20.
 A conta completa está em [08-teto-de-desempenho.md](docs/08-teto-de-desempenho.md).

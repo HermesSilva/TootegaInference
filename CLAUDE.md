@@ -32,8 +32,13 @@ O `build.ps1` de cada ferramenta só delega para `tools/shared/build-tool.ps1`,
 passando o próprio caminho — por isso o mesmo script serve às duas árvores.
 
 Hoje: `Tests/` tem `ablate` (perplexidade e ablação), `gentest` (qualidade de
-geração), `bench` (tempo, memória, roofline) e `gpu` (portão do M2). `tools/`
-tem `convert`, `agent` (cliente agêntico) e `cuda` (backend).
+geração) e `bench` (tempo, memória, roofline). `tools/` tem `convert` e `agent`
+(cliente agêntico).
+
+**A master é CPU pura.** O backend CUDA, a colocação em VRAM e o portão do M2
+existem e vivem na branch `GPU` — foram medidos e a conclusão foi que a
+granularidade está errada (`docs/18` daquela branch). Nada de GPU entra aqui
+sem que o `run_layer` mostre ganho no decode completo.
 
 ### O que separa Tests de tools
 

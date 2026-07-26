@@ -42,7 +42,6 @@ ordem de acumulação.
 | determinismo | logits **byte-idênticos** de 1 a 20 threads |
 | tokenizer contra o `tokenizers` da HF | **36/36** casos, round-trip exato |
 | kernels contra a quantização do numpy | **bit a bit** |
-| CPU contra CUDA, cinco tensores | erro relativo **0,0000%** |
 
 ## Quantização — ablação pareada
 
@@ -73,19 +72,19 @@ ordem de acumulação.
 | servidor HTTP, SSE, UI web embutida | `src/server.c`, `webui.h` |
 | ferramentas no protocolo OpenAI (`tools`, `tool_calls`, `role:tool`) | `src/server.c`, [20](20-agente.md) |
 | agente falando o contrato do Claude Code CLI (fase A) | `tools/agent/` |
-| interface de backend, `LoadLibrary`/`dlopen` | `src/backend.c` |
 | conversor BF16 → `.tootega` | `tools/convert/` |
-| backend CUDA (kernels int4/int8/f32) | `tools/cuda/` |
-| medição: ablação, geração, roofline, portão GPU | `Tests/` |
+| medição: ablação, geração, roofline | `Tests/` |
 
 ## Não implementado
 
 - **Slots e batching contínuo** (M3). Um pedido por vez; a segunda aba espera
   no backlog do TCP, em silêncio.
-- **Partição GPU por camada** (M2). Os kernels foram reescritos e o portão
-  **passou**: 179–190 GB/s contra 68,7 da CPU, projetando 20,8 tok/s já na
-  placa de 8 GB. Falta o que transforma projeção em ganho — `run_layer` no
-  device, experts em lançamento único, planner ([18](18-gpu.md)).
+- **GPU (M2) — fora da master, na branch `GPU`.** Foi escrita e medida ali:
+  kernels a 179–190 GB/s contra 68,7 da CPU (2,6×), e mesmo assim o decode
+  completo ficou **mais lento** que a CPU pura em três configurações, porque a
+  granularidade de um matmul por chamada paga 17 µs de protocolo por vez.
+  Falta o `run_layer` no device. A master é CPU pura até que ele exista e
+  mostre ganho medido.
 - **Ferramentas locais no agente** (M4 fase B) — o laço fala o protocolo, mas
   não tem mãos: `Read`/`Edit`/`Bash` e o `can_use_tool` não existem.
 - **Estado persistente** ([12](12-estado-persistente.md)) e **especulação MTP**

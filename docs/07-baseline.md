@@ -1,103 +1,106 @@
 # 07 — Baseline
 
-Tudo medido nesta máquina, com engine anterior v1.1.1 e GLM-5.2 int4 (383,7 GB) em
-`F:\glm52_i4`. São os números que o TootegaEngine tem de bater.
+Everything measured on this machine, with the streaming engine v1.1.1 and
+GLM-5.2 int4 (383.7 GB). These are the numbers TootegaEngine has to beat.
 
-Protocolo: prompt fixo, `max_tokens=80`, `temperature=0` (greedy), `RAM_GB=45`
-fixo salvo indicação, hash SHA-256 da resposta registrado em cada execução.
+Protocol: fixed prompt, `max_tokens=80`, `temperature=0` (greedy), `RAM_GB=45`
+unless stated otherwise, SHA-256 of the answer recorded on every run.
 
 ## Single-stream
 
 | build / config | prompt 1 | prompt 2 |
 |---|---|---|
-| release, `x86-64-v3` | 0,684 | 0,748 |
-| **nativo, AVX-VNNI** | 0,684 | 0,748 |
-| cuda-experts4 | 0,647 | 0,700 |
-| cuda-tc-w4a16 (tensor cores) | 0,639 | 0,709 |
-| cuda-tc-pipe2 | 0,641 | 0,700 |
-| **cuda-dense** | **0,054** | abortado |
+| release, `x86-64-v3` | 0.684 | 0.748 |
+| **native, AVX-VNNI** | 0.684 | 0.748 |
+| cuda-experts4 | 0.647 | 0.700 |
+| cuda-tc-w4a16 (tensor cores) | 0.639 | 0.709 |
+| cuda-tc-pipe2 | 0.641 | 0.700 |
+| **cuda-dense** | **0.054** | aborted |
 
-Nenhuma variante de GPU alcançou o CPU. **`CUDA_DENSE=1` degradou 13×** — os
-10,9 GB densos não cabem nos 8,6 GB de VRAM e o engine passou a trafegar peso
-pelo PCIe a cada camada. O engine não recusou; aceitou e degradou.
+No GPU variant caught up with the CPU. **`CUDA_DENSE=1` degraded 13×** — the
+10.9 GB of dense tensors do not fit in 8.6 GB of VRAM and the engine started
+shipping weights over PCIe on every layer. The engine did not refuse; it accepted
+and degraded.
 
-## Efeito de repetição (cache quente)
+## Repetition effect (warm cache)
 
-Mesmo prompt 3× seguidas, mesmo servidor:
+Same prompt 3× in a row, same server:
 
-| config | run 1 | run 2 | run 3 | ganho |
+| config | run 1 | run 2 | run 3 | gain |
 |---|---|---|---|---|
-| cpu-nativo | 0,709 | 0,861 | 0,856 | **+20,7%** |
-| cuda-tc-w4a16 | 0,775 | 0,805 | 0,806 | +4,0% |
-| cpu-direct (`DIRECT=1 PIPE=1`) | 0,827 | 0,858 | **0,867** | +4,8% |
+| cpu-native | 0.709 | 0.861 | 0.856 | **+20.7%** |
+| cuda-tc-w4a16 | 0.775 | 0.805 | 0.806 | +4.0% |
+| cpu-direct (`DIRECT=1 PIPE=1`) | 0.827 | 0.858 | **0.867** | +4.8% |
 
-`DIRECT=1` ajuda na **primeira** execução (0,827 contra 0,709, +17%), não no
-regime quente — coerente, já que `O_DIRECT` só beneficia quem lê do disco.
+`DIRECT=1` helps on the **first** run (0.827 against 0.709, +17%), not in the
+warm regime — consistent, since `O_DIRECT` only benefits whoever reads from disk.
 
-## Melhor marca
+## Best mark
 
-**0,929 tok/s** — GPU com tier de 4 GB de experts + `DIRECT=1 PIPE=1`, quente:
+**0.929 tok/s** — GPU with a 4 GB expert tier + `DIRECT=1 PIPE=1`, warm:
 
 ```
-VRAM  4525 / 8192 MB  (55%, 3,6 GB ociosos)
-RSS   45,14 GB · RAM livre 6,3 GB
+VRAM  4525 / 8192 MB  (55%, 3.6 GB idle)
+RSS   45.14 GB · free RAM 6.3 GB
 ```
 
-**A GPU não era o recurso escasso; a RAM era.**
+**The GPU was not the scarce resource; RAM was.**
 
-## Escalabilidade
+## Scalability
 
-**Concorrência** (4 slots de KV, aquecimento antes):
+**Concurrency** (4 KV slots, warmed up first):
 
-| K | agregado | por request |
+| K | aggregate | per request |
 |---|---|---|
-| 1 | 0,921 | 0,921 |
-| 2 | 1,043 | 0,524 |
-| 4 | **1,339** | 0,338 |
+| 1 | 0.921 | 0.921 |
+| 2 | 1.043 | 0.524 |
+| 4 | **1.339** | 0.338 |
 
-4× de carga → **1,45×** de throughput. Expoente **0,27**.
+4× the load → **1.45×** the throughput. Exponent **0.27**.
 
-**Memória** (mesma config, `RAM_GB` variando):
+**Memory** (same config, varying `RAM_GB`):
 
-| RAM_GB | quente |
+| RAM_GB | warm |
 |---|---|
-| 16 | 0,656 |
-| 30 | 0,695 |
-| 45 | 0,839 |
-| ~60 (auto) | 0,929 |
+| 16 | 0.656 |
+| 30 | 0.695 |
+| 45 | 0.839 |
+| ~60 (auto) | 0.929 |
 
-3,75× de RAM → **1,42×**. Expoente ~0,26.
+3.75× the RAM → **1.42×**. Exponent ~0.26.
 
-**Os dois eixos dão `N^0,25`.** A lei de escala não é hardware, é fração de
-residência: com 60 GB de orçamento cacheamos ~15% dos 324 GB de experts frios.
+**Both axes give `N^0.25`.** The scaling law is not hardware, it is residency
+fraction: with a 60 GB budget we cache ~15% of the 324 GB of cold experts.
 
-## Correção verificada
+## Verified correctness
 
-Um achado que vale como requisito, não só como observação: **CPU e CUDA
-produziram bytes idênticos** (mesmo SHA-256 da resposta), em servidores
-diferentes, com colocações diferentes. A promessa central do engine anterior — *placement
-only ever decides speed* — se sustenta.
+A finding that counts as a requirement, not just an observation: **CPU and CUDA
+produced identical bytes** (same SHA-256 of the answer), on different servers,
+with different placements. The streaming engine's central promise — *placement
+only ever decides speed* — holds.
 
-A única divergência observada veio de um KV persistido de **outra
-conversa**, cujo prefixo casava parcialmente. Runs 2 e 3 idênticas entre si
-descartaram não-determinismo de redução em ponto flutuante sob OpenMP: o engine é
-determinístico **por estado**.
+The only divergence observed came from a KV persisted from **another
+conversation**, whose prefix partially matched. Runs 2 and 3 being identical to
+each other ruled out non-determinism from floating-point reduction under OpenMP:
+the engine is deterministic **per state**.
 
-Isso vira teste no TootegaEngine: mesma colocação → mesmos bytes; estado de KV
-diferente → **também** mesmos bytes (aqui o engine anterior não foi verificado a fundo).
+That becomes a test in TootegaEngine: same placement → same bytes; different KV
+state → **also** the same bytes (this last part was never verified in depth on
+the streaming engine).
 
-## Banda de disco não saturada
+## Disk bandwidth not saturated
 
-Cada token precisa de ~78 × 8 × 19 MB ≈ 11,9 GB de experts. Com ~15% residentes,
-~10 GB vêm do disco por token. A 0,93 tok/s isso é **~9,3 GB/s** — contra
-**18,4 GB/s** medidos no RAID0.
+Each token needs ~78 × 8 × 19 MB ≈ 11.9 GB of experts. With ~15% resident, ~10 GB
+come from disk per token. At 0.93 tok/s that is **~9.3 GB/s** — against
+**18.4 GB/s** measured on the RAID0.
 
-Metade da banda do disco ociosa. Provável causa: `PIPE_WORKERS=8` não mantém fila
-profunda o suficiente (o RND4K Q1T1 do array é 73 MB/s contra 2.058 MB/s em
-Q32T16). Não perseguimos — o TootegaEngine não lê expert do disco.
+Half the disk bandwidth idle. Likely cause: `PIPE_WORKERS=8` does not keep the
+queue deep enough (the array's RND4K Q1T1 is 73 MB/s against 2,058 MB/s at
+Q32T16). We did not chase it — TootegaEngine does not read experts from disk.
 
-## Como reproduzir
+## How to reproduce
 
-Scripts em \`: `bench.ps1` (matriz de configs), `bench_repeat.ps1`
-(efeito de repetição), `scaling.ps1` (fases A/B/C), `roofline.py` (teto teórico).
-Resultados brutos em `bench_run.log`, `bench_repeat.log`, `scaling_run.log`.
+The harness scripts belong to the streaming engine's repository, not this one:
+`bench.ps1` (config matrix), `bench_repeat.ps1` (repetition effect),
+`scaling.ps1` (phases A/B/C), `roofline.py` (theoretical ceiling). Raw results in
+`bench_run.log`, `bench_repeat.log`, `scaling_run.log`.

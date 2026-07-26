@@ -1,13 +1,13 @@
-/* budget.h -- orcamento de recursos.  Implementa docs/09-limites-de-recursos.md.
+/* budget.h -- resource budget.  Implements docs/09-resource-limits.md.
  *
- * A regra que este arquivo existe para cumprir: **recusar em vez de degradar**.
- * Um engine que aceita o pedido e depois faz o SO paginar entrega 0,05 tok/s e
- * a pessoa nao sabe por que; um que recusa dizendo o que reduzir custa cinco
- * segundos e nenhuma duvida.
+ * The rule this file exists to enforce: **refuse instead of degrading**.  An
+ * engine that accepts the request and then makes the OS page delivers
+ * 0.05 tok/s and the person does not know why; one that refuses and says what
+ * to reduce costs five seconds and no doubt at all.
  *
- * Por isso toda conta aqui e feita ANTES de alocar qualquer coisa, e a
- * verificacao continua durante a execucao -- estimar e prometer, medir e
- * cumprir.
+ * That is why every calculation here happens BEFORE anything is allocated, and
+ * why verification continues at runtime -- estimating is promising, measuring is
+ * keeping the promise.
  */
 #ifndef TOOTEGA_BUDGET_H
 #define TOOTEGA_BUDGET_H
@@ -18,28 +18,29 @@
 #include "model.h"
 
 typedef struct {
-    uint64_t weights;          /* pesos residentes */
-    uint64_t kv;               /* cache para `ctx` posicoes */
+    uint64_t weights;          /* resident weights */
+    uint64_t kv;               /* cache for `ctx` positions */
     uint64_t scratch;
     uint64_t total;
 
-    double   budget_gb;        /* teto pedido, ou o default de docs/09 */
+    double   budget_gb;        /* ceiling requested, or the docs/09 default */
     double   ram_total_gb;
     double   ram_avail_gb;
 
     int      fits;
-    int64_t  ctx_max;          /* maior ctx que caberia no orcamento */
+    int64_t  ctx_max;          /* largest ctx that would fit in the budget */
 } tt_plan;
 
-/* `ram_gb <= 0` usa o default `auto`: total menos 8 GB de folga para o SO e
- * para o resto do que a pessoa esta fazendo. */
+/* `ram_gb <= 0` uses the `auto` default: total minus 8 GB of headroom for the
+ * OS and for whatever else the person is doing. */
 void tt_plan_compute(tt_plan *p, const tt_model *m, int64_t ctx, double ram_gb);
 void tt_plan_print(const tt_plan *p, const tt_model *m, int64_t ctx, int threads);
 
-/* -1 com mensagem acionavel se nao couber -- a mensagem diz o novo `--ctx`. */
+/* -1 with an actionable message if it does not fit -- the message states the
+ * new `--ctx`. */
 int  tt_plan_check(const tt_plan *p, int64_t ctx);
 
-/* Verificacao em execucao: o RSS medido contra o teto prometido. */
+/* Runtime verification: measured RSS against the promised ceiling. */
 int  tt_budget_verify(const tt_plan *p);
 
 int tt_cmd_plan(int argc, char **argv);

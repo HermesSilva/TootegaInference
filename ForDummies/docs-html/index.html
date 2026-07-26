@@ -274,36 +274,36 @@ body{display:block;background:var(--plane);padding:0}
 .foot a{color:var(--ink2)}
 </style></head>
 <body><div class="page">
-<h1 class="hero">Especificação <span style="color:var(--muted)">docs/</span></h1>
-<p class="lede">Os 20 documentos normativos do projeto, em versão de leitura.</p>
-<div class="warn"><b>Cópia gerada.</b> A fonte é o Markdown em <code>docs/</code>; estas
-páginas existem só porque navegador não renderiza <code>.md</code>. Onde divergirem,
-o Markdown ganha. Novo por aqui? Comece pelo
-<a href="../index.html">guia ForDummies</a>, depois volte para o <b>02</b> e o <b>08</b>
-— destacados abaixo.</div>
-<div class="list"><a class="row" href="01-objetivos.html"><span class="num">01</span><span><b>Objetivos e escopo</b><span>o que é e o que explicitamente não é</span></span></a>
-<a class="row first" href="02-hardware.html"><span class="num">02</span><span><b>Modelo de hardware</b><span>as bandas medidas e a lei de colocação que sai delas</span></span></a>
-<a class="row" href="03-arquitetura.html"><span class="num">03</span><span><b>Arquitetura</b><span>camadas, contratos, os três caches e seus donos</span></span></a>
-<a class="row" href="04-modelo-alvo.html"><span class="num">04</span><span><b>Modelo alvo: GLM-4.7-Flash</b><span>GLM-4.7-Flash: o que o engine tem de implementar</span></span></a>
-<a class="row" href="05-roadmap.html"><span class="num">05</span><span><b>Roadmap</b><span>marcos com critério de saída mensurável</span></span></a>
-<a class="row" href="06-licoes-aprendidas.html"><span class="num">06</span><span><b>Lições aprendidas</b><span>o que copiar, o que jogar fora, o que consertar</span></span></a>
-<a class="row" href="07-baseline.html"><span class="num">07</span><span><b>Baseline</b><span>os números a bater, todos medidos nesta máquina</span></span></a>
-<a class="row first" href="08-teto-de-desempenho.html"><span class="num">08</span><span><b>Teto de desempenho</b><span>roofline: quanto dá para extrair desta máquina</span></span></a>
-<a class="row" href="09-limites-de-recursos.html"><span class="num">09</span><span><b>Limites de recursos</b><span>orçamentos e a regra de recusar em vez de degradar</span></span></a>
-<a class="row" href="10-implementacao.html"><span class="num">10</span><span><b>Implementação, build e portabilidade</b><span>C11, linkagem estática, portabilidade Win/Linux</span></span></a>
-<a class="row" href="11-memoria.html"><span class="num">11</span><span><b>Disciplina de memória e zero-copy</b><span>zero-copy, KV paginado compartilhado, páginas grandes</span></span></a>
-<a class="row" href="12-estado-persistente.html"><span class="num">12</span><span><b>Estado persistente: subir quente</b><span>índices e KV em disco para subir quente</span></span></a>
-<a class="row" href="13-decisoes-pendentes.html"><span class="num">13</span><span><b>Decisões pendentes</b><span>o placar das decisões, D1 a D14</span></span></a>
-<a class="row" href="14-formato-container.html"><span class="num">14</span><span><b>Formato do container <code>.tootega</code></b><span>especificação normativa do .tootega, byte a byte</span></span></a>
-<a class="row" href="15-kernels-e-numerica.html"><span class="num">15</span><span><b>Kernels, numérica e threading</b><span>W4A32, ordem de acumulação, pool de threads</span></span></a>
-<a class="row" href="16-tokenizer.html"><span class="num">16</span><span><b>Tokenizer</b><span>BPE tiktoken, o que implementar e como testar</span></span></a>
-<a class="row" href="17-diagnostico.html"><span class="num">17</span><span><b>Diagnóstico</b><span>os bugs que existiram, e por que os testes não os pegaram</span></span></a>
-<a class="row" href="19-estado.html"><span class="num">19</span><span><b>Estado de referência</b><span>a fotografia do que existe e do que foi medido</span></span></a>
-<a class="row" href="20-agente.html"><span class="num">20</span><span><b>Agente e protocolos</b><span>ferramentas, o contrato do CLI, o custo do raciocínio</span></span></a>
-<a class="row" href="21-kv-int8.html"><span class="num">21</span><span><b>KV em int8</b><span>medido em contexto longo: inconclusivo, não adotado</span></span></a></div>
+<h1 class="hero">Specification <span style="color:var(--muted)">docs/</span></h1>
+<p class="lede">The project's 20 normative documents, in reading form.</p>
+<div class="warn"><b>Generated copy.</b> The source is the Markdown in <code>docs/</code>;
+these pages exist only because a browser does not render <code>.md</code>. Where they
+disagree, the Markdown wins. New here? Start with the
+<a href="../index.html">ForDummies guide</a>, then come back to <b>02</b> and <b>08</b>
+— highlighted below.</div>
+<div class="list"><a class="row" href="01-goals.html"><span class="num">01</span><span><b>Goals and scope</b><span>what it is and what it explicitly is not</span></span></a>
+<a class="row" href="02-hardware.html"><span class="num">02</span><span><b>Hardware model</b><span>the measured bandwidths and the placement law that follows</span></span></a>
+<a class="row" href="03-architecture.html"><span class="num">03</span><span><b>Architecture</b><span>layers, contracts, the three caches and their owners</span></span></a>
+<a class="row" href="04-target-model.html"><span class="num">04</span><span><b>Target model: GLM-4.7-Flash</b><span>GLM-4.7-Flash: what the engine has to implement</span></span></a>
+<a class="row" href="05-roadmap.html"><span class="num">05</span><span><b>Roadmap</b><span>milestones with a measurable exit criterion</span></span></a>
+<a class="row" href="06-lessons-learned.html"><span class="num">06</span><span><b>Lessons learned</b><span>what to adopt, what to throw away, what to avoid</span></span></a>
+<a class="row" href="07-baseline.html"><span class="num">07</span><span><b>Baseline</b><span>the numbers to beat, all measured on this machine</span></span></a>
+<a class="row" href="08-performance-ceiling.html"><span class="num">08</span><span><b>Performance ceiling</b><span>roofline: how much this machine can give</span></span></a>
+<a class="row" href="09-resource-limits.html"><span class="num">09</span><span><b>Resource limits</b><span>budgets, and the rule of refusing instead of degrading</span></span></a>
+<a class="row" href="10-implementation.html"><span class="num">10</span><span><b>Implementation, build and portability</b><span>C11, static linking, Windows/Linux portability</span></span></a>
+<a class="row" href="11-memory.html"><span class="num">11</span><span><b>Memory discipline and zero-copy</b><span>zero-copy, shared paged KV, huge pages</span></span></a>
+<a class="row" href="12-persistent-state.html"><span class="num">12</span><span><b>Persistent state: starting warm</b><span>indexes and KV on disk to start warm</span></span></a>
+<a class="row" href="13-open-decisions.html"><span class="num">13</span><span><b>Open decisions</b><span>the decision scoreboard, D1 to D14</span></span></a>
+<a class="row" href="14-container-format.html"><span class="num">14</span><span><b>The <code>.tootega</code> container format</b><span>the normative .tootega specification, byte by byte</span></span></a>
+<a class="row" href="15-kernels-and-numerics.html"><span class="num">15</span><span><b>Kernels, numerics and threading</b><span>W4A32, accumulation order, thread pool</span></span></a>
+<a class="row" href="16-tokenizer.html"><span class="num">16</span><span><b>Tokenizer</b><span>tiktoken BPE, what to implement and how to test it</span></span></a>
+<a class="row" href="17-diagnosis.html"><span class="num">17</span><span><b>Diagnosis</b><span>the bugs that existed, and why the tests missed them</span></span></a>
+<a class="row" href="19-reference-state.html"><span class="num">19</span><span><b>Reference state</b><span>the snapshot of what exists and what was measured</span></span></a>
+<a class="row" href="20-agent.html"><span class="num">20</span><span><b>Agent, tools and protocols</b><span>tools, the CLI contract, the cost of reasoning</span></span></a>
+<a class="row" href="21-int8-kv.html"><span class="num">21</span><span><b>int8 KV</b><span>measured at long context: inconclusive, not adopted</span></span></a></div>
 <p class="foot"><a href="../index.html">← ForDummies</a> &nbsp;·&nbsp;
-<a href="../TootegaEngine-ForDummies.pt.html">guia PT</a> &nbsp;·&nbsp;
-<a href="../TootegaEngine-ForDummies.en.html">guide EN</a></p>
+<a href="../TootegaEngine-ForDummies.pt.html">PT guide</a> &nbsp;·&nbsp;
+<a href="../TootegaEngine-ForDummies.en.html">EN guide</a></p>
 </div>
 <script>var r=document.documentElement,s=localStorage.getItem('tt-theme');
 r.setAttribute('data-theme', s || (matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'));

@@ -1,6 +1,6 @@
 /* kernels.h -- a aritmetica.  Ingenua de proposito, por enquanto.
  *
- * docs/15-kernels-e-numerica.md fixa tres coisas que este arquivo obedece:
+ * docs/15-kernels-and-numerics.md fixa tres coisas que este arquivo obedece:
  *
  *   W4A32   Desempacota o peso para float e multiplica com FMA.  O decode e
  *           memory-bound (~33 ms de memoria contra 4-7 ms de compute), entao

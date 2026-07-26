@@ -1,16 +1,16 @@
-/* pool.h -- pool de threads proprio.
+/* pool.h -- our own thread pool.
  *
- * Nao e OpenMP.  OpenMP resolveria, mas arrasta `libgomp` e a promessa de
- * docs/10 e linkagem estatica com o minimo de runtime (docs/15, D6).
+ * It is not OpenMP.  OpenMP would work, but it drags in `libgomp`, and docs/10
+ * promises static linking with minimal runtime (docs/15, D6).
  *
- * O contrato que importa vem de docs/15: **particionamento por linha de
- * saida**.  Cada thread possui linhas inteiras e faz a reducao ao longo de I
- * sozinha, na mesma ordem, com acumulador proprio.  Threads nunca somam
- * parcelas umas das outras -- por isso o resultado nao muda com --threads, e o
- * teste de determinismo pode existir.
+ * The contract that matters comes from docs/15: **partitioning by output row**.
+ * Each thread owns whole rows and performs the reduction along I on its own, in
+ * the same order, with its own accumulator.  Threads never sum each other's
+ * partials -- which is why the result does not change with --threads, and why
+ * the determinism test can exist at all.
  *
- * Granularidade dinamica (contador atomico) porque a maquina e hibrida: com
- * faixas fixas, um E-core segura a barreira dos oito P-cores.
+ * Dynamic granularity (an atomic counter) because the machine is hybrid: with
+ * fixed ranges, one E-core holds the barrier for all eight P-cores.
  */
 #ifndef TOOTEGA_POOL_H
 #define TOOTEGA_POOL_H
@@ -22,21 +22,21 @@ typedef void (*tt_task_fn)(void *arg, int64_t row0, int64_t row1);
 typedef struct tt_pool tt_pool;
 
 typedef enum {
-    TT_AFFINITY_PCORES = 0,   /* default de docs/09 */
-    TT_AFFINITY_ALL,          /* todos os cores fisicos, para medir */
-    TT_AFFINITY_NONE          /* deixa o escalonador do SO decidir */
+    TT_AFFINITY_PCORES = 0,   /* docs/09 default */
+    TT_AFFINITY_ALL,          /* every physical core, for measurement */
+    TT_AFFINITY_NONE          /* let the OS scheduler decide */
 } tt_affinity;
 
 int tt_affinity_parse(const char *s, tt_affinity *out);
 
-/* `threads <= 0` usa o default: um por P-core fisico. */
+/* `threads <= 0` uses the default: one per physical P-core. */
 tt_pool *tt_pool_create(int threads, tt_affinity affinity);
 void     tt_pool_destroy(tt_pool *p);
 int      tt_pool_threads(const tt_pool *p);
 
-/* Roda fn sobre [0, rows) particionado em blocos de `grain` linhas.  A thread
- * chamadora participa do trabalho -- nao faz sentido ela dormir enquanto ha
- * fila.  Retorna quando tudo terminou (a barreira e aqui). */
+/* Runs fn over [0, rows) partitioned into blocks of `grain` rows.  The calling
+ * thread joins the work -- there is no sense in it sleeping while the queue has
+ * items.  Returns when everything has finished (the barrier is here). */
 void tt_pool_run(tt_pool *p, tt_task_fn fn, void *arg, int64_t rows, int64_t grain);
 
 int tt_pool_selftest(void);

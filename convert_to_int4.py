@@ -7,12 +7,12 @@ Marco M0 do roadmap. Tres propriedades que o engine depende:
      E o formato que a conta de teto assume (0,5625 byte por peso).
   2. Todo tensor alinhado a 64 bytes no arquivo. Sem isso nao ha leitura
      zero-copy com SIMD e o carregador precisa de um caminho de copia --
-     ver docs/11-memoria.md.
+     ver docs/11-memory.md.
   3. Streaming shard a shard. Nunca os dois lados em memoria: a fonte tem
      62,4 GB e a saida ~19,3 GB (medido; a estimativa antiga de 15,6 GB nao
      contava escalas, MTP em int8 nem os dois `embed_tokens` em bf16).
 
-Precisao por tensor segue docs/04-modelo-alvo.md, incluindo a licao #8 do engine anterior: cabeca MTP em int4 derruba a aceitacao de draft para 0-4%, entao a
+Precisao por tensor segue docs/04-target-model.md, incluindo a licao #8 do engine anterior: cabeca MTP em int4 derruba a aceitacao de draft para 0-4%, entao a
 camada MTP inteira vai em int8.
 
 Uso:
@@ -94,7 +94,7 @@ def classify(name: str, mtp_layer: int, lm_head: str, mtp: str) -> str:
     """Precisao alvo. `mtp_layer` e resolvido do config, nao chutado.
 
     lm_head e mtp sao parametros porque sao as duas escolhas genuinamente
-    incertas da tabela em docs/04-modelo-alvo.md -- existem para a ablacao,
+    incertas da tabela em docs/04-target-model.md -- existem para a ablacao,
     nao para ficarem fixas por palpite.
     """
     probe = re.sub(rf"^model\.layers\.{mtp_layer}\.", "model.layers.MTP.", name)

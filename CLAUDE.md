@@ -1,82 +1,90 @@
-# TootegaEngine — diretivas
+# TootegaEngine — directives
 
-Engine de inferência para MoE residentes, escrito do zero. O projeto inteiro
-está especificado em `docs/`; leia `docs/02-hardware.md` primeiro e
-`docs/13-decisoes-pendentes.md` para o placar das decisões.
+An inference engine for resident MoE models, written from scratch. The whole
+project is specified in `docs/`; read `docs/02-hardware.md` first and
+`docs/13-open-decisions.md` for the decision scoreboard.
 
-## Independência
+**Working language is English.** Code, comments, documents, commit messages and
+anything the program prints. The only deliberate exception is
+`ForDummies/*.pt.*`, the Portuguese entry guide.
 
-**Nada de dependência de projeto externo** — nem código, nem toolchain. Tudo
-que este engine usa foi escrito aqui: parser JSON, tokenizer, tabelas Unicode,
-pool de threads, kernels.
+## Independence
 
-Onde um documento citar medição ou lição de trabalho anterior, é **histórico
-de aprendizado, não origem de código**. Nada foi reaproveitado.
+**No dependency on any external project** — neither code nor toolchain.
+Everything this engine uses was written here: JSON parser, tokenizer, Unicode
+tables, thread pool, kernels.
 
-## Onde cada coisa mora
+Where a document cites a measurement or a lesson from earlier work, that is
+**learning history, not the origin of code**. Nothing was reused.
 
-| pasta | o que é | regra |
+## Where everything lives
+
+| folder | what it is | rule |
 |---|---|---|
-| `src/` | o engine | C11 ISO, **zero dependências**, só `compat.c` tem `#ifdef` de SO |
-| `Tests/` | ferramentas de **medição** | uma pasta por ferramenta, **o `.exe` na raiz de `Tests/`** |
-| `tools/` | ferramentas de **produção** | mesma regra; `tools/shared/` é a biblioteca comum |
-| `ptools/` | ferramentas em Python | legado e referências que exigem `transformers`/`numpy` |
-| `docs/` | especificação | toda decisão com o porquê e o número que a sustenta |
+| `src/` | the engine | ISO C11, **zero dependencies**, only `compat.c` has OS `#ifdef`s |
+| `Tests/` | **measurement** tools | one folder per tool, **the `.exe` at the root of `Tests/`** |
+| `tools/` | **production** tools | same rule; `tools/shared/` is the common library |
+| `ptools/` | Python tools | legacy and references that need `transformers`/`numpy` |
+| `docs/` | the specification | every decision with its why and the number behind it |
 
-### Ferramentas novas: C ou Rust, nunca Python
+### New tools: C or Rust, never Python
 
-Ferramenta nova vai para `Tests/<nome>/` ou `tools/<nome>/`, e o executável é
-gerado na raiz da árvore correspondente. Python só continua em `ptools/` para o
-que depende de `transformers` ou `tokenizers` como referência externa.
+A new tool goes into `Tests/<name>/` or `tools/<name>/`, and the executable is
+produced at the root of the corresponding tree. Python only remains in `ptools/`
+for what depends on `transformers` or `tokenizers` as an external reference.
 
-O `build.ps1` de cada ferramenta só delega para `tools/shared/build-tool.ps1`,
-passando o próprio caminho — por isso o mesmo script serve às duas árvores.
+Each tool's `build.ps1` only delegates to `tools/shared/build-tool.ps1`, passing
+its own path — which is why the same script serves both trees.
 
-Hoje: `Tests/` tem `ablate` (perplexidade e ablação), `gentest` (qualidade de
-geração) e `bench` (tempo, memória, roofline). `tools/` tem `convert` e `agent`
-(cliente agêntico).
+Today: `Tests/` has `ablate` (perplexity and ablation), `gentest` (generation
+quality) and `bench` (time, memory, roofline). `tools/` has `convert` and `agent`
+(the agentic client).
 
-**A master é CPU pura.** O backend CUDA, a colocação em VRAM e o portão do M2
-existem e vivem na branch `GPU` — foram medidos e a conclusão foi que a
-granularidade está errada (`docs/18` daquela branch). Nada de GPU entra aqui
-sem que o `run_layer` mostre ganho no decode completo.
+**Master is pure CPU.** The CUDA backend, VRAM placement and the M2 gate exist
+and live on the `GPU` branch — they were measured and the conclusion was that the
+granularity is wrong (`docs/18` on that branch). No GPU code lands here until
+`run_layer` shows a gain in the complete decode.
 
-### O que separa Tests de tools
+### What separates Tests from tools
 
-`Tests/` mede o engine e pode depender do checkpoint BF16 original. `tools/`
-produz artefatos que o engine consome. Um conversor não é teste; um medidor de
-perplexidade não é produção.
+`Tests/` measures the engine and may depend on the original BF16 checkpoint.
+`tools/` produces artefacts the engine consumes. A converter is not a test; a
+perplexity meter is not production.
 
-**Ferramenta nativa pode usar biblioteca.** A proibição de dependências vale
-para `src/` — o engine é auditável em uma sessão de leitura e consome arquivos
-de terceiros. Ferramenta é outra coisa: pode linkar o que o Python linkaria
-(BLAS, mmap, o que for), desde que não entre em `src/`.
+**A native tool may use libraries.** The dependency ban applies to `src/` — the
+engine is auditable in one reading session and consumes third-party files. A tool
+is a different thing: it may link whatever Python would link (BLAS, mmap,
+whatever), as long as it does not enter `src/`.
 
-Ferramenta em C pode — e deve — **reusar as fontes de `src/`**. É o caminho que
-garante que a ferramenta mede o engine, e não uma reimplementação dele.
+A tool written in C can — and should — **reuse the sources in `src/`**. That is
+what guarantees the tool measures the engine, and not a reimplementation of it.
+
+The documentation generator is the one exception on record:
+`ForDummies/build.py` is Python because it builds documents, not artefacts the
+engine consumes. Port it to C when it becomes worth doing.
 
 ## Build
 
 ```powershell
-.\build.ps1                  # engine, MSVC via vswhere; nunca caminho fixo
+.\build.ps1                  # engine, MSVC via vswhere; never a fixed path
 .\build.ps1 test             # + selftest
-.\tools\<nome>\build.ps1     # uma ferramenta
+.\tools\<name>\build.ps1     # one tool
 ```
 
-Windows é MSVC (Visual Studio 2026). Linux é o `Makefile` com gcc ou clang.
-`/fp:precise` sem contração para FMA — verificado no disassembly, e é o que a
-reprodutibilidade de `docs/15` exige.
+Windows is MSVC (Visual Studio 2026). Linux is the `Makefile` with gcc or clang.
+`/fp:precise` with no contraction to FMA — verified in the disassembly, and it is
+what the reproducibility of `docs/15` requires.
 
-## Regras que vieram de erro cometido
+## Rules that came from mistakes made
 
-- **Medição pareada.** Comparar duas configurações pela média global engole o
-  efeito na variância entre janelas. Ver o aviso em `docs/04`: a primeira
-  medida de perplexidade deu o **sinal invertido**.
-- **Mudança de saída não entra em silêncio.** Qualquer alteração
-  algebricamente equivalente (absorção do MLA, precisão de KV) só é adotada com
- **32/32 tokens idênticos** contra `ref32.json`. bf16 e int8 no KV reprovaram
-  e ficaram como opção, não como default.
-- **Trocar trabalho por memória precisa da conta de tráfego antes.** A primeira
-  versão da absorção materializou `kv_b` em fp32 e ficou 2× mais lenta.
-- **Se Hermes disse que vai rodar algo no console dele, não disparar em
-  paralelo.**
+- **Paired measurement.** Comparing two configurations by the global mean
+  swallows the effect in the variance between windows. See the warning in
+  `docs/04`: the first perplexity measurement had the **sign inverted**.
+- **An output change never lands silently.** Any algebraically equivalent
+  alteration (MLA absorption, KV precision) is only adopted with **32/32
+  identical tokens** against `ref32.json`. bf16 and int8 KV both failed and
+  remain options, not defaults.
+- **Trading work for memory needs the traffic arithmetic first.** The first
+  version of absorption materialised `kv_b` in fp32 and came out 2× slower.
+- **If Hermes says he is going to run something in his own console, do not fire
+  it off in parallel.**

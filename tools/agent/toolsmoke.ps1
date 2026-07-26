@@ -11,7 +11,7 @@
 
 param(
     [int]$Port = 8099,
-    [string]$Prompt = 'Quantas linhas tem o arquivo docs/03-arquitetura.md? Use as ferramentas e responda so o numero.'
+    [string]$Prompt = 'Quantas linhas tem o arquivo docs/03-architecture.md? Use as ferramentas e responda so o numero.'
 )
 
 $ErrorActionPreference = 'Stop'

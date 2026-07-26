@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TootegaEngine — 17 — Diagnosis: hunting the quality bug</title>
+<meta name="description" content="TootegaEngine — 17 — Diagnosis: hunting the quality bug">
+<meta name="color-scheme" content="light dark">
+<style>
+:root{
+  --surface:#fcfcfb; --plane:#f5f5f2; --card:#ffffff;
+  --ink:#141413; --ink2:#52514e; --muted:#8a8880;
+  --rule:#e3e2db; --rule2:#ecebe4;
+  --s1:#2a78d6; --s2:#c9541f; --s3:#0f8a5f; --crit:#c23434; --warn:#a97c07;
+  --s1f:#eaf2fd; --s2f:#fdeee6; --s3f:#e6f5ef; --critf:#fbecec; --warnf:#fdf5e0;
+  --sel:#cfe2fa; --shadow:0 1px 2px rgba(20,20,19,.05),0 8px 24px rgba(20,20,19,.09);
+  --grid:#ecebe4; --axis:#cfcec6; --good:#0ca30c; --neutral:#f1f0ea;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --serif:Charter,Georgia,"Iowan Old Style","Times New Roman",serif;
+  --mono:ui-monospace,"Cascadia Mono","Consolas","Menlo",monospace;
+}
+html[data-theme=dark]{
+  --surface:#141414; --plane:#0e0e0e; --card:#1b1b1a;
+  --ink:#f2f1ec; --ink2:#c3c2b7; --muted:#8a8880;
+  --rule:#2c2c2a; --rule2:#232322;
+  --s1:#5b9df0; --s2:#e87a49; --s3:#35b98a; --crit:#e56a6a; --warn:#e0ab34;
+  --s1f:#16283e; --s2f:#33200f; --s3f:#0f2c22; --critf:#331a1a; --warnf:#332a12;
+  --sel:#1d3b5f; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.45);
+  --grid:#242423; --axis:#3a3a37; --good:#22b322; --neutral:#242423;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:84px}
+body{margin:0;background:var(--plane);color:var(--ink);font-family:var(--serif);
+     font-size:17.5px;line-height:1.72;-webkit-font-smoothing:antialiased}
+::selection{background:var(--sel)}
+a{color:var(--s1);text-underline-offset:2px;text-decoration-thickness:.06em}
+a:hover{text-decoration-thickness:.12em}
+
+/* ---------- barra de progresso ---------- */
+#prog{position:fixed;top:0;left:0;height:2px;background:var(--s1);width:0;z-index:60;
+      transition:width .1s linear}
+
+/* ---------- topo ---------- */
+header{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--surface) 88%,transparent);
+       backdrop-filter:saturate(160%) blur(10px);border-bottom:1px solid var(--rule)}
+.hbar{display:flex;align-items:center;gap:12px;padding:10px 22px;max-width:1500px;margin:0 auto}
+.brand{font-family:var(--sans);font-weight:650;font-size:14.5px;letter-spacing:-.01em;
+       white-space:nowrap;text-decoration:none;color:var(--ink)}
+.brand small{color:var(--muted);font-weight:450}
+.crumb{font-family:var(--sans);font-size:13px;color:var(--muted);flex:1;overflow:hidden;
+       text-overflow:ellipsis;white-space:nowrap}
+.btn{font-family:var(--sans);font-size:13px;color:var(--ink2);background:var(--card);
+     border:1px solid var(--rule);border-radius:8px;padding:6px 11px;cursor:pointer;
+     display:inline-flex;align-items:center;gap:6px;text-decoration:none;line-height:1.3}
+.btn:hover{border-color:var(--s1);color:var(--s1)}
+.btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.7;
+         stroke-linecap:round;stroke-linejoin:round}
+.sbox{position:relative}
+#q{font-family:var(--sans);font-size:13px;background:var(--card);border:1px solid var(--rule);
+   border-radius:8px;padding:6px 11px;width:200px;color:var(--ink)}
+#q:focus{outline:none;border-color:var(--s1);box-shadow:0 0 0 3px var(--s1f)}
+
+/* ---------- resultados da busca ---------- */
+#res{position:absolute;top:calc(100% + 9px);right:0;width:min(580px,92vw);background:var(--card);
+     border:1px solid var(--rule);border-radius:13px;box-shadow:var(--shadow);
+     max-height:min(72vh,560px);overflow-y:auto;display:none;z-index:70;padding:5px}
+#res.on{display:block}
+.rgrp{font-family:var(--sans);font-size:10.5px;text-transform:uppercase;letter-spacing:.085em;
+      color:var(--muted);padding:10px 12px 5px;font-weight:660}
+.rit{display:block;width:100%;text-align:left;background:none;border:0;cursor:pointer;
+     padding:8px 12px;border-radius:9px;font-family:var(--sans);color:var(--ink2);
+     font-size:13px;line-height:1.46}
+.rit:hover,.rit.sel{background:var(--s1f)}
+.rit .rt{color:var(--ink);font-weight:640;font-size:13.7px;display:flex;gap:8px;
+         align-items:center;flex-wrap:wrap}
+.rit .rs{display:block;margin-top:2px}
+.rit .rw{color:var(--muted);font-size:11.3px;display:block;margin-top:3px}
+.rit mark{background:color-mix(in srgb,var(--warn) 38%,transparent);color:inherit;
+          border-radius:3px;padding:0 1.5px}
+.rempty{padding:18px 13px;color:var(--muted);font-family:var(--sans);font-size:13px}
+.rfoot{position:sticky;bottom:-5px;background:var(--card);border-top:1px solid var(--rule2);
+       margin:5px -5px -5px;padding:8px 13px;color:var(--muted);font-family:var(--sans);
+       font-size:11px;display:flex;gap:14px;flex-wrap:wrap}
+kbd{font-family:var(--mono);font-size:10.5px;border:1px solid var(--rule);border-radius:4px;
+    padding:1px 4.5px;background:var(--surface);color:var(--ink2)}
+@keyframes hitflash{0%{background:var(--warnf);box-shadow:0 0 0 6px var(--warnf)}
+                    100%{background:transparent;box-shadow:0 0 0 6px transparent}}
+.hit{animation:hitflash 1.8s ease-out;border-radius:6px}
+
+/* ---------- estrutura ---------- */
+.wrap{display:grid;grid-template-columns:290px minmax(0,1fr);gap:44px;
+      max-width:1500px;margin:0 auto;padding:0 22px}
+nav.toc{position:sticky;top:62px;align-self:start;height:calc(100vh - 62px);overflow-y:auto;
+        padding:26px 0 60px;font-family:var(--sans);font-size:13.4px;line-height:1.45}
+nav.toc h2{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);
+           margin:0 0 12px;font-weight:650}
+nav.toc a{display:block;padding:4.5px 12px 4.5px 13px;color:var(--ink2);text-decoration:none;
+          border-left:2px solid transparent;border-radius:0 6px 6px 0}
+nav.toc a:hover{background:var(--rule2);color:var(--ink)}
+nav.toc a.l3{padding-left:27px;font-size:12.6px;color:var(--muted)}
+nav.toc a.on{border-left-color:var(--s1);color:var(--s1);background:var(--s1f);font-weight:600}
+nav.toc a.hide{display:none}
+main{padding:30px 0 120px;max-width:74ch;background:var(--surface);
+     padding-left:44px;padding-right:44px;border-left:1px solid var(--rule);
+     border-right:1px solid var(--rule);min-height:100vh}
+
+/* ---------- tipografia ---------- */
+h1{font-family:var(--sans);font-size:37px;line-height:1.16;letter-spacing:-.022em;
+   font-weight:700;margin:14px 0 10px}
+h2{font-family:var(--sans);font-size:25px;line-height:1.24;letter-spacing:-.018em;font-weight:680;
+   margin:64px 0 14px;padding-top:14px;border-top:1px solid var(--rule)}
+h3{font-family:var(--sans);font-size:18.5px;letter-spacing:-.012em;font-weight:650;margin:36px 0 10px}
+h4{font-family:var(--sans);font-size:15.5px;font-weight:650;margin:24px 0 6px}
+p{margin:0 0 17px}
+hr{border:0;border-top:1px solid var(--rule);margin:40px 0}
+strong{font-weight:660}
+blockquote{margin:24px 0;padding:15px 21px;background:var(--s1f);
+           border-left:3px solid var(--s1);border-radius:0 11px 11px 0;
+           font-size:.955em;line-height:1.66}
+blockquote p:last-child{margin-bottom:0}
+blockquote code{background:color-mix(in srgb,var(--s1) 13%,transparent);
+                border-color:color-mix(in srgb,var(--s1) 22%,transparent)}
+blockquote strong{color:var(--ink)}
+ul,ol{margin:0 0 18px;padding-left:24px}
+li{margin:5px 0}
+code{font-family:var(--mono);font-size:.855em;background:var(--rule2);border:1px solid var(--rule);
+     border-radius:5px;padding:.08em .34em}
+.anchor{font-family:var(--sans);color:var(--rule);text-decoration:none;margin-left:9px;
+        font-weight:400;opacity:0;transition:opacity .15s}
+h2:hover .anchor,h3:hover .anchor,h4:hover .anchor{opacity:1}
+.anchor:hover{color:var(--s1)}
+
+/* ---------- codigo ---------- */
+.codewrap{position:relative;margin:0 0 20px}
+pre{font-family:var(--mono);font-size:12.9px;line-height:1.62;background:var(--card);
+    border:1px solid var(--rule);border-radius:11px;padding:15px 17px;overflow-x:auto;margin:0}
+pre code{background:none;border:0;padding:0;font-size:inherit}
+.copy{position:absolute;top:8px;right:8px;font-family:var(--sans);font-size:11px;
+      background:var(--surface);color:var(--muted);border:1px solid var(--rule);
+      border-radius:6px;padding:3px 8px;cursor:pointer;opacity:0;transition:opacity .15s}
+.codewrap:hover .copy{opacity:1}
+.copy:hover{color:var(--s1);border-color:var(--s1)}
+
+/* ---------- tabelas ---------- */
+.tablewrap{overflow-x:auto;margin:0 0 22px;border:1px solid var(--rule);border-radius:11px}
+table{border-collapse:collapse;width:100%;font-family:var(--sans);font-size:13.6px;line-height:1.5}
+th{text-align:left;font-weight:650;color:var(--ink2);background:var(--rule2);
+   padding:9px 13px;border-bottom:1px solid var(--rule);white-space:nowrap}
+td{padding:9px 13px;border-bottom:1px solid var(--rule2);vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--rule2)}
+td code{font-size:.9em}
+
+/* ---------- figuras ---------- */
+figure{margin:28px 0 30px}
+.zoom{display:block;width:100%;padding:0;border:1px solid var(--rule);border-radius:12px;
+      background:var(--surface);cursor:zoom-in;overflow:hidden;line-height:0}
+.zoom:hover{border-color:var(--s1)}
+.zoom img,.zoom svg.fig{width:100%;height:auto;display:block}
+figcaption{font-family:var(--sans);font-size:12.4px;color:var(--muted);margin-top:9px;
+           text-align:center;line-height:1.45}
+figcaption b{color:var(--ink2);font-weight:640}
+#lb{position:fixed;inset:0;background:color-mix(in srgb,var(--plane) 94%,transparent);
+    backdrop-filter:blur(6px);z-index:90;display:none;align-items:center;justify-content:center;
+    padding:34px;cursor:zoom-out}
+#lb.on{display:flex}
+#lb img,#lb svg{max-width:min(1500px,100%);max-height:100%;width:100%;height:auto;
+        border:1px solid var(--rule);border-radius:12px;background:var(--surface)}
+
+/* ---------- termos com hint ---------- */
+.term{border-bottom:1.5px dotted var(--s1);cursor:help;color:inherit;
+      text-decoration:none;border-radius:2px;padding:0 1px;transition:background .12s}
+.term:hover,.term:focus{background:var(--s1f);outline:none}
+.term:focus-visible{box-shadow:0 0 0 2px var(--s1)}
+#tip{position:absolute;z-index:80;max-width:352px;background:var(--card);
+     border:1px solid var(--rule);border-radius:12px;box-shadow:var(--shadow);
+     padding:13px 15px;font-family:var(--sans);font-size:13.2px;line-height:1.55;
+     color:var(--ink2);opacity:0;transform:translateY(4px);pointer-events:none;
+     transition:opacity .13s,transform .13s;display:none}
+#tip.on{opacity:1;transform:none;display:block;pointer-events:auto}
+#tip h5{margin:0 0 7px;font-size:14.5px;color:var(--ink);font-weight:660;
+        display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#tip p{margin:0 0 6px}
+#tip p:last-child{margin:0}
+#tip .usual{color:var(--muted);font-size:12.4px}
+#tip .usual span{font-variant:small-caps;letter-spacing:.03em}
+#tip .go{display:inline-block;margin-top:8px;font-size:12px;color:var(--s1);text-decoration:none}
+#tip .go:hover{text-decoration:underline}
+.chip{font-family:var(--sans);font-size:10.5px;font-weight:640;letter-spacing:.02em;
+      padding:2px 7px;border-radius:99px;white-space:nowrap;text-transform:uppercase}
+.chip.ca{background:transparent;color:var(--muted);
+         box-shadow:inset 0 0 0 1px var(--rule);font-weight:600}
+.chip.cb{background:var(--s2f);color:var(--s2)}
+.chip.cc{background:var(--s1f);color:var(--s1)}
+
+/* ---------- glossario na pagina ---------- */
+.glossary{margin:8px 0 10px}
+.gcat{display:flex;align-items:center;gap:10px;margin:34px 0 14px}
+.gcount{font-family:var(--sans);font-size:11.5px;color:var(--muted);background:var(--rule2);
+        border-radius:99px;padding:1px 9px;font-weight:600}
+.gcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:12px}
+.gcard{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:13px 15px;
+       font-family:var(--sans);font-size:13.2px;line-height:1.53;color:var(--ink2);
+       scroll-margin-top:90px}
+.gcard:target{border-color:var(--s1);box-shadow:0 0 0 3px var(--s1f)}
+.gcard h4{margin:0 0 7px;font-size:14.6px;color:var(--ink);display:inline-block;margin-right:8px}
+.gcard .chip{vertical-align:2px}
+.gcard p{margin:7px 0 0}
+.gcard .usual{color:var(--muted);font-size:12.3px}
+.gcard .usual span{font-variant:small-caps;letter-spacing:.03em}
+
+/* ---------- painel do glossario ---------- */
+#panel{position:fixed;top:0;right:0;bottom:0;width:min(460px,100%);background:var(--surface);
+       border-left:1px solid var(--rule);box-shadow:var(--shadow);z-index:95;
+       transform:translateX(102%);transition:transform .24s cubic-bezier(.4,0,.2,1);
+       display:flex;flex-direction:column}
+#panel.on{transform:none}
+#panel .ph{padding:14px 18px;border-bottom:1px solid var(--rule);display:flex;gap:10px;
+           align-items:center}
+#panel .ph strong{font-family:var(--sans);font-size:15px;flex:1}
+#pq{flex:1;font-family:var(--sans);font-size:13px;background:var(--card);
+    border:1px solid var(--rule);border-radius:8px;padding:7px 11px;color:var(--ink);width:100%}
+#pq:focus{outline:none;border-color:var(--s1);box-shadow:0 0 0 3px var(--s1f)}
+#panel .pf{padding:11px 18px;border-bottom:1px solid var(--rule);display:flex;gap:6px;
+           flex-wrap:wrap}
+.fchip{font-family:var(--sans);font-size:11.5px;border:1px solid var(--rule);background:var(--card);
+       color:var(--ink2);border-radius:99px;padding:3px 10px;cursor:pointer}
+.fchip.on{background:var(--s1);border-color:var(--s1);color:#fff}
+#plist{overflow-y:auto;padding:8px 10px 40px;flex:1}
+.pit{padding:10px 12px;border-radius:9px;cursor:pointer;font-family:var(--sans);font-size:13px;
+     line-height:1.5;color:var(--ink2)}
+.pit:hover{background:var(--rule2)}
+.pit b{color:var(--ink);font-size:13.8px;font-weight:640}
+.pit .chip{margin-left:7px;vertical-align:1px}
+.pit p{margin:3px 0 0}
+#scrim{position:fixed;inset:0;background:rgba(0,0,0,.28);z-index:94;opacity:0;
+       pointer-events:none;transition:opacity .24s}
+#scrim.on{opacity:1;pointer-events:auto}
+
+/* ---------- voltar ao topo ---------- */
+#top{position:fixed;right:20px;bottom:20px;z-index:40;opacity:0;pointer-events:none;
+     transition:opacity .2s}
+#top.on{opacity:1;pointer-events:auto}
+
+@media (max-width:1080px){
+  .wrap{grid-template-columns:1fr;gap:0;padding:0 14px}
+  nav.toc{display:none}
+  main{padding:22px 18px 100px;border:0;max-width:none}
+  #q{width:130px}
+  h1{font-size:30px} h2{font-size:22px}
+  body{font-size:16.6px}
+}
+@media print{
+  header,nav.toc,#panel,#scrim,#top,#prog,.copy,.anchor{display:none!important}
+  main{border:0;max-width:none;padding:0}
+  body{background:#fff;color:#000;font-size:11pt}
+  .term{border:0}
+  figure,table,blockquote{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div id="prog" role="progressbar" aria-label="progresso de leitura"></div>
+<header>
+  <div class="hbar">
+    <a class="brand" href="../index.html">TootegaEngine <small>· especificação</small></a>
+    <span class="crumb" id="crumb"></span>
+    <div class="sbox">
+      <input id="q" type="search" placeholder="Search…" aria-label="Search…"
+             autocomplete="off" role="combobox" aria-expanded="false" aria-controls="res">
+      <div id="res" role="listbox" aria-label="Search…"></div>
+    </div>
+    <button class="btn" id="gbtn" type="button"><svg viewBox="0 0 24 24"><path d="M4 4.5A1.5 1.5 0 015.5 3H19v18H5.5A1.5 1.5 0 014 19.5z"/><path d="M8 3v18"/></svg> Glossary</button>
+    <a class="btn" href="../index.html"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> ForDummies</a>
+    <button class="btn" id="theme" type="button" aria-label="Theme"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.4v2M12 19.6v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2.4 12h2M19.6 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg></button>
+  </div>
+</header>
+<div class="wrap">
+  <nav class="toc"><h2>On this page</h2><a class="l2" href="#the-symptom">The symptom</a>
+<a class="l2" href="#path-1--blame-quantisation">Path 1 — blame quantisation</a>
+<a class="l2" href="#path-2--blame-greedy-decoding">Path 2 — blame greedy decoding</a>
+<a class="l2" href="#path-3--rope-interleave">Path 3 — RoPE interleave</a>
+<a class="l2" href="#path-4--stale-binary">Path 4 — stale binary</a>
+<a class="l2" href="#path-5--there-is-still-a-bug-perplexity-is-still-340">Path 5 — "there is still a bug, perplexity is still 340"</a>
+<a class="l2" href="#what-the-external-reference-established">What the external reference established</a>
+<a class="l2" href="#what-survives">What survives</a>
+<a class="l2" href="#the-method-errors">The method errors</a>
+<a class="l2" href="#the-rule-that-was-missing">The rule that was missing</a></nav>
+  <main><blockquote><p><strong>Reading copy.</strong> This <span class="term" tabindex="0" data-t="pagina">page</span> is generated from <code>docs/17-diagnosis.md</code>, which remains the normative source. Where the two disagree, the Markdown wins. <a href="../index.html">← back to the guide</a></p></blockquote>
+<h1 id="17--diagnosis-hunting-the-quality-bug">17 — Diagnosis: hunting the quality bug<a class="anchor" href="#17--diagnosis-hunting-the-quality-bug" aria-label="link">#</a></h1>
+<p>A record of what was tried, what each attempt measured, and what survived. It exists because the sequence of wrong conclusions here is worth more than the final result: each one failed for a different, reproducible reason.</p>
+<h2 id="the-symptom">The symptom<a class="anchor" href="#the-symptom" aria-label="link">#</a></h2>
+<p>Free generation produced degenerate text — <code>*   *   *</code> in a loop with <span class="term" tabindex="0" data-t="greedy">greedy</span> <span class="term" tabindex="0" data-t="amostragem">sampling</span>, word salad with <span class="term" tabindex="0" data-t="temperatura">temperature</span> — while <strong>every</strong> internal test passed.</p>
+<h2 id="path-1--blame-quantisation">Path 1 — blame quantisation<a class="anchor" href="#path-1--blame-quantisation" aria-label="link">#</a></h2>
+<p><strong>Hypothesis:</strong> the <code>v2</code> <span class="term" tabindex="0" data-t="tootega">container</span> (<span class="term" tabindex="0" data-t="atencao">attention</span> in <span class="term" tabindex="0" data-t="int4">int8</span>) broke the <span class="term" tabindex="0" data-t="modelo">model</span>, because <code>v1</code> answered correctly and <code>v2</code> did not.</p>
+<p><strong>Measurement:</strong> one <span class="term" tabindex="0" data-t="prompt">prompt</span>, eyeballed.</p>
+<p><strong>Result: false.</strong> <code>gentest</code> over 12 prompts showed that the original <strong><span class="term" tabindex="0" data-t="bf16">BF16</span> <span class="term" tabindex="0" data-t="peso">weights</span> degenerate the same way</strong> — 52.7% repeated 4-grams, 1 of 12 prompts stopping at EOS.</p>
+<p><strong>Method error:</strong> a conclusion from N=1, right after I had written in the preceding paragraph that one prompt is not a sample.</p>
+<h2 id="path-2--blame-greedy-decoding">Path 2 — blame greedy decoding<a class="anchor" href="#path-2--blame-greedy-decoding" aria-label="link">#</a></h2>
+<p><strong>Hypothesis:</strong> <span class="term" tabindex="0" data-t="greedy">greedy</span> decoding gets stuck in a loop; it is a known pathology.</p>
+<p><strong>Measurement:</strong> the same <span class="term" tabindex="0" data-t="prompt">prompt</span> with <code>--temp 0.8</code>.</p>
+<p><strong>Result: false.</strong> With <span class="term" tabindex="0" data-t="temperatura">temperature</span> the output became word salad — invented Portuguese, "Recadesso o a seguint", "corcovamento" — instead of a loop. Invented words are not a decoding pathology; they are the signature of <strong>wrong <span class="term" tabindex="0" data-t="logits">logits</span></strong>.</p>
+<h2 id="path-3--rope-interleave">Path 3 — RoPE interleave<a class="anchor" href="#path-3--rope-interleave" aria-label="link">#</a></h2>
+<p><strong>Hypothesis:</strong> some <span class="term" tabindex="0" data-t="atencao">attention</span> operation is wrong.</p>
+<p><strong>Measurement:</strong> reading <code>configuration_glm4_moe_lite.py</code>.</p>
+<p><strong>Result: TRUE, and it was a real bug.</strong></p>
+<p><code>rope_interleave</code> is <code>True</code> by default and <code>config.json</code> does not override it. Attention uses <code>apply_rotary_pos_emb_interleave</code>; I had implemented the <code>else</code> <span class="term" tabindex="0" data-t="branch">branch</span>:</p>
+<div class="tablewrap"><table><thead><tr><th>variant</th><th>pairs</th></tr></thead><tbody><tr><td><code>rotate_half</code> — implemented</td><td><code>x[i]</code> with <code>x[i + rot/2]</code></td></tr><tr><td><strong>interleave</strong> — correct</td><td><code>x[2i]</code> with <code>x[2i+1]</code></td></tr></tbody></table></div>
+<p>At position 0 the two coincide (<code>cos = 1</code>, <code>sin = 0</code>), and the error grows with position. Fixed in <code>src/forward.c</code> and in <code>ptools/oracle.py</code>.</p>
+<p><strong>Effect:</strong> generation went from salad to a correct answer with complete <span class="term" tabindex="0" data-t="rascunho">reasoning</span> and a stop at EOS.</p>
+<h2 id="path-4--stale-binary">Path 4 — stale binary<a class="anchor" href="#path-4--stale-binary" aria-label="link">#</a></h2>
+<p><strong>Hypothesis:</strong> the <span class="term" tabindex="0" data-t="rope">RoPE</span> fix was not enough, because <span class="term" tabindex="0" data-t="perplexidade">perplexity</span> stayed at 380, then 281, then 273.</p>
+<p><strong>Result: false, and the cause was trivial.</strong></p>
+<p><code>Tests/*.exe</code> link <code>src/</code> statically. After fixing <code>src/forward.c</code> I ran <code>.\build.ps1</code> — which builds <strong>only the <span class="term" tabindex="0" data-t="engine">engine</span></strong>. The measurement <span class="term" tabindex="0" data-t="ferramenta">tools</span> kept the broken <span class="term" tabindex="0" data-t="forward">forward</span> inside them.</p>
+<p>Every post-fix perplexity came from a stale binary. Rebuilding:</p>
+<div class="tablewrap"><table><thead><tr><th></th><th>before (old binary)</th><th>after</th></tr></thead><tbody><tr><td><span class="term" tabindex="0" data-t="int4">int4</span></td><td>ppl 273.5</td><td><strong>ppl 5.66</strong></td></tr><tr><td><span class="term" tabindex="0" data-t="bf16">BF16</span></td><td>ppl 281.4</td><td><strong>ppl 8.63</strong></td></tr><tr><td>transformers</td><td>—</td><td>8.89</td></tr></tbody></table></div>
+<p>The bug had been fixed hours earlier. <code>build-all.ps1</code> exists for exactly this, was written the same day, and was not used.</p>
+<blockquote><p>A <span class="term" tabindex="0" data-t="ferramenta">tool</span> that embeds the code under test has to be rebuilt together with it. A single build entry point is not a convenience: it is what stops you from measuring the wrong version without noticing.</p></blockquote>
+<h2 id="path-5--there-is-still-a-bug-perplexity-is-still-340">Path 5 — "there is still a bug, perplexity is still 340"<a class="anchor" href="#path-5--there-is-still-a-bug-perplexity-is-still-340" aria-label="link">#</a></h2>
+<p><strong>Hypothesis:</strong> the <span class="term" tabindex="0" data-t="rope">RoPE</span> fix was not enough.</p>
+<p><strong>Measurement:</strong> <code>ablate</code> over <code>docs/*.md</code>, then over ordinary prose. It gave 380 and 281.</p>
+<p><strong>Result: false — but it led to the test that settled everything.</strong> The suspicion motivated building <code>ptools/hf_ref.py</code>, the <strong>project's first external reference</strong>.</p>
+<h2 id="what-the-external-reference-established">What the external reference established<a class="anchor" href="#what-the-external-reference-established" aria-label="link">#</a></h2>
+<p>Running <code>transformers</code> with disk offload cost <strong>2 minutes</strong>. The 62 <span class="term" tabindex="0" data-t="gb">GB</span> do not fit in <span class="term" tabindex="0" data-t="ram">RAM</span>, and I had treated that as "cannot be run" from the start.</p>
+<div class="tablewrap"><table><thead><tr><th>measurement</th><th><span class="term" tabindex="0" data-t="qkv">value</span></th></tr></thead><tbody><tr><td>transformers, 384 positions of prose</td><td><strong>ppl 8.89</strong></td></tr><tr><td><span class="term" tabindex="0" data-t="engine">engine</span>, <strong>the same 384 positions</strong></td><td><strong>ppl 5.66</strong></td></tr><tr><td><code>Tests/ablate.exe</code>, "the same" <span class="term" tabindex="0" data-t="janela">window</span></td><td><strong>ppl 273–281</strong></td></tr></tbody></table></div>
+<p>The engine and <code>transformers</code> agree. <strong>The 281 comes from the measurement <span class="term" tabindex="0" data-t="ferramenta">tool</span>.</strong></p>
+<p>Checks that close the net:</p>
+<ul><li><strong><span class="term" tabindex="0" data-t="tokenizer">tokenizer</span>:</strong> 1,995 ids identical to HF's over the whole corpus, exact round-trip. It is not that.</li><li><strong>per-<span class="term" tabindex="0" data-t="camada">layer</span> bisection:</strong> embed with 0.000% error; layers 0–45 between 4% and 15%, rising and falling, with no jump. That is quantisation noise, not a bug.</li><li><strong><span class="term" tabindex="0" data-t="logits">logits</span> against transformers:</strong> 4.05% error, 7 of 8 <span class="term" tabindex="0" data-t="token">tokens</span> equal.</li></ul>
+<h2 id="what-survives">What survives<a class="anchor" href="#what-survives" aria-label="link">#</a></h2>
+<p><strong>The <span class="term" tabindex="0" data-t="engine">engine</span> is correct and validated against an external reference.</strong></p>
+<div class="tablewrap"><table><thead><tr><th>measurement</th><th>engine</th><th>transformers</th></tr></thead><tbody><tr><td><span class="term" tabindex="0" data-t="perplexidade">perplexity</span>, 384 positions of prose, <span class="term" tabindex="0" data-t="bf16">BF16</span></td><td><strong>8.63</strong></td><td><strong>8.89</strong></td></tr><tr><td>perplexity, same text, <span class="term" tabindex="0" data-t="int4">int4</span> <span class="term" tabindex="0" data-t="tootega">container</span></td><td><strong>5.66</strong></td><td>—</td></tr></tbody></table></div>
+<p>The 3% between 8.63 and 8.89 is what is left: one-dimensional <span class="term" tabindex="0" data-t="tensor">tensors</span> the substitution does not <span class="term" tabindex="0" data-t="swap">swap</span> (already exact) and accumulation-order differences.</p>
+<p><span class="term" tabindex="0" data-t="tokenizer">Tokenizer</span>, container, <span class="term" tabindex="0" data-t="kernel">kernels</span>, <span class="term" tabindex="0" data-t="reprodutibilidade">determinism</span> and speed remain valid and were validated through independent paths.</p>
+<p><strong>What still does not close:</strong> int4 giving 34% LOWER perplexity than BF16 on the same <span class="term" tabindex="0" data-t="janela">window</span>. Quantisation does not improve a <span class="term" tabindex="0" data-t="modelo">model</span>. It is a single window; it needs more sample before it becomes a suspicion or an explanation.</p>
+<p><strong>What needs redoing:</strong> the per-<span class="term" tabindex="0" data-t="grupo">group</span> <span class="term" tabindex="0" data-t="ablacao">ablation</span> and the precision tables in <a href="04-target-model.html">04</a>. They were measured with the wrong <span class="term" tabindex="0" data-t="rope">RoPE</span>, with a stale binary, or both.</p>
+<h2 id="the-method-errors">The method errors<a class="anchor" href="#the-method-errors" aria-label="link">#</a></h2>
+<ol><li><strong>A conclusion from N=1</strong> (path 1).</li><li><strong>Explaining the number instead of chasing it</strong> — <span class="term" tabindex="0" data-t="perplexidade">perplexity</span> 340 became "it is the corpus", 281 became "it is the corpus again".</li><li><strong>Validating interpretation against interpretation</strong> — the <span class="term" tabindex="0" data-t="oraculo">oracle</span> and the <span class="term" tabindex="0" data-t="engine">engine</span> are two writings of the same reading of mine of the <span class="term" tabindex="0" data-t="modelo">model</span>. They agreed <span class="term" tabindex="0" data-t="trinta-e-dois">32/32</span> even with the wrong <span class="term" tabindex="0" data-t="rope">RoPE</span>.</li><li><strong>Measuring with a stale binary</strong> (path 4).</li></ol>
+<p>The third is the root of the first two: without an external reference, any story that closes looks like evidence. The fourth is of a different nature — build discipline — and it cost more hours than the other three combined.</p>
+<h2 id="the-rule-that-was-missing">The rule that was missing<a class="anchor" href="#the-rule-that-was-missing" aria-label="link">#</a></h2>
+<blockquote><p><strong>Before writing the first line of a <span class="term" tabindex="0" data-t="forward">forward</span>, run the reference <span class="term" tabindex="0" data-t="modelo">model</span> once and save the <span class="term" tabindex="0" data-t="logits">logits</span>.</strong></p></blockquote>
+<p>Not as final validation — as a <strong>starting point</strong>. It costs minutes and would have prevented this entire document.</p>
+<p>And the second, which follows from it:</p>
+<blockquote><p><strong>A metric with a known absolute <span class="term" tabindex="0" data-t="qkv">value</span> gets its range declared before measuring.</strong> <span class="term" tabindex="0" data-t="perplexidade">Perplexity</span> outside 5–40 is a failure, not an observation.</p></blockquote></main>
+</div>
+<div id="scrim"></div>
+<aside id="panel" aria-label="Glossary">
+  <div class="ph"><strong>Glossary</strong><button class="btn" id="pclose" type="button">Close</button></div>
+  <div class="ph"><input id="pq" type="search" placeholder="Search…" aria-label="Search…"></div>
+  <div class="pf"><button class="fchip on" data-f="">All</button><button class="fchip" data-f="armadilha">Other meaning</button><button class="fchip" data-f="projeto">Project</button><button class="fchip" data-f="cc">Vocabulary</button></div>
+  <div id="plist"></div>
+</aside>
+<button class="btn" id="top" type="button" aria-label="Top"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+<script type="application/json" id="gdata">[{"id": "modelo", "term": "model", "def": "A file of numbers. Here it is literally <code>model.tootega</code>, 19.65 GB of weights. Not a program and not a service.", "usual": "the \"brain\", something abstract", "cat": "Other meaning", "catid": "armadilha", "k": "ca"}, {"id": "expert", "term": "expert", "def": "A pair of matrices picked by a score, per token and per layer. It has no subject: there is no \"math expert\".", "usual": "a specialist in some subject", "cat": "Other meaning", "catid": "armadilha", "k": "ca"}, {"id": "cache", "term": "cache", "def": "Here it means three different things with different owners: the weight cache, the KV cache and the prefix cache. Conflating them is the origin of most design confusion.", "usual": "one single thing, generic fast memory", "cat": "Other meaning", "catid": "armadilha", "k": "ca"}, {"id": "banda", "term": "bandwidth", "def": "How many gigabytes per second memory delivers. Nothing to do with the internet, and <strong>different from latency</strong>: bandwidth is bytes per second, latency is time to the first byte. Nearly every calculation here is about bandwidth, because in decode the read is large, predictable and sequential. On this machine it is <strong>68.7 GB/s</strong>, measured at runtime — not read off the box.", "usual": "internet bandwidth, measured in Mbps", "cat": "Other meaning", "catid": "armadilha", "k": "ca"}, {"id": "residente", "term": "resident", "def": "Living entirely in RAM and never leaving during the run. Not the same as \"installed\" or \"loaded\".", "usual": "installed on the machine", "cat": "Other meaning", "catid": "armadilha", "k": "ca"}, {"id": "quantizacao", "term": "quantization", "def": "Storing each weight in 4 or 8 bits instead of 16. Weights only: the arithmetic stays in 32 bits, and the kernel <em>unpacks</em> before multiplying. That has a name here — <strong>W4A32</strong>, 4-bit weights and 32-bit activations. It costs perplexity: measured, +5.26% with everything in int4 and <strong>−0.19%</strong> (indistinguishable from zero) leaving attention in int8.", "usual": "discretizing any signal", "cat": "Other meaning", "catid": "armadilha", "k": "ca"}, {"id": "lora", "term": "LoRA", "def": "Here (<code>q_lora_rank</code>, <code>kv_lora_rank</code>) it is just low-rank projection, part of the original architecture. No relation to the fine-tuning technique of the same name.", "usual": "a model fine-tuning technique", "cat": "Other meaning", "catid": "armadilha", "k": "ca"}, {"id": "token", "term": "token", "def": "A piece of text, ~4 characters on average. The model only ever sees the integer that stands for that piece.", "usual": "a symbol, or an access credential", "cat": "Other meaning", "catid": "armadilha", "k": "ca"}, {"id": "contexto", "term": "context", "def": "The maximum number of tokens that fit in the conversation window — everything the model can \"have in view\" at once. It is not long-term memory: what leaves the window stops existing for it. And it costs RAM, linearly: <strong>105.8 KB per position</strong> in the f32 default, <em>per conversation</em>. At this model's ceiling, 202,752 positions, that is 21.96 GB — more than the 18.54 GB of weights.", "usual": "the topic being discussed", "cat": "Other meaning", "catid": "armadilha", "k": "ca"}, {"id": "grupo", "term": "group", "def": "Two unrelated homonyms: <code>group=64</code> (how many weights share one scale) and <code>n_group</code> (a routing restriction across experts).", "usual": "generic grouping", "cat": "Other meaning", "catid": "armadilha", "k": "ca"}, {"id": "pagina", "term": "page", "def": "A 4 KB (or 2 MB) block the operating system manages memory with. Nothing to do with document pages.", "usual": "a document or web page", "cat": "Other meaning", "catid": "armadilha", "k": "ca"}, {"id": "plano", "term": "plan", "def": "The decision of where each weight will live (RAM or VRAM), computed at startup from the measured bandwidths.", "usual": "an intention or a schedule", "cat": "Other meaning", "catid": "armadilha", "k": "ca"}, {"id": "oraculo", "term": "oracle", "def": "The Python reference implementation the engine is compared against, token by token. It is slow and that does not matter: it exists to be <em>external</em> — written by other people, from another reading of the model. It was an external reference that caught a RoPE in the wrong variant after three green internal tests, all blind to the same mistake.", "usual": "a fortune teller, or a database vendor", "cat": "Other meaning", "catid": "armadilha", "k": "ca"}, {"id": "ablacao", "term": "ablation", "def": "Turning one part off (or restoring it) at a time to measure how much it contributes. It is borrowed from experimental biology, and the logic is the same: you do not learn what a part does by looking at it, but by removing it. Here it is what showed that int8 attention costs nothing and that the rest of the model in int4 costs 5%.", "usual": "a medical procedure", "cat": "Other meaning", "catid": "armadilha", "k": "ca"}, {"id": "slot", "term": "slot", "def": "An independent conversation context inside the engine, with its own KV cache. It is what would allow serving several people at once without mixing conversations. It <strong>does not exist yet</strong>: today it is one request at a time, and the second waits silently in the TCP backlog. That is milestone M3.", "usual": "a physical socket, a calendar opening", "cat": "Other meaning", "catid": "armadilha", "k": "ca"}, {"id": "shard", "term": "shard", "def": "One of the 48 files the original model comes split into, because of a per-file size limit. They carry no meaning of their own: a tensor may start in one and end in the next. The converter reads them all and writes a single container.", "usual": "a generic fragment, a database partition", "cat": "Other meaning", "catid": "armadilha", "k": "ca"}, {"id": "kernel", "term": "kernel", "def": "The routine doing the heavy arithmetic - <code>matmul_int4_g</code>, for instance. Not the operating system kernel.", "usual": "the operating system core", "cat": "Other meaning", "catid": "armadilha", "k": "ca"}, {"id": "draft", "term": "draft", "def": "A cheap guess at a token, produced to be confirmed or thrown away in a block (speculation). The idea: a small model guesses several tokens at once and the big one checks them all in a single pass, paying one weight read instead of N. Here that is milestone M5, and it does not exist yet.", "usual": "a rough version of a text", "cat": "Other meaning", "catid": "armadilha", "k": "ca"}, {"id": "temperatura", "term": "temperature", "def": "A number controlling how random the next-token choice is. 0 means always the most likely; above 1 the unlikely options gain a chance. It is not a \"creativity\" knob: it is how much risk you accept on the next piece. In measurement it is always 0, or you measure the draw as well.", "usual": "heat", "cat": "Other meaning", "catid": "armadilha", "k": "ca"}, {"id": "engine", "term": "engine", "def": "The program that runs the model: loads the weights, does the arithmetic, manages the cache. It is not the model, and not the interface.", "usual": "a car engine, or a game engine", "cat": "Other meaning", "catid": "armadilha", "k": "ca"}, {"id": "agente", "term": "agent", "def": "A program that uses the model in a loop: asks, gets an answer, runs tools, feeds the result back.", "usual": "a person acting on someone's behalf", "cat": "Other meaning", "catid": "armadilha", "k": "ca"}, {"id": "ferramenta", "term": "tool", "def": "In the agent sense: a function the model can ask to run (read a file, run a command). Its schema goes into the prompt.", "usual": "a utensil, or a command-line program", "cat": "Other meaning", "catid": "armadilha", "k": "ca"}, {"id": "a-inversao", "term": "the inversion", "def": "The discovery that this machine's PCIe (12 GB/s) is slower than its disk (18.4 GB/s), inverting the hierarchy nearly every engine assumes.", "usual": null, "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "lei-de-colocacao", "term": "placement law", "def": "\"Put on the GPU only what fits there permanently; never stream weights over a link slower than the source tier.\"", "usual": null, "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "particao-por-camada", "term": "layer partition", "def": "Splitting the model between GPU and CPU by layers, not by tensors. Weights stay pinned where the layer is computed; only 8 KB crosses between layers.", "usual": null, "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "fracao-de-residencia", "term": "residency fraction", "def": "What percentage of the model sits in fast memory. It is the variable that governs speed, more than any hardware spec.", "usual": null, "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "armadilha-desta-maquina", "term": "this machine's trap", "def": "engine anterior's <code>CUDA_DENSE=1</code> setting, which did not refuse the impossible and degraded 13x silently: 0.684 → 0.054 tok/s.", "usual": null, "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "recusar-em-vez-de-degradar", "term": "refuse instead of degrade", "def": "If the plan does not fit the declared budget, the engine exits with an error naming what to reduce. It never accepts and gets slow.", "usual": null, "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "trinta-e-dois", "term": "32/32", "def": "The acceptance criterion: 32 test positions, all matching the reference token. Binary, and it blocks merges.", "usual": null, "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "medicao-pareada", "term": "paired measurement", "def": "Comparing two configurations window by window over the same text, never by global mean. The global mean already produced a sign-flipped number.", "usual": null, "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "determinismo-por-estado", "term": "determinism by state", "def": "Two runs in the same state produce identical bytes; different states may legitimately diverge. \"Greedy is enough\" is not assumed.", "usual": null, "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "absorcao", "term": "absorption", "def": "Rewriting attention to operate in the compressed space, projecting the query once instead of expanding every cached position.", "usual": null, "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "desabsorvida", "term": "unabsorbed", "def": "The original attention formulation, which expands the cache before using it. It is the one the oracle uses.", "usual": null, "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "metade-metade", "term": "half/half", "def": "The nibble packing convention: byte <code>j</code> holds weights <code>j</code> and <code>j+32</code>, not <code>2j</code> and <code>2j+1</code>.", "usual": null, "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "arena", "term": "scratch arena", "def": "One block of memory allocated once at startup and sliced for every temporary buffer. Zero <code>malloc</code> in the token loop.", "usual": null, "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "estavel-primeiro", "term": "stable first, volatile last", "def": "The prompt ordering rule that makes the cache work: system → tools → long context → history → current turn.", "usual": null, "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "criterio-de-saida", "term": "exit criterion", "def": "The number that closes a roadmap milestone. Without a number the milestone does not close — and \"it works\" is not a number. It is what keeps the conversation from becoming a matter of opinion: either the measured value cleared the threshold declared <em>beforehand</em>, or it did not.", "usual": null, "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "criterio-de-corte", "term": "kill criterion", "def": "The number below which the feature is cancelled, not postponed. M2 has one: a gain below 20% kills the GPU/CPU partition.", "usual": null, "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "file-backed", "term": "file-backed", "def": "Memory that came from a mapped file: the operating system can drop it and reread from disk. That is why it does not count against the RAM budget.", "usual": null, "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "anonima", "term": "anonymous memory", "def": "Memory that exists only in RAM, with no file behind it. If evicted, the content is lost - hence it counts against the budget.", "usual": null, "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "publica-se-o-medido", "term": "publish what was measured", "def": "When intuition says one thing and measurement says another, the measurement is published - even if the alternative looks safer.", "usual": null, "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "teto", "term": "ceiling", "def": "The upper speed bound obtained by dividing bytes by bandwidth, ignoring compute and overhead. Also called the roofline.", "usual": null, "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "engine-de-streaming", "term": "streaming engine", "def": "An engine that runs a model larger than RAM by reading pieces from disk on demand. It works, and it is slow for the right reason: disk is ~370× slower than RAM. We measured <strong>0.93 tok/s</strong> that way, against 13.5 for TootegaEngine with the whole model in memory.", "usual": "video streaming, which is unrelated", "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "tootega", "term": ".tootega container", "def": "The project's file format: a 128-byte header, blobs aligned to 64 bytes, a JSON index at the end. Read directly, with no conversion step.", "usual": null, "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "llm", "term": "LLM", "def": "Large Language Model: a program that predicts the next token of a text. The whole appearance of conversation comes from that — predicting the next piece, thousands of times, each time with the previous result in the input. There is no plan, and no intention kept between one prediction and the next.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "transformer", "term": "transformer", "def": "The architecture practically every LLM uses: a stack of identical layers, each with attention and a multiplication block.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "camada", "term": "layer", "def": "One block of the transformer stack. Here there are 47, run in sequence - each one's output is the next one's input.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "peso", "term": "weight", "def": "One of the numbers learned during training. Here there are 31.2 billion of them, and they are what fills the 19.65 GB.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "parametro", "term": "parameter", "def": "A synonym for weight when talking about model size. \"31.2 billion parameters\" = 31.2 billion learned numbers.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "parametro-ativo", "term": "active parameter", "def": "How many weights are actually read to produce one token. Here 3.57 billion out of 31.2 - and that is the number that sets the speed.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "tensor", "term": "tensor", "def": "A named multidimensional array of weights. The container has 9,703 of them, and the index says where each one starts.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "hidden", "term": "hidden", "def": "The vector travelling through the layer stack. Here it holds 2048 numbers - 8 KB. Also called the residual stream.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "embedding", "term": "embedding", "def": "The table converting a token id into the initial 2048-number vector. Here it has 154,880 rows and one is read per token.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "logits", "term": "logits", "def": "The 154,880 output scores, one per vocabulary piece, before they become probabilities. High score = likely candidate.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "softmax", "term": "softmax", "def": "The function turning scores into probabilities that sum to 1. The maximum is subtracted first, to avoid exponent overflow.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "rmsnorm", "term": "RMSNorm", "def": "Normalization that rescales the vector to a predictable magnitude before each block. Without it, 47 stacked layers blow up or vanish.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "residual", "term": "residual", "def": "Adding the input back into the block's output. It makes a layer correct the vector rather than replace it, which is what allows stacking 47.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "atencao", "term": "attention", "def": "The mechanism by which the current token looks at every previous one and decides which to draw on. It is what gives the model a sense of context — and it is the only place where cost grows with conversation length, because the new token must consult everything that came before. Hence the KV cache: without it, each token would recompute the whole conversation.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "cabeca", "term": "head", "def": "One of the 20 parallel views inside attention. Each can specialize in a different kind of relation between tokens.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "qkv", "term": "Q, K, V", "def": "Query, key and value: what I look for, what I offer, what I hand over. Attention compares Q against every K and mixes the Vs.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "rope", "term": "RoPE", "def": "Positional encoding by rotating the vector. Here it is partial: only 64 of each head's 256 dimensions rotate.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "mlp", "term": "MLP", "def": "The two-multiplication block that follows attention. Also called FFN, feed-forward network.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "moe", "term": "MoE", "def": "Mixture-of-Experts: instead of one MLP per layer, many - and only a few run per token. It is what makes 31.2 B of weights cost 3.57 B per token.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "roteador", "term": "router", "def": "The small matrix that scores every expert and decides which ones run. In code and config it appears as <code>gate</code>.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "topk", "term": "top-k", "def": "\"Take the k largest\". In the router it is top-4 of 64; in sampling it means choosing among the k highest-scoring tokens.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "expert-compartilhado", "term": "shared expert", "def": "An expert that always runs, on top of the ones the router picks. It holds what is useful for any token.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "mla", "term": "MLA", "def": "Multi-head Latent Attention: attention that keeps the cache compressed, 576 numbers per token per layer instead of 10,240.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "gqa", "term": "GQA / MHA", "def": "The more common attention variants. They work, but their cache is much larger - hence the target model uses MLA.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "mtp", "term": "MTP", "def": "Multi-Token Prediction: an extra head that guesses the following token almost for free, to speed things up by speculation.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "lm-head", "term": "lm_head", "def": "The final matrix, 2048 × 154,880, turning the last layer's vector into output scores. It is read in full every token.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "vocabulario", "term": "vocabulary", "def": "The 154,880 text pieces the model knows. Only 154,856 actually exist; the rest is padding.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "camada-densa", "term": "dense layer", "def": "A layer with no MoE, holding a plain MLP. Here only layer 0 is like that, with internal size 10,240.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "arquitetura", "term": "architecture", "def": "The model's blueprint: how many layers, of what kind, with what sizes. It comes from <code>config.json</code>, which the container stores whole.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "checkpoint", "term": "checkpoint", "def": "The set of files published with the trained weights. Here it comes as 48 shards in <code>safetensors</code> format, 62.4 GB in BF16, and it is the converter's input — the engine never reads it at runtime. Its licence belongs to whoever trained it, not to this code.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "safetensors", "term": "safetensors", "def": "The format weights are published in: a JSON header giving name, shape and offset, then the raw numbers.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "hugging-face", "term": "Hugging Face", "def": "The public repository the model and tokenizer are downloaded from, and the source of the library used as reference.", "usual": null, "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "inferencia", "term": "inference", "def": "Running an already trained model to get an answer. It is all this project does - there is no training anywhere.", "usual": null, "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "treino", "term": "training", "def": "The very expensive process that produced the weights. It happens once, elsewhere, and is never repeated here.", "usual": null, "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "fine-tuning", "term": "fine-tuning", "def": "Adjusting an already trained model for a specific task. Declared out of scope in this project.", "usual": null, "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "forward", "term": "forward", "def": "One complete pass through the layer stack, from input to logits. It is also the name of the subcommand that does it over fixed ids.", "usual": null, "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "prefill", "term": "prefill", "def": "Processing the whole prompt at once, before generating. All tokens go through together, so weights are read once for many tokens.", "usual": null, "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "decode", "term": "decode", "def": "Generating one token at a time, in a chain. Each token rereads the full 2.01 GB of weights - this is where bandwidth rules.", "usual": null, "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "ttft", "term": "TTFT", "def": "Time to first token: how long until the first word shows up. Not a goal in this project until milestone M3.", "usual": null, "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "toks", "term": "tok/s", "def": "Tokens per second, the project's headline metric. Always quoted with the context it was measured in, because the number moves with it: <strong>13.1 tok/s</strong> on warm decode here, against a 24.0 ceiling computed from bandwidth. Quoting tok/s without saying the context, whether it was warm and how many threads is the easiest way to publish a number nobody can reproduce.", "usual": null, "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "kv-cache", "term": "KV cache", "def": "The attention state already computed for previous tokens. Keeping it avoids redoing the whole prompt for every word.", "usual": null, "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "cache-de-prefixo", "term": "prefix cache", "def": "Reusing the KV of the conversation's beginning across turns. It holds up to the first differing token; from there on everything is redone.", "usual": null, "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "teacher-forcing", "term": "teacher forcing", "def": "Running the model over a known text, forcing each correct word, to compare prediction by prediction against the reference.", "usual": null, "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "greedy", "term": "greedy", "def": "Always picking the highest-scoring token, no draw. It is deterministic, and it is the mode used in every measurement — because comparing two configurations with random sampling measures the random number generator too. Mind the trap: greedy does <strong>not</strong> guarantee identical output across machines; a tie broken by one different bit separates the paths.", "usual": null, "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "topp", "term": "top-p", "def": "Drawing among the highest-scoring tokens whose probabilities together reach p. Also called nucleus sampling.", "usual": null, "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "amostragem", "term": "sampling", "def": "The step that picks one token out of the 154,880 candidates, from the scores. Greedy, temperature, top-k and top-p are its modes.", "usual": null, "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "batching", "term": "continuous batching", "def": "Serving several conversations at once, amortizing the same weight read across all of them. It is where the project's second goal lives.", "usual": null, "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "especulacao", "term": "speculation", "def": "Guessing several tokens at once with a cheap mechanism and verifying them in bulk. It pays off when the model is resident.", "usual": null, "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "prompt", "term": "prompt", "def": "The complete input text: instructions, tools, history and the current question. It is what the prefix cache tries to reuse.", "usual": null, "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "system-prompt", "term": "system prompt", "def": "The fixed part of the prompt, holding permanent instructions. It goes first precisely so it never invalidates the cache.", "usual": null, "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "chat-template", "term": "chat template", "def": "The rules for assembling a conversation's text out of turns, with the speaker markers. It ships with the model.", "usual": null, "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "turno", "term": "turn", "def": "One round of the conversation: what the user said plus what the assistant answered.", "usual": null, "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "tokenizer", "term": "tokenizer", "def": "The component converting text into ids and back. An error here does not crash: it yields slightly different ids and a plausible, wrong answer.", "usual": null, "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "bpe", "term": "BPE", "def": "Byte Pair Encoding: repeatedly merges the two cheapest adjacent pieces, according to a table of 321,649 rules.", "usual": null, "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "token-especial", "term": "special token", "def": "One of the 36 markers such as <code>&lt;|user|&gt;</code>, matched by exact text before BPE. They delimit who is speaking.", "usual": null, "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "cpu", "term": "CPU", "def": "The main processor. Here, an i9-14900K with 8 fast cores, 16 efficient ones and 32 threads in total.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "gpu", "term": "GPU", "def": "The graphics card, used as an arithmetic accelerator. Here it is an 8 GB RTX 2060 SUPER - fast inside, poorly connected outside.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "ram", "term": "RAM", "def": "The computer's main memory. Here, 64 GB delivering ~60 GB/s. It is where the whole model needs to fit.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "vram", "term": "VRAM", "def": "The graphics card's memory. Fast (448 GB/s here) and small (8 GB), and reachable only over PCIe — which on this machine delivers ~12 GB/s, less than the disk. It is the combination of the three numbers that decides everything: with the model at 18.54 GB nothing fits permanently, and what does not fit must cross the slowest link on every layer.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "pcie", "term": "PCIe", "def": "The bus connecting the GPU to the rest of the computer. Here it is gen 3: ~12 GB/s, the machine's slowest link.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "nvme", "term": "NVMe", "def": "The standard for fast SSDs wired straight to the bus. Here, two in RAID0 delivering 18.4 GB/s sequential.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "tier", "term": "tier", "def": "One level of the memory hierarchy: VRAM, RAM, disk. Each tier has its bandwidth, its capacity and its access link.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "memory-bound", "term": "memory-bound", "def": "When time is dominated by waiting on memory rather than doing arithmetic. It is decode's regime: ~33 ms of reads against 4-7 ms of compute.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "compute-bound", "term": "compute-bound", "def": "When time is dominated by arithmetic. It is prefill's regime, which is why optimizing it is a different problem.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "nucleo", "term": "core", "def": "An independent execution unit inside the CPU. This processor is hybrid: 8 fast P-cores and 16 efficient E-cores.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "thread", "term": "thread", "def": "A line of execution. The engine uses its own thread pool, with work split by matrix output rows.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "afinidade", "term": "affinity", "def": "Pinning each thread to chosen cores. The default is P-cores only: spreading memory-bound work across E-cores usually hurts.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "simd", "term": "SIMD", "def": "One instruction operating on several numbers at once. It is how the kernel processes 8 or 16 weights per cycle instead of one.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "avx", "term": "AVX2 / AVX-VNNI", "def": "This CPU's SIMD instruction sets. The engine picks which to use at runtime, so the binary still runs on other machines.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "fma", "term": "FMA", "def": "Multiply and add in a single instruction. Fast, but it rounds differently - which is why the build forbids automatic fusion.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "cache-l3", "term": "L1/L2/L3 cache", "def": "Tiny, extremely fast memories inside the processor. This CPU's L3 holds 36 MB, enough for one full layer's cache at 4k.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "mmap", "term": "mmap", "def": "Mapping a file straight into the process address space. The file becomes the memory, with no copy step.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "page-cache", "term": "page cache", "def": "The cache the operating system keeps of files it has read. Since the model is mapped, that cache is the weight cache.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "page-fault", "term": "page fault", "def": "What happens on the first access to a mapped page: the system stops everything and fetches from disk. Hence the pre-fault at load time.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "huge-pages", "term": "huge pages", "def": "Using 2 MB pages instead of 4 KB. With 19.3 GB of weights, that goes from 4.7 million pages down to ~9 thousand.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "tlb", "term": "TLB", "def": "The small processor table that translates addresses. It has ~2048 entries: with 4 KB pages it covers 8 MB, with 2 MB pages it covers 4 GB.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "rss", "term": "RSS", "def": "Resident Set Size: how much physical memory the process actually occupies. It is the number the watchdog compares against the budget.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "swap", "term": "swap", "def": "When the operating system writes memory to disk for lack of RAM. Here it counts as a failure: the budget exists so it never happens.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "oom", "term": "OOM", "def": "Out of memory: when the system kills the process for lack of RAM. It is what the refuse-instead-of-degrade rule prevents.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "orcamento", "term": "budget", "def": "A hard cap on RAM, VRAM or threads passed as a parameter. Verified at runtime, not just in the plan.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "gargalo", "term": "bottleneck", "def": "The resource that limits everything else. Here it is memory bandwidth; optimizing anything else does not change total time.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "overhead", "term": "overhead", "def": "Cost that is not the work itself: calling functions, synchronizing threads, allocating memory. Invisible at 1 tok/s, a percentage at 20.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "amdahl", "term": "Amdahl's law", "def": "The arithmetic saying how much speeding up one part speeds up the whole. Used here to estimate the gain of moving 39% of layers to the GPU.", "usual": null, "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "bit", "term": "bit", "def": "The smallest unit of information: 0 or 1. An int4 weight takes 4 bits.", "usual": null, "cat": "Numerics", "catid": "numerica", "k": "cc"}, {"id": "byte", "term": "byte", "def": "Eight bits. Two int4 weights fit in one byte - hence nibble packing.", "usual": null, "cat": "Numerics", "catid": "numerica", "k": "cc"}, {"id": "gb", "term": "GB", "def": "Gigabyte, a thousand million bytes. The model is 19.65 GB; 2.01 GB is read per token.", "usual": null, "cat": "Numerics", "catid": "numerica", "k": "cc"}, {"id": "float", "term": "float", "def": "A number with decimals, stored in floating-point format. The engine's arithmetic is all in 32-bit floats.", "usual": null, "cat": "Numerics", "catid": "numerica", "k": "cc"}, {"id": "fp32", "term": "fp32", "def": "32-bit floating point, with 23 mantissa bits. It is the engine's working precision, and the oracle's.", "usual": null, "cat": "Numerics", "catid": "numerica", "k": "cc"}, {"id": "bf16", "term": "bf16", "def": "16-bit floating point with fp32's exponent and only 7 mantissa bits. It is how the model is published.", "usual": null, "cat": "Numerics", "catid": "numerica", "k": "cc"}, {"id": "int4", "term": "int4 / int8", "def": "4-bit and 8-bit integers, used to store weights. Always paired with a scale that converts them back.", "usual": null, "cat": "Numerics", "catid": "numerica", "k": "cc"}, {"id": "nibble", "term": "nibble", "def": "Half a byte, 4 bits. Exactly one int4 weight - which is why the order the two nibbles of a byte are read in matters.", "usual": null, "cat": "Numerics", "catid": "numerica", "k": "cc"}, {"id": "escala", "term": "scale", "def": "The float that turns an integer back into the real weight: <code>weight ≈ (code − 8) × scale</code>. One scale per 64 weights.", "usual": null, "cat": "Numerics", "catid": "numerica", "k": "cc"}, {"id": "g64", "term": "g64", "def": "\"Group of 64\": one shared scale per 64 neighbouring weights. It costs 4/64 = 0.0625 extra bytes per weight.", "usual": null, "cat": "Numerics", "catid": "numerica", "k": "cc"}, {"id": "absmax", "term": "absmax", "def": "The largest absolute value in a group. Divided by 7, it gives the simplest scale - though not the optimal one.", "usual": null, "cat": "Numerics", "catid": "numerica", "k": "cc"}, {"id": "w4a32", "term": "W4A32", "def": "Weights in 4 bits, activations in 32. The kernel unpacks and multiplies in float, never quantizing activations.", "usual": null, "cat": "Numerics", "catid": "numerica", "k": "cc"}, {"id": "ativacao", "term": "activation", "def": "The numbers flowing between layers - the 2048-value vector. Tiny compared to weights: 8 KB against 4.7 MB per expert.", "usual": null, "cat": "Numerics", "catid": "numerica", "k": "cc"}, {"id": "associatividade", "term": "associativity", "def": "Summing in a different order gives a different floating-point result. Hence the engine's reduction order is fixed and independent of thread count.", "usual": null, "cat": "Numerics", "catid": "numerica", "k": "cc"}, {"id": "fp-precise", "term": "/fp:precise", "def": "The compiler option forbidding sum reassociation and multiply-add fusion. It costs performance and buys reproducibility.", "usual": null, "cat": "Numerics", "catid": "numerica", "k": "cc"}, {"id": "arredondamento", "term": "rounding", "def": "Choosing the nearest representable value. int4's error is the floor of rounding, not a bug.", "usual": null, "cat": "Numerics", "catid": "numerica", "k": "cc"}, {"id": "erro-relativo", "term": "relative error", "def": "How far the result strays from the correct one, as a percentage. Here it is measured at a multiplication's output, not per isolated weight.", "usual": null, "cat": "Numerics", "catid": "numerica", "k": "cc"}, {"id": "outlier", "term": "outlier", "def": "A value far outside its neighbours' range. In real activations a few channels carry 10-100x the median magnitude, and they dominate the error.", "usual": null, "cat": "Numerics", "catid": "numerica", "k": "cc"}, {"id": "perplexidade", "term": "perplexity", "def": "How \"surprised\" the model is by a text. Lower is better. It is the measure that says whether quantization actually degraded anything.", "usual": null, "cat": "Measurement", "catid": "medicao", "k": "cc"}, {"id": "nll", "term": "nll", "def": "Negative log-likelihood, perplexity's logarithm. Used because it is additive - means and intervals can be computed on it.", "usual": null, "cat": "Measurement", "catid": "medicao", "k": "cc"}, {"id": "intervalo", "term": "95% interval", "def": "The range the true value probably lies in. If it crosses zero, no effect is demonstrated - just noise.", "usual": null, "cat": "Measurement", "catid": "medicao", "k": "cc"}, {"id": "janela", "term": "window", "def": "A fixed chunk of text used in measurement. Here there are 10 windows of 384 tokens, compared window by window.", "usual": null, "cat": "Measurement", "catid": "medicao", "k": "cc"}, {"id": "fixture", "term": "fixture", "def": "A file of precomputed correct answers, generated once and compared against on every test run.", "usual": null, "cat": "Measurement", "catid": "medicao", "k": "cc"}, {"id": "selftest", "term": "selftest", "def": "The test built into the binary: kernels, JSON parser, thread pool, tokenizer and sampler against fixtures. It runs in seconds.", "usual": null, "cat": "Measurement", "catid": "medicao", "k": "cc"}, {"id": "regressao", "term": "regression test", "def": "A test that exists only to keep an old bug from returning. The <code>CUDA_DENSE</code> case became one.", "usual": null, "cat": "Measurement", "catid": "medicao", "k": "cc"}, {"id": "baseline", "term": "baseline", "def": "The reference number to beat. Here it is 0.93 tok/s, measured with engine anterior and the oversized model.", "usual": null, "cat": "Measurement", "catid": "medicao", "k": "cc"}, {"id": "benchmark", "term": "benchmark", "def": "A controlled, repeatable measurement. Without a fixed budget, warm-up and an output hash, it is worthless.", "usual": null, "cat": "Measurement", "catid": "medicao", "k": "cc"}, {"id": "aquecimento", "term": "warm-up", "def": "A discarded run before measuring, so the cost of filling caches does not land entirely on the first measurement.", "usual": null, "cat": "Measurement", "catid": "medicao", "k": "cc"}, {"id": "reprodutibilidade", "term": "reproducibility", "def": "The property of getting exactly the same result on repetition. Here it is an exit criterion, not a convenience.", "usual": null, "cat": "Measurement", "catid": "medicao", "k": "cc"}, {"id": "hash", "term": "hash", "def": "A short number computed from a content, which changes if any byte changes. Used to prove two outputs are identical.", "usual": null, "cat": "Measurement", "catid": "medicao", "k": "cc"}, {"id": "throughput", "term": "throughput", "def": "How much work comes out per unit of time, summed over all conversations. Different from latency, which is the time of one.", "usual": null, "cat": "Measurement", "catid": "medicao", "k": "cc"}, {"id": "latencia", "term": "latency", "def": "The time until the answer starts. High bandwidth with poor latency is common on disk; RAM has both good.", "usual": null, "cat": "Measurement", "catid": "medicao", "k": "cc"}, {"id": "c11", "term": "C11", "def": "The C language standard version the engine uses. Chosen because it is auditable and drags in no dependencies.", "usual": null, "cat": "Software", "catid": "software", "k": "cc"}, {"id": "dependencia", "term": "dependency", "def": "An external library the program needs. The engine has zero: JSON, tokenizer and file reader are all its own.", "usual": null, "cat": "Software", "catid": "software", "k": "cc"}, {"id": "linkagem-estatica", "term": "static linking", "def": "Bundling everything into the executable so it runs with nothing installed. The goal is a single binary, with the GPU backend loaded separately.", "usual": null, "cat": "Software", "catid": "software", "k": "cc"}, {"id": "compilador", "term": "compiler", "def": "The program that turns code into an executable. Here it is MSVC on Windows, located dynamically, and gcc or clang on Linux.", "usual": null, "cat": "Software", "catid": "software", "k": "cc"}, {"id": "build-id", "term": "build id", "def": "A hash of the sources and build flags, embedded in the binary. It invalidates persisted caches when the engine changes.", "usual": null, "cat": "Software", "catid": "software", "k": "cc"}, {"id": "cli", "term": "CLI", "def": "Command-line interface: the program you use by typing commands in a terminal.", "usual": null, "cat": "Software", "catid": "software", "k": "cc"}, {"id": "ponteiro", "term": "pointer", "def": "A memory address stored in a variable. Moving a large block here means swapping pointers, never copying bytes.", "usual": null, "cat": "Software", "catid": "software", "k": "cc"}, {"id": "malloc", "term": "malloc", "def": "The function that asks the system for memory at runtime. The engine's token loop never calls it.", "usual": null, "cat": "Software", "catid": "software", "k": "cc"}, {"id": "zero-copy", "term": "zero-copy", "def": "Using data where it already is, with no intermediate copy step. Here, kernel pointers point straight into the mapped file.", "usual": null, "cat": "Software", "catid": "software", "k": "cc"}, {"id": "json", "term": "JSON", "def": "A text format for structured data. The container index and the model config are JSON, read by the project's own parser.", "usual": null, "cat": "Software", "catid": "software", "k": "cc"}, {"id": "utf8", "term": "UTF-8", "def": "The standard text encoding, where a character takes 1 to 4 bytes. The tokenizer works on bytes, not characters.", "usual": null, "cat": "Software", "catid": "software", "k": "cc"}, {"id": "unicode", "term": "Unicode", "def": "The catalogue of every character of every writing system. The pre-tokenizer must know, per character, whether it is a letter, a digit or a space.", "usual": null, "cat": "Software", "catid": "software", "k": "cc"}, {"id": "regex", "term": "regular expression", "def": "A pattern describing how to split a text. The tokenizer uses a fixed one, the same as GPT-4's, hand-implemented instead of using a generic engine.", "usual": null, "cat": "Software", "catid": "software", "k": "cc"}, {"id": "http", "term": "HTTP", "def": "The web protocol. The <code>serve</code> subcommand opens a local server at <code>127.0.0.1:8080</code> with a chat interface.", "usual": null, "cat": "Software", "catid": "software", "k": "cc"}, {"id": "loopback", "term": "loopback", "def": "The address <code>127.0.0.1</code>, reachable only from the machine itself. It is the server's default because this is not a production service.", "usual": null, "cat": "Software", "catid": "software", "k": "cc"}, {"id": "atomico", "term": "atomic write", "def": "Writing to a temporary file and renaming at the end. A power cut halfway through cannot leave a truncated file looking valid.", "usual": null, "cat": "Software", "catid": "software", "k": "cc"}, {"id": "watchdog", "term": "watchdog", "def": "A thread comparing real consumption against the budget while running. Without it, \"budget\" would be just an opinion.", "usual": null, "cat": "Software", "catid": "software", "k": "cc"}, {"id": "vetor", "term": "vector", "def": "A list of numbers. Here, a token's state is a vector of 2048 floats.", "usual": null, "cat": "Math", "catid": "matematica", "k": "cc"}, {"id": "matriz", "term": "matrix", "def": "A table of numbers, with rows and columns. A model weight is a matrix; the largest is 2048 × 154,880.", "usual": null, "cat": "Math", "catid": "matematica", "k": "cc"}, {"id": "matmul", "term": "matrix multiplication", "def": "The central operation: each output row is the sum of products of one weight row against the input. Almost all the time goes here.", "usual": null, "cat": "Math", "catid": "matematica", "k": "cc"}, {"id": "produto-escalar", "term": "dot product", "def": "Multiplying two vectors element by element and summing. A matrix multiplication is a pile of dot products.", "usual": null, "cat": "Math", "catid": "matematica", "k": "cc"}, {"id": "posto-baixo", "term": "low rank", "def": "Replacing one large matrix by two smaller ones multiplied together. It compresses, and it is what <code>q_lora_rank</code> and <code>kv_lora_rank</code> do.", "usual": null, "cat": "Math", "catid": "matematica", "k": "cc"}, {"id": "transposta", "term": "transpose", "def": "The matrix with rows and columns swapped. It matters here because reading a column is expensive and reading a row is cheap.", "usual": null, "cat": "Math", "catid": "matematica", "k": "cc"}, {"id": "flop", "term": "FLOP", "def": "One floating-point operation. Generating a token costs ~7.1 GFLOP - little, next to the 2.01 GB of reads.", "usual": null, "cat": "Math", "catid": "matematica", "k": "cc"}, {"id": "probabilidade", "term": "probability", "def": "A number between 0 and 1 saying how likely something is. Softmax turns output scores into probabilities.", "usual": null, "cat": "Math", "catid": "matematica", "k": "cc"}, {"id": "desvio", "term": "standard deviation", "def": "How much values spread around the mean. It is why paired comparison exists: the variance across windows swallowed the effect.", "usual": null, "cat": "Math", "catid": "matematica", "k": "cc"}, {"id": "expoente", "term": "exponent", "def": "In <code>N^0.25</code>, the 0.25. It says quadrupling N multiplies the result by only 1.41 - the scaling law this project refuses.", "usual": null, "cat": "Math", "catid": "matematica", "k": "cc"}, {"id": "cuda", "term": "CUDA", "def": "NVIDIA's platform for running computation on a graphics card. A CUDA program has two halves: one runs on the CPU, one on the GPU, written in different files and built by different compilers. Here it was written, measured and <strong>not adopted</strong> — it lives on the <code>GPU</code> branch.", "usual": "a synonym for \"use the graphics card\"", "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "msvc", "term": "MSVC", "def": "Microsoft's C and C++ compiler, shipped with Visual Studio. It turns the <code>.c</code> files into <code>tootega.exe</code> on Windows. The project locates it with <code>vswhere</code> instead of hard-coding a path: hard-coded paths break when the version changes.", "usual": "confused with Visual Studio, which is the editor", "cat": "Software", "catid": "software", "k": "cc"}, {"id": "smt", "term": "SMT", "def": "<em>Simultaneous Multithreading</em> — Intel calls it Hyper-Threading. One physical core appears as two logical ones sharing the same execution units. For memory-bound work like ours the two siblings fight over the same resource and do not help: that is why the pool uses <strong>one logical core per physical core</strong>.", "usual": "\"twice the cores\", which is what the task manager suggests", "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "p-core", "term": "P-core and E-core", "def": "Modern Intel processors mix two kinds of core: <strong>P</strong> for performance, big and fast, and <strong>E</strong> for efficiency, small and frugal. Spreading even work across both makes the fast ones wait for the slow ones, so the engine pins threads to P-cores by default.", "usual": "\"all cores are the same\"", "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "ddr5", "term": "DDR5-4800", "def": "The generation and speed of the RAM. The number is the nominal rate in millions of transfers per second. Nominal is not real: the <strong>68.7 GB/s</strong> this project uses in every calculation was <em>measured at runtime</em>, not read off the box.", "usual": "that a bigger number means proportionally more speed", "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "rtx", "term": "RTX", "def": "NVIDIA's consumer graphics card line. This machine has an RTX 2060 SUPER with 8 GB. Those 8 GB are the deciding number: the model takes 18.5 GB, so it <strong>does not fit</strong>, and any GPU use becomes a partition — which was measured and did not pay off.", "usual": "that a better graphics card always speeds up a language model", "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "sistema-operacional", "term": "OS", "def": "Operating system — Windows, Linux, macOS. It hands memory, files and threads to the program. The engine touches the OS in <strong>a single file</strong>, <code>compat.c</code>: that is the boundary where the Windows/Linux differences live, so the rest of the code need not know where it runs.", "usual": "the graphical interface, which is only the visible part", "cat": "Machine", "catid": "maquina", "k": "cc"}, {"id": "iso", "term": "ISO", "def": "The body that publishes international standards. \"ISO C11\" means the code follows the 2011 C standard <em>as written</em>, without any one compiler's extensions. That is what lets the same file build under MSVC and gcc unchanged.", "usual": "the <code>.iso</code> disk image, a different use of the same acronym", "cat": "Software", "catid": "software", "k": "cc"}, {"id": "sse", "term": "SSE", "def": "<em>Server-Sent Events</em> — the standard way for an HTTP server to push text in pieces as it is produced, without the client polling. It is why the answer appears word by word instead of showing up complete half a minute later.", "usual": "confused with WebSocket, which is bidirectional; SSE only goes from server to client", "cat": "Software", "catid": "software", "k": "cc"}, {"id": "cors", "term": "CORS", "def": "<em>Cross-Origin Resource Sharing</em> — the browser rule that stops a page from one address calling a server at another, unless the server allows it. Without that permission a client running <em>inside</em> the browser never even sends the request.", "usual": "\"an annoying browser error\" — it is a protection, and the server is the one that grants it", "cat": "Software", "catid": "software", "k": "cc"}, {"id": "ndjson", "term": "NDJSON", "def": "<em>Newline-Delimited JSON</em>: one JSON object per line, one event per line. It is how the agent talks to the interface — each line is complete on its own, so the reader can process the first without waiting for the last.", "usual": "confused with a regular JSON file, which is a single object", "cat": "Software", "catid": "software", "k": "cc"}, {"id": "stdin-stdout", "term": "stdin and stdout", "def": "The two text channels every program is born with: <strong>stdin</strong> is where input comes in, <strong>stdout</strong> is where output goes. The agent and the interface talk over them — no network, no port, no file. Closing stdin is like hanging up: the program sees the end and exits.", "usual": "\"the screen and the keyboard\" — that is where the name comes from, but today it is almost always another program on the other side", "cat": "Software", "catid": "software", "k": "cc"}, {"id": "eof", "term": "EOF", "def": "<em>End Of File</em>. The signal that nothing more is coming. When the interface closes the agent's channel it gets an EOF and exits right away — the clean shutdown mechanism, more reliable than any timer.", "usual": "an error; it is normal operation, and its absence would be the problem", "cat": "Software", "catid": "software", "k": "cc"}, {"id": "protocolo-openai", "term": "OpenAI protocol", "def": "The message format OpenAI published for talking to models, which became a de-facto standard: a list of messages with <code>role</code> and <code>content</code>, and the reply in the same shape. Speaking it is what lets Copilot, Continue and any other client connect to this server <strong>without a line of our code</strong>.", "usual": "that you need OpenAI to speak OpenAI's protocol", "cat": "Software", "catid": "software", "k": "cc"}, {"id": "endpoint", "term": "endpoint", "def": "A specific address inside a server, with one job. <code>/v1/chat/completions</code> generates text; <code>/stats</code> reports how the server is doing. It is the service's \"extension number\": same machine, same port, different purposes.", "usual": "a synonym for the server or for the whole URL", "cat": "Software", "catid": "software", "k": "cc"}, {"id": "json-schema", "term": "JSON Schema", "def": "A description, in JSON, of what another JSON must look like: which fields, of what type, which are required. The client sends the tools' schema, and that is how the server knows <code>3</code> must become the <strong>number</strong> 3 and not the text <code>\"3\"</code> — without it, every tool with a numeric argument arrives wrong.", "usual": "confused with JSON itself", "cat": "Software", "catid": "software", "k": "cc"}, {"id": "mcp", "term": "MCP", "def": "<em>Model Context Protocol</em> — a standard for an agent to discover and use tools offered by other programs, rather than only its own. It is today's \"common tool protocol\". TootegaEngine <strong>does not implement it</strong>; it is on record as not done.", "usual": "confused with the tool-call format, which is a different layer", "cat": "Software", "catid": "software", "k": "cc"}, {"id": "tool-call", "term": "tool call", "def": "When the model, instead of answering, asks a program to do something for it — read a file, run a command. It executes nothing: it writes a request, someone runs it, and the result comes back as a new message. In this model the request uses <code>&lt;tool_call&gt;</code>, which is a <strong>single token</strong> in the vocabulary, not text to be pattern-matched.", "usual": "that the model \"runs\" the command; it only asks", "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "sandbox", "term": "sandbox", "def": "A fence around what a program may touch. In the agent it is the working folder: every path is resolved against it and refused if it escapes — <strong>even with auto-approval on</strong>. It is the only thing between a 31-billion-parameter model and the rest of the disk.", "usual": "\"a test environment\"; here it is access restriction, not a separate environment", "cat": "Software", "catid": "software", "k": "cc"}, {"id": "diretiva", "term": "directive", "def": "An instruction about how to answer, given before the conversation starts: \"answer in the language of the question\", \"get to the point\". It goes in a system message at the <strong>beginning</strong> of the prompt — where the prefix cache reuses it on every turn. Changing it mid-conversation would invalidate the whole cache.", "usual": "confused with the question; a directive applies to every answer, a question to one", "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "aprovacao", "term": "approval", "def": "The question the agent asks before doing something that changes state — writing a file, running a command. Reading does not ask, deliberately: confirming everything, at 13 tokens per second, turns the task into half an hour of pressing Enter — and <strong>trains the person to approve without reading</strong>, which is the worst possible outcome.", "usual": "that more prompts mean more safety", "cat": "Software", "catid": "software", "k": "cc"}, {"id": "entropia", "term": "entropy", "def": "How spread out the model's opinion about the next token is, measured in <em>bits</em>. Low entropy: few candidates. High: many, nearly tied. It goes next to perplexity because it separates two cases perplexity conflates — <strong>confident and right</strong> from <strong>confident for lack of options</strong>, and the second is what precedes repetition.", "usual": "\"disorder\", from thermodynamics — same math, different subject", "cat": "Measurement", "catid": "medicao", "k": "cc"}, {"id": "rep4", "term": "rep4", "def": "The fraction of four-token sequences that already appeared earlier in the same answer. It is the early detector of <em>degeneration</em>: a model starting to loop shows up here long before it bothers a reader. Above ~15% is outright degeneration.", "usual": "confused with word repetition; it counts sequences, which is more sensitive", "cat": "Measurement", "catid": "medicao", "k": "cc"}, {"id": "match-ref", "term": "match@ref", "def": "How many leading tokens a generation shares with the reference generation before diverging. It is the most direct measure of \"this container generates what the original would\". Diverging is not an error: two near-identical paths split at the first tie.", "usual": "that 100% would be expected; any numeric difference separates the paths early", "cat": "Measurement", "catid": "medicao", "k": "cc"}, {"id": "degeneracao", "term": "degeneration", "def": "When the model loses the thread and starts repeating, doubling words or never stopping. It is not a program error — it is the text folding onto itself. That is how one container was found to be bad while perplexity said it was fine.", "usual": "\"the model froze\"; it is working, and producing garbage", "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "intervalo-de-confianca", "term": "confidence interval", "def": "The range the true value probably lies in, given how much the measurements varied. If the range <strong>crosses zero</strong>, the measurement cannot tell \"better\" from \"worse\" — and the honest answer is <em>inconclusive</em>, not \"about the same\".", "usual": "that the middle number is the result; the width of the range is what decides whether there is a result", "cat": "Measurement", "catid": "medicao", "k": "cc"}, {"id": "mha", "term": "MHA", "def": "<em>Multi-Head Attention</em>: classic attention, where each head keeps its own key and value. Simplest, and most expensive in memory — the opposite of this model's MLA, which compresses both into a smaller space and saves 18× the traffic.", "usual": "that \"more heads\" means \"smarter\"", "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "glm", "term": "GLM", "def": "The family of open models this project runs. The target is <strong>GLM-4.7-Flash</strong>: 31 billion parameters in total, but only ~3 billion active per token, because it is an MoE. That ratio is what makes it both fit and run fast.", "usual": "that the total parameter count indicates the cost of running it", "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "rascunho", "term": "draft", "def": "The text the model writes to itself before answering, between <code>&lt;think&gt;</code> and <code>&lt;/think&gt;</code>. Measured on this model: with a 400-token budget it <strong>fails to finish 8 of 12 questions</strong>, repeats 8× more and costs 4.5× the time — for \"what is the capital of Brazil\" it writes six steps in English and gets cut off before answering.", "usual": "that reasoning always improves the answer", "cat": "Model", "catid": "modelo", "k": "cc"}, {"id": "marco", "term": "milestone", "def": "A project stage with a <strong>measurable exit criterion</strong>, not a date. M0 converts and validates the model; M1 is the token-exact CPU forward; M2 was the GPU; M3 is serving several requests at once; M4 is the agent; M5 is speculation. A milestone closes when the number shows up, not when the code compiles.", "usual": "\"deadline\"; here it is a number to hit", "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "decisao-numerada", "term": "numbered decision", "def": "Every design choice with real alternatives gets a number — D1 to D14 — and a line on the scoreboard with its state: open, closed, or closed with the number that closed it. It exists so nobody reopens a discussion for not knowing it already happened.", "usual": "confused with a task; a decision is about \"which way\", not \"when\"", "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "branch", "term": "branch", "def": "A parallel line of development in version control. Here <code>master</code> is the CPU-only engine and <code>GPU</code> holds all the graphics-card work — written, measured, not adopted. Splitting that way is what lets you <strong>keep the measurement without carrying the code</strong>.", "usual": "\"a copy\"; it is the same history with one more branch, not a duplicate", "cat": "Software", "catid": "software", "k": "cc"}, {"id": "mit", "term": "MIT license", "def": "A short, permissive free-software licence: anyone may use, copy, modify and sell, provided the copyright notice stays, and with no warranty. It is this engine's licence. It <strong>does not cover the model</strong> — weights and tokenizer have their own, from whoever trained them.", "usual": "that the code's licence also covers the data it reads", "cat": "Project", "catid": "projeto", "k": "pr"}, {"id": "futex", "term": "futex", "def": "The mechanism by which a thread sleeps waiting for a value to change and is <strong>woken by whoever changed it</strong> — instead of waking on a timer to check. The difference shows up as a number: sleeping on a timer made a 1.6 MB matmul cost 26 ms instead of 0.026 ms.", "usual": "confused with \"waiting\"; the point is who wakes whom", "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "barreira", "term": "barrier", "def": "The point where every thread stops and waits for the last one. It is necessary and it is expensive: synchronising 20 threads costs the same order of magnitude as one expert's work. That is why 15 barriers per layer became 2 — by fusing the matmuls into a single dispatch.", "usual": "\"the program hung\"; it is normal coordination, and its cost is what matters", "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "processo", "term": "process", "def": "A running program with its own memory. The server is one; the agent is another, one per interface tab. Splitting them has a cost and a reason: if the agent dies, the server and the 18.5 GB it loaded stay up.", "usual": "confused with a thread — threads share memory, processes do not", "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "pipe", "term": "pipe", "def": "A tube between two programs: what one writes, the other reads. The interface sends the question to the agent through a pipe. It has a trap that cost hours here: the program may have <em>already read</em> the bytes into an internal buffer, and whoever inspects only the tube sees it empty — and wrongly concludes nothing arrived.", "usual": "\"the | symbol in the terminal\", which is one use of the same mechanism", "cat": "Execution", "catid": "execucao", "k": "cc"}, {"id": "crlf", "term": "CRLF", "def": "The two invisible characters Windows ends each line of text with, against one on Linux. Invisible does not mean harmless: a snippet copied in one style will not match a file saved in the other, and the search fails with nothing on screen to explain it.", "usual": "that \"text is text\"; the difference is real and breaks exact matching", "cat": "Software", "catid": "software", "k": "cc"}, {"id": "uuid", "term": "UUID", "def": "An identifier long enough to be unique without anyone coordinating who uses which. It names a conversation, a block, a session — when two sides must refer to the same item with no central registry.", "usual": "that a server must issue it; any machine generates its own", "cat": "Software", "catid": "software", "k": "cc"}]</script>
+<script type="application/json" id="ldata">{"usual": "usually means", "openg": "open in glossary", "copy": "copy", "copied": "copied", "nores": "nothing found", "gterms": "Glossary", "gsecs": "Sections", "gtext": "In the text", "knav": "navigate", "kopen": "open", "kclose": "close", "nhits": "results", "gbase": "../TootegaEngine-ForDummies.en.html"}</script>
+<script>
+(function{
+var G = JSON.parse(document.getElementById('gdata').textContent);
+var L = JSON.parse(document.getElementById('ldata').textContent);
+var byId = {}; G.forEach(function(t){byId[t.id]=t;});
+
+/* --- tema --- */
+var root=document.documentElement;
+var saved=localStorage.getItem('tt-theme');
+if(saved) root.setAttribute('data-theme',saved);
+else root.setAttribute('data-theme', matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+document.getElementById('theme').onclick=function{
+  var d=root.getAttribute('data-theme')==='dark'?'light':'dark';
+  root.setAttribute('data-theme',d); localStorage.setItem('tt-theme',d);
+};
+
+/* --- progresso + topo --- */
+var prog=document.getElementById('prog'), top=document.getElementById('top');
+function onScroll{
+  var h=document.body.scrollHeight-innerHeight;
+  prog.style.width=(h>0?(scrollY/h*100):0)+'%';
+  top.classList.toggle('on', scrollY>600);
+  spy;
+}
+addEventListener('scroll',onScroll,{passive:true});
+top.onclick=function{scrollTo({top:0,behavior:'smooth'});};
+
+/* --- scroll spy + migalha --- */
+var links=[].slice.call(document.querySelectorAll('nav.toc a'));
+var heads=links.map(function(a){return document.getElementById(a.getAttribute('href').slice(1));});
+var crumb=document.getElementById('crumb');
+function spy{
+  var best=-1;
+  for(var i=0;i<heads.length;i++){ if(heads[i] && heads[i].getBoundingClientRect.top<110) best=i; }
+  links.forEach(function(a,i){a.classList.toggle('on',i===best);});
+  if(best>=0){
+    crumb.textContent=heads[best].textContent.replace(/#$/,'');
+    keepVisible(links[best].parentNode, links[best], 40);
+  }
+}
+/* rola SO o container; scrollIntoView tambem rolaria a janela e tiraria o leitor do lugar */
+function keepVisible(box, el, pad){
+  if(!box||!el) return;
+  var r=el.getBoundingClientRect, n=box.getBoundingClientRect;
+  if(r.top < n.top+pad)        box.scrollTop += r.top - (n.top+pad);
+  else if(r.bottom > n.bottom-pad) box.scrollTop += r.bottom - (n.bottom-pad);
+}
+
+/* --- busca com dropdown de resultados --- */
+var q=document.getElementById('q'), res=document.getElementById('res');
+function norm(s){return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase;}
+function escH(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function mark(text,i,n){
+  return escH(text.slice(0,i))+'<mark>'+escH(text.slice(i,i+n))+'</mark>'+escH(text.slice(i+n));
+}
+
+/* indice: cabecalhos, termos do glossario e blocos de texto */
+var IDX={h:[],g:[],t:[]};
+(function{
+  var main=document.querySelector('main'), cur={id:'',t:''};
+  main.querySelectorAll('h1,h2,h3,h4,p,li,td,th,blockquote>p,figcaption,pre').forEach(function(el){
+    var tag=el.tagName;
+    if(tag[0]==='H'){
+      var txt=el.textContent.replace(/#$/,'').trim;
+      if(el.id){ cur={id:el.id,t:txt}; IDX.h.push({id:el.id,t:txt,n:norm(txt),lv:+tag[1]}); }
+      return;
+    }
+    if(el.closest('.glossary')) return;
+    if(cur.id==='sumário'||cur.id==='contents') return;   /* o indice do topo nao e conteudo */
+    var s=el.textContent.replace(/\s+/g,' ').trim;
+    if(s.length<14) return;
+    IDX.t.push({el:el,t:s,n:norm(s),h:cur.t,id:cur.id});
+  });
+  G.forEach(function(x){
+    IDX.g.push({id:'g-'+x.id,t:x.term,n:norm(x.term+' '+x.def.replace(/<[^>]+>/g,'')),
+                cat:x.cat,k:x.k,d:x.def.replace(/<[^>]+>/g,''),tn:norm(x.term)});
+  });
+});
+
+var hits=[], sel=-1;
+function renderSearch{
+  var raw=q.value.trim;
+  if(raw.length<2){ res.classList.remove('on'); q.setAttribute('aria-expanded','false');
+                    hits=[]; sel=-1; return; }
+  var v=norm(raw), h='';
+  hits=[];
+  var gs=IDX.g.filter(function(x){return x.n.indexOf(v)>=0;})
+              .sort(function(a,b){return (a.tn.indexOf(v)<0?1:0)-(b.tn.indexOf(v)<0?1:0);}).slice(0,8);
+  var hs=IDX.h.filter(function(x){return x.n.indexOf(v)>=0;}).slice(0,8);
+  var ts=IDX.t.filter(function(x){return x.n.indexOf(v)>=0;}).slice(0,14);
+  if(gs.length){
+    h+='<div class="rgrp">'+L.gterms+'</div>';
+    gs.forEach(function(x){
+      var i=x.tn.indexOf(v);
+      hits.push({go:function{
+        if(L.gbase){ location.href=L.gbase+'#g-'+x.id.slice(2); return; }
+        location.hash=x.id; flash(document.getElementById(x.id));}});
+      h+='<button class="rit" data-i="'+(hits.length-1)+'"><span class="rt">'+
+         (i>=0?mark(x.t,i,raw.length):escH(x.t))+
+         '<span class="chip '+x.k+'">'+escH(x.cat)+'</span></span>'+
+         '<span class="rs">'+escH(x.d.slice(0,118))+(x.d.length>118?'…':'')+'</span></button>';
+    });
+  }
+  if(hs.length){
+    h+='<div class="rgrp">'+L.gsecs+'</div>';
+    hs.forEach(function(x){
+      var i=x.n.indexOf(v);
+      hits.push({go:function{location.hash=x.id;flash(document.getElementById(x.id));}});
+      h+='<button class="rit" data-i="'+(hits.length-1)+'"><span class="rt">'+
+         mark(x.t,i,raw.length)+'</span></button>';
+    });
+  }
+  if(ts.length){
+    h+='<div class="rgrp">'+L.gtext+'</div>';
+    ts.forEach(function(x){
+      var i=x.n.indexOf(v), a=Math.max(0,i-58), b=Math.min(x.t.length,i+raw.length+90);
+      var frag=(a?'…':'')+x.t.slice(a,i)+'\x01'+x.t.slice(i,i+raw.length)+'\x02'+
+               x.t.slice(i+raw.length,b)+(b<x.t.length?'…':'');
+      hits.push({go:function{scrollToEl(x.el);}});
+      h+='<button class="rit" data-i="'+(hits.length-1)+'"><span class="rs">'+
+         escH(frag).replace('\x01','<mark>').replace('\x02','</mark>')+'</span>'+
+         '<span class="rw">'+escH(x.h)+'</span></button>';
+    });
+  }
+  if(!hits.length) h='<div class="rempty">'+L.nores+' — <b>'+escH(raw)+'</b></div>';
+  else h+='<div class="rfoot"><span><kbd>&uarr;</kbd><kbd>&darr;</kbd> '+L.knav+
+          '</span><span><kbd>&crarr;</kbd> '+L.kopen+'</span><span><kbd>esc</kbd> '+
+          L.kclose+'</span><span>'+hits.length+' '+L.nhits+'</span></div>';
+  res.innerHTML=h; res.classList.add('on'); q.setAttribute('aria-expanded','true');
+  sel=-1;
+}
+function flash(el){ if(!el) return; el.classList.remove('hit');
+  void el.offsetWidth; el.classList.add('hit');
+  setTimeout(function{el.classList.remove('hit');},2000); }
+function scrollToEl(el){
+  var y=el.getBoundingClientRect.top+scrollY-100;
+  scrollTo({top:y,behavior:'smooth'}); flash(el);
+}
+function move(d){
+  var b=res.querySelectorAll('.rit'); if(!b.length) return;
+  sel=(sel+d+b.length)%b.length;
+  [].forEach.call(b,function(x,i){x.classList.toggle('sel',i===sel);});
+  keepVisible(res,b[sel],6);
+}
+function closeRes{ res.classList.remove('on'); q.setAttribute('aria-expanded','false'); sel=-1; }
+q.addEventListener('input',renderSearch);
+q.addEventListener('focus',function{ if(q.value.trim.length>1) renderSearch; });
+q.addEventListener('keydown',function(e){
+  if(e.key==='ArrowDown'){e.preventDefault;move(1);}
+  else if(e.key==='ArrowUp'){e.preventDefault;move(-1);}
+  else if(e.key==='Enter'){
+    e.preventDefault;
+    var b=res.querySelectorAll('.rit'); var i=sel<0?0:sel;
+    if(b[i]){ hits[+b[i].dataset.i].go; closeRes; q.blur; }
+  }
+  else if(e.key==='Escape'){ if(res.classList.contains('on')) closeRes;
+                             else { q.value=''; q.blur; } }
+});
+res.addEventListener('mousedown',function(e){
+  var b=e.target.closest('.rit'); if(!b) return;
+  e.preventDefault; hits[+b.dataset.i].go; closeRes; q.blur;
+});
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.sbox')) closeRes;
+});
+
+/* --- tooltip --- */
+var tip=document.createElement('div'); tip.id='tip'; document.body.appendChild(tip);
+var hideT=null, cur=null;
+function fill(t){
+  var h='<h5>'+t.term+'<span class="chip c'+t.k+'">'+t.cat+'</span></h5>';
+  if(t.usual) h+='<p class="usual"><span>'+L.usual+':</span> '+t.usual+'</p>';
+  h+='<p>'+t.def+'</p>';
+  h+='<a class="go" href="'+L.gbase+'#g-'+t.id+'">'+L.openg+' &rarr;</a>';
+  tip.innerHTML=h;
+}
+function show(el){
+  var t=byId[el.dataset.t]; if(!t) return;
+  cur=el; clearTimeout(hideT); fill(t); tip.classList.add('on');
+  var r=el.getBoundingClientRect;
+  tip.style.left='0px'; tip.style.top='0px';
+  var w=tip.offsetWidth, hgt=tip.offsetHeight;
+  var x=Math.min(Math.max(10,r.left+r.width/2-w/2), innerWidth-w-10);
+  var y=r.top+scrollY-hgt-10;
+  if(r.top-hgt-10<8) y=r.bottom+scrollY+10;
+  tip.style.left=x+'px'; tip.style.top=y+'px';
+}
+function hide{ hideT=setTimeout(function{tip.classList.remove('on');cur=null;},140); }
+document.addEventListener('mouseover',function(e){
+  var el=e.target.closest?e.target.closest('.term'):null;
+  if(el) show(el);
+});
+document.addEventListener('mouseout',function(e){
+  if(e.target.closest && e.target.closest('.term')) hide;
+});
+tip.addEventListener('mouseenter',function{clearTimeout(hideT);});
+tip.addEventListener('mouseleave',hide);
+document.addEventListener('focusin',function(e){
+  if(e.target.classList && e.target.classList.contains('term')) show(e.target);
+});
+document.addEventListener('focusout',function(e){
+  if(e.target.classList && e.target.classList.contains('term')) hide;
+});
+document.addEventListener('click',function(e){
+  var el=e.target.closest?e.target.closest('.term'):null;
+  if(el){ clearTimeout(hideT); show(el); e.preventDefault; }
+  else if(!e.target.closest('#tip')) { tip.classList.remove('on'); }
+});
+
+/* --- painel do glossario --- */
+var panel=document.getElementById('panel'), scrim=document.getElementById('scrim'),
+    plist=document.getElementById('plist'), pq=document.getElementById('pq'), filt='';
+function render{
+  var v=pq.value.trim.toLowerCase, n=0, h='';
+  G.forEach(function(t){
+    if(filt && t.k!==filt && t.catid!==filt) return;
+    if(v && (t.term+' '+t.def).toLowerCase.indexOf(v)<0) return;
+    n++;
+    h+='<div class="pit" data-g="'+t.id+'"><b>'+t.term+'</b><span class="chip c'+t.k+'">'+t.cat+'</span><p>'+t.def+'</p></div>';
+  });
+  plist.innerHTML = n? h : '<div class="pit" style="color:var(--muted)">'+L.nores+'</div>';
+}
+function openP{ panel.classList.add('on'); scrim.classList.add('on'); render; setTimeout(function{pq.focus;},260); }
+function closeP{ panel.classList.remove('on'); scrim.classList.remove('on'); }
+document.getElementById('gbtn').onclick=openP;
+document.getElementById('pclose').onclick=closeP;
+scrim.onclick=closeP;
+pq.addEventListener('input',render);
+[].slice.call(document.querySelectorAll('.fchip')).forEach(function(c){
+  c.onclick=function{
+    document.querySelectorAll('.fchip').forEach(function(x){x.classList.remove('on');});
+    c.classList.add('on'); filt=c.dataset.f||''; render;
+  };
+});
+plist.addEventListener('click',function(e){
+  var it=e.target.closest('.pit'); if(!it||!it.dataset.g) return;
+  closeP; location.href=L.gbase+'#g-'+it.dataset.g;
+});
+
+/* --- lightbox --- */
+var lb=document.createElement('div'); lb.id='lb'; document.body.appendChild(lb);
+document.addEventListener('click',function(e){
+  var z=e.target.closest?e.target.closest('.zoom'):null;
+  if(!z) return;
+  var art=z.querySelector('svg,img'); if(!art) return;
+  lb.innerHTML=''; lb.appendChild(art.cloneNode(true)); lb.classList.add('on');
+});
+lb.onclick=function{lb.classList.remove('on');};
+
+/* --- copiar codigo --- */
+[].slice.call(document.querySelectorAll('.copy')).forEach(function(b){
+  b.textContent=L.copy;
+  b.onclick=function{
+    navigator.clipboard.writeText(b.parentNode.querySelector('code').textContent);
+    b.textContent=L.copied; setTimeout(function{b.textContent=L.copy;},1400);
+  };
+});
+
+/* --- teclado --- */
+addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT') return;
+  if(e.key==='/'){ e.preventDefault; q.focus; }
+  if(e.key==='g'){ e.preventDefault; openP; }
+  if(e.key==='Escape'){ closeP; lb.classList.remove('on'); tip.classList.remove('on'); }
+});
+onScroll;
+});
+</script>
+</body>
+</html>

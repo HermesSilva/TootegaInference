@@ -1,7 +1,7 @@
 /* main.c -- entrada e despacho de subcomandos.
  *
  * Um binario, varios verbos.  A CLI completa (orcamentos, --plan) esta em
- * docs/09-limites-de-recursos.md e entra junto com o forward; por ora existem
+ * docs/09-resource-limits.md e entra junto com o forward; por ora existem
  * os verbos que valem sem modelo carregado.
  */
 #include "budget.h"

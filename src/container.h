@@ -1,14 +1,14 @@
-/* container.h -- leitor do `.tootega`.
+/* container.h -- the `.tootega` reader.
  *
- * A especificacao normativa e docs/14-formato-container.md; o escritor e
- * `convert_to_int4.py`.  Este leitor tem de casar byte a byte com ele, e por
- * isso valida tudo o que a spec promete em vez de confiar: magic, versao,
- * alinhamento de 64 de cada blob, e a relacao entre `shape`, `group` e o
- * tamanho de cada blob.  Um container que passa daqui pode ser lido pelos
- * kernels sem nenhuma outra checagem.
+ * The normative specification is docs/14-container-format.md; the writer is
+ * `convert_to_int4.py`.  This reader has to match it byte for byte, and so it
+ * validates everything the spec promises instead of trusting: magic, version,
+ * the 64-byte alignment of every blob, and the relationship between `shape`,
+ * `group` and each blob's size.  A container that gets past here can be read by
+ * the kernels with no further checking.
  *
- * Zero copia: todo ponteiro devolvido aponta para dentro do mapeamento
- * somente-leitura do arquivo.  Nada e lido para buffer proprio, nem o indice.
+ * Zero copy: every pointer returned points inside the file's read-only mapping.
+ * Nothing is read into a buffer of our own, not even the index.
  */
 #ifndef TOOTEGA_CONTAINER_H
 #define TOOTEGA_CONTAINER_H
@@ -32,42 +32,42 @@ const char *tt_kind_name(tt_kind k);
 #define TT_MAX_DIMS 4
 
 typedef struct {
-    const char *name;          /* dentro do indice, sem terminador */
+    const char *name;          /* inside the index, not terminated */
     size_t      name_len;
     tt_kind     kind;
 
     int64_t     shape[TT_MAX_DIMS];
     int         ndim;
-    int64_t     rows;          /* O -- produto das dims menos a ultima */
-    int64_t     cols;          /* I -- ultima dim, a de reducao */
+    int64_t     rows;          /* O -- product of the dims minus the last */
+    int64_t     cols;          /* I -- last dim, the reduction one */
 
-    const void *data;          /* dentro do mapeamento, alinhado a 64 */
+    const void *data;          /* inside the mapping, aligned to 64 */
     uint64_t    data_off, data_bytes;
 
-    const float *scales;       /* NULL para f32/bf16 */
+    const float *scales;       /* NULL for f32/bf16 */
     uint64_t     scales_off, scales_bytes;
 
-    int32_t     group;         /* 0 quando nao ha escala */
+    int32_t     group;         /* 0 when there is no scale */
 } tt_tensor;
 
 typedef struct {
     tt_map      map;
-    tt_arena    arena;         /* DOM do indice + tabela de tensores */
+    tt_arena    arena;         /* index DOM + tensor table */
 
     uint32_t    format_version;
     uint64_t    index_off, index_len;
 
     const tt_json *root;       /* {meta, tensors} */
     const tt_json *meta;
-    const tt_json *config;     /* meta.config -- a arquitetura vem daqui */
+    const tt_json *config;     /* meta.config -- the architecture comes from here */
 
     tt_tensor  *tensors;
     size_t      n_tensors;
 
-    uint32_t   *buckets;       /* hash aberto: 0 vazio, i+1 = tensors[i] */
+    uint32_t   *buckets;       /* open hashing: 0 empty, i+1 = tensors[i] */
     size_t      n_buckets;
 
-    /* Contabilidade que o orcamento de docs/09 usa. */
+    /* The accounting the docs/09 budget uses. */
     uint64_t    bytes_by_kind[TT_KIND_COUNT];
     size_t      count_by_kind[TT_KIND_COUNT];
 } tt_container;
@@ -75,16 +75,18 @@ typedef struct {
 int  tt_container_open(tt_container *c, const char *path);
 void tt_container_close(tt_container *c);
 
-/* Busca por nome exato, O(1).  NULL se nao existe -- e o chamador que decide
- * se a ausencia e fatal, porque para tensor opcional (MTP) nao e. */
+/* Exact-name lookup, O(1).  NULL if it does not exist -- the caller decides
+ * whether the absence is fatal, because for an optional tensor (MTP) it is
+ * not. */
 const tt_tensor *tt_container_find(const tt_container *c, const char *name);
 
-/* Idem, montando o nome com printf.  Evita o buffer temporario em cada
- * chamada do carregador de pesos. */
+/* The same, building the name with printf.  Avoids a temporary buffer at every
+ * call site in the weight loader. */
 const tt_tensor *tt_container_findf(const tt_container *c, const char *fmt, ...);
 
-/* Bytes que ficam residentes se tudo for tocado.  `embed_tokens` fica de fora
- * por decisao de docs/04: e lido uma linha por token e vive file-backed. */
+/* Bytes that stay resident if everything is touched.  `embed_tokens` is left
+ * out by the decision in docs/04: it is read one row per token and lives
+ * file-backed. */
 uint64_t tt_container_resident_bytes(const tt_container *c);
 
 int tt_cmd_inspect(int argc, char **argv);

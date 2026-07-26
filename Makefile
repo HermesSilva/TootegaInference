@@ -1,4 +1,4 @@
-# TootegaEngine -- Makefile.  Ver docs/10-implementacao.md.
+# TootegaEngine -- Makefile.  Ver docs/10-implementation.md.
 #
 # Um Makefile que um humano le: sem CMake, sem geracao, sem configure.
 #

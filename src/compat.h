@@ -1,7 +1,7 @@
 /* compat.h -- a fina camada entre POSIX e Win32.
  *
  * Tudo que difere entre os dois SOs mora aqui e em lugar nenhum mais. Ver
- * docs/10-implementacao.md: o nucleo e C11 puro, e este arquivo existe para
+ * docs/10-implementation.md: o nucleo e C11 puro, e este arquivo existe para
  * que ele possa continuar sendo.
  */
 #ifndef TOOTEGA_COMPAT_H
@@ -35,7 +35,7 @@ void tt_map_close(tt_map *m);
 
 /* Sinaliza que a faixa sera lida em breve e forca residencia.
  * Duas coisas distintas: o hint e assincrono, o toque e sincrono -- ver
- * docs/11-memoria.md secao 2. */
+ * docs/11-memory.md secao 2. */
 void tt_map_willneed(const tt_map *m, size_t offset, size_t length);
 void tt_map_touch(const tt_map *m, size_t offset, size_t length);
 

@@ -316,22 +316,46 @@ def figures(html):
     return re.findall(r'<figure>.*?</figure>', html, re.S)
 
 
-SHELL_NOTE = {
-    'pt': ('**Cópia de leitura.** Esta página é gerada a partir de '
-           '`docs/%s`, que continua sendo a fonte normativa. Se as duas '
-           'divergirem, o Markdown ganha. [← voltar ao guia](../index.html)'),
-}
+SHELL_NOTE = ('**Reading copy.** This page is generated from `docs/%s`, which '
+              'remains the normative source. Where the two disagree, the '
+              'Markdown wins. [← back to the guide](../index.html)')
+
+# O casco do espelho nasceu em portugues; `docs/` e ingles, entao a interface
+# dele tambem e. So as strings visiveis mudam -- o CSS e o JS sao os mesmos.
+SHELL_EN = [
+    ('placeholder="Buscar…"', 'placeholder="Search…"'),
+    ('aria-label="Buscar…"', 'aria-label="Search…"'),
+    ('</svg> Glossário</button>', '</svg> Glossary</button>'),
+    ('aria-label="Tema"', 'aria-label="Theme"'),
+    ('aria-label="Topo"', 'aria-label="Top"'),
+    ('<nav class="toc"><h2>Nesta página</h2>', '<nav class="toc"><h2>On this page</h2>'),
+    ('<aside id="panel" aria-label="Glossário">', '<aside id="panel" aria-label="Glossary">'),
+    ('<strong>Glossário</strong>', '<strong>Glossary</strong>'),
+    ('id="pclose" type="button">Fechar<', 'id="pclose" type="button">Close<'),
+    ('data-f="">Todos<', 'data-f="">All<'),
+    ('data-f="armadilha">Outro sentido<', 'data-f="armadilha">Other meaning<'),
+    ('data-f="projeto">Do projeto<', 'data-f="projeto">Project<'),
+    ('data-f="cc">Vocabulário<', 'data-f="cc">Vocabulary<'),
+]
+LDATA_EN = ('{"usual": "usually means", "openg": "open in glossary", '
+            '"copy": "copy", "copied": "copied", "nores": "nothing found", '
+            '"gterms": "Glossary", "gsecs": "Sections", "gtext": "In the text", '
+            '"knav": "navigate", "kopen": "open", "kclose": "close", '
+            '"nhits": "results", "gbase": "../TootegaEngine-ForDummies.en.html"}')
 
 
 def docs_mirror(g, check):
     """Reconstroi ForDummies/docs-html a partir de docs/*.md."""
     import os
     shell = io.open('ForDummies/docs-html/02-hardware.html', encoding='utf-8').read()
+    for a, b in SHELL_EN:
+        shell = shell.replace(a, b)
     pre = shell[:shell.index('<nav class="toc"><h2>') + len('<nav class="toc"><h2>')]
-    mid = shell[shell.index('</h2>', len(pre) - 10):shell.index('</nav>')]
     tail = shell[shell.index('</main>'):]
     tail = re.sub(r'(<script type="application/json" id="gdata">).*?(</script>)',
-                  lambda m: m.group(1) + gdata(g, 'pt') + m.group(2), tail, flags=re.S)
+                  lambda m: m.group(1) + gdata(g, 'en') + m.group(2), tail, flags=re.S)
+    tail = re.sub(r'(<script type="application/json" id="ldata">).*?(</script>)',
+                  lambda m: m.group(1) + LDATA_EN + m.group(2), tail, flags=re.S)
     ttl = re.search(r'<h2>([^<]*)</h2>', shell[shell.index('<nav class="toc"'):]).group(1)
     bad = 0
     for f in sorted(os.listdir('docs')):
@@ -339,8 +363,8 @@ def docs_mirror(g, check):
             continue
         md = io.open('docs/' + f, encoding='utf-8').read()
         title = md.split('\n')[0].lstrip('# ').strip()
-        note = SHELL_NOTE['pt'] % f
-        body, toc = render('> ' + note + '\n\n' + md, g, 'pt', [], set())
+        note = SHELL_NOTE % f
+        body, toc = render('> ' + note + '\n\n' + md, g, 'en', [], set())
         out = ('ForDummies/docs-html/' + f[:-3] + '.html')
         head = re.sub(r'(<title>|<meta name="description" content=")'
                       r'TootegaEngine — [^<"]*', lambda m: m.group(1)

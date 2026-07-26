@@ -1,23 +1,23 @@
-/* json.h -- parser JSON proprio, DOM sobre arena.
+/* json.h -- our own JSON parser, a DOM over an arena.
  *
- * Existe porque docs/10-implementacao.md proibe biblioteca de JSON: o engine
- * consome arquivos de modelo de terceiros e cada dependencia e superficie que
- * nao controlamos.  Serve a dois consumidores, e os dois sao grandes:
+ * It exists because docs/10-implementation.md forbids a JSON library: the engine
+ * consumes third-party model files and every dependency is a surface we do not
+ * control.  It serves two consumers, and both are large:
  *
- *   - o indice do container (~2 MB, 9.703 tensores)   docs/14
- *   - `tokenizer.json` (~20 MB, 321.649 merges)       docs/16
+ *   - the container index (~2 MB, 9,703 tensors)      docs/14
+ *   - `tokenizer.json` (~20 MB, 321,649 merges)       docs/16
  *
- * Propriedades deliberadas:
+ * Deliberate properties:
  *
- *   zero copia   Strings sem escape apontam para o buffer de origem.  So as
- *                que tem escape sao copiadas (e desescapadas) na arena.
- *   sem malloc   Toda a memoria sai de uma arena do chamador.
- *   sem mutacao  O buffer de entrada e const -- o indice vive dentro do
- *                mapeamento somente-leitura do container.
+ *   zero copy    Strings without escapes point into the source buffer.  Only
+ *                escaped ones are copied (and unescaped) into the arena.
+ *   no malloc    All memory comes from a caller-provided arena.
+ *   no mutation  The input buffer is const -- the index lives inside the
+ *                container's read-only mapping.
  *
- * Busca por chave e LINEAR.  Para objetos com milhares de membros (o mapa de
- * tensores, o vocabulario), itere uma vez e construa sua propria tabela; nao
- * chame tt_json_get em laco.
+ * Key lookup is LINEAR.  For objects with thousands of members (the tensor map,
+ * the vocabulary), iterate once and build your own table; do not call
+ * tt_json_get in a loop.
  */
 #ifndef TOOTEGA_JSON_H
 #define TOOTEGA_JSON_H
@@ -30,8 +30,8 @@
 typedef enum {
     TT_JSON_NULL = 0,
     TT_JSON_BOOL,
-    TT_JSON_INT,        /* inteiro que coube em int64 -- offsets e shapes */
-    TT_JSON_REAL,       /* tudo o mais que e numero */
+    TT_JSON_INT,        /* an integer that fit in int64 -- offsets and shapes */
+    TT_JSON_REAL,       /* everything else that is a number */
     TT_JSON_STRING,
     TT_JSON_ARRAY,
     TT_JSON_OBJECT
@@ -42,32 +42,32 @@ typedef struct tt_json tt_json;
 struct tt_json {
     tt_json_type type;
 
-    /* Nome do membro, quando este no e membro de um objeto.  NAO tem
-     * terminador; use key_len ou tt_json_key_eq. */
+    /* Member name, when this node is a member of an object.  It is NOT
+     * terminated; use key_len or tt_json_key_eq. */
     const char *key;
     size_t      key_len;
 
-    tt_json *child;     /* primeiro membro (objeto) ou elemento (array) */
-    tt_json *next;      /* proximo irmao */
-    size_t   count;     /* membros ou elementos */
+    tt_json *child;     /* first member (object) or element (array) */
+    tt_json *next;      /* next sibling */
+    size_t   count;     /* members or elements */
 
     union {
         int      boolean;
         int64_t  i;
         double   r;
-        struct { const char *ptr; size_t len; } str;  /* sem terminador */
+        struct { const char *ptr; size_t len; } str;  /* not terminated */
     } v;
 };
 
-/* Limite superior de bytes de arena para parsear este buffer.  Calculado numa
- * varredura barata; use-o para dimensionar a arena e transformar "estourou" em
- * impossibilidade, nao em erro de execucao. */
+/* Upper bound in arena bytes for parsing this buffer.  Computed in a cheap
+ * scan; use it to size the arena and turn "it overflowed" into an
+ * impossibility, not a runtime error. */
 size_t tt_json_bound(const char *data, size_t len);
 
-/* NULL em erro, com tt_error() explicando onde (offset e byte). */
+/* NULL on error, with tt_error() explaining where (offset and byte). */
 tt_json *tt_json_parse(const char *data, size_t len, tt_arena *arena);
 
-/* ------------------------------------------------------------- acesso */
+/* -------------------------------------------------------------- access */
 
 const tt_json *tt_json_get(const tt_json *obj, const char *key);
 const tt_json *tt_json_at(const tt_json *arr, size_t index);
@@ -75,16 +75,16 @@ const tt_json *tt_json_at(const tt_json *arr, size_t index);
 int      tt_json_key_eq(const tt_json *node, const char *key);
 int      tt_json_str_eq(const tt_json *node, const char *s);
 
-/* Os acessores toleram NULL e tipo errado, devolvendo o default.  E
- * deliberado: o chamador valida a forma uma vez, com mensagem propria, em vez
- * de checar tipo em toda leitura. */
+/* The accessors tolerate NULL and the wrong type, returning the default.  That
+ * is deliberate: the caller validates the shape once, with its own message,
+ * instead of checking types on every read. */
 int64_t     tt_json_int(const tt_json *node, int64_t def);
 double      tt_json_real(const tt_json *node, double def);
 int         tt_json_bool(const tt_json *node, int def);
-const char *tt_json_str(const tt_json *node, size_t *len);   /* NULL se nao-string */
+const char *tt_json_str(const tt_json *node, size_t *len);   /* NULL if not a string */
 
-/* Copia uma string do DOM para buffer C com terminador.  Retorna -1 se nao
- * couber ou se o no nao for string. */
+/* Copies a string from the DOM into a terminated C buffer.  Returns -1 if it
+ * does not fit or if the node is not a string. */
 int tt_json_strcpy(const tt_json *node, char *dst, size_t dstlen);
 
 int tt_json_selftest(void);

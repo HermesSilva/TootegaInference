@@ -78,7 +78,7 @@ project works hardest to avoid — and it already cost a public 60% correction t
 central calculation (see [§12](#12--how-we-know-it-is-correct)).
 
 **References.** Whenever a claim comes from a normative document, it appears like
-this: → [`docs/08`](../docs/08-teto-de-desempenho.md). This document is a **front
+this: → [`docs/08`](../docs/08-performance-ceiling.md). This document is a **front
 door**, not the source of truth; where they disagree, the numbered document wins.
 
 **"This machine"** always means the reference computer described in
@@ -137,7 +137,7 @@ Remember the PCIe line. It is the origin of half the project's decisions
 
 **GLM-4.7-Flash**: 31.2 billion stored parameters, ~3.57 billion used per token,
 19.65 GB in the project's format, 202,752 tokens of maximum context.
-→ [`docs/04`](../docs/04-modelo-alvo.md)
+→ [`docs/04`](../docs/04-target-model.md)
 
 ### Current state
 
@@ -212,7 +212,7 @@ arithmetic).
 **The surprising practical consequence:** trading precision for arithmetic speed
 barely helps, because the CPU spends most of its time waiting on memory. That is
 why the project chose the **most precise** and arithmetically "slower" kernel —
-there is compute headroom to spare. → [`docs/15`](../docs/15-kernels-e-numerica.md)
+there is compute headroom to spare. → [`docs/15`](../docs/15-kernels-and-numerics.md)
 
 ### Idea 4 — residency: either the model fits, or you are playing a different game
 
@@ -279,7 +279,7 @@ split emerged from training.
 flowing between layers) are never quantized. This has a name in the project:
 **W4A32** — *weights 4 bits, activations 32 bits*. The arithmetically faster
 alternative (W4A8) was rejected because arithmetic is not the bottleneck and it
-would introduce fresh error. → [`docs/15`](../docs/15-kernels-e-numerica.md)
+would introduce fresh error. → [`docs/15`](../docs/15-kernels-and-numerics.md)
 
 **"LoRA" here is not fine-tuning.** `q_lora_rank: 768` in the config means: instead
 of one 2048×5120 matrix, the model uses two — 2048×768 and 768×5120. It is
@@ -620,7 +620,7 @@ Each id becomes a row of the `embed_tokens` table: 154,880 rows × 2048 numbers.
 **One row is read per token.** Since the whole table is 1.27 GB and only 8 KB of
 it is read per token, it stays in the mapped file and does **not** consume RAM
 budget — a distinction a naive loader gets wrong.
-→ [`docs/11`](../docs/11-memoria.md)
+→ [`docs/11`](../docs/11-memory.md)
 
 From here on, the token is a vector of 2048 numbers that the documents call
 `hidden` or "the residual stream".
@@ -681,7 +681,7 @@ compressed KV  47 layers × 4,096 positions ×    576 × 4 B = 443 MB per token
 > accumulating **rows**, which is what the format delivers cheaply.
 >
 > The project's lesson: *trading work for memory needs the traffic arithmetic
-> done first.* → [`docs/13`](../docs/13-decisoes-pendentes.md), D11
+> done first.* → [`docs/13`](../docs/13-open-decisions.md), D11
 
 ### 6.5 MoE — 64 stored, 5 used
 
@@ -704,7 +704,7 @@ choice to certain blocks of experts. In this model they are both 1 — meaning
 **no restriction**. That is why the project implements only this path on day one,
 but keeps the variant declared rather than hard-wired into the parser (streaming engine's
 mistake, which shrank the universe of compatible models to a single family).
-→ [`docs/06`](../docs/06-licoes-aprendidas.md)
+→ [`docs/06`](../docs/06-lessons-learned.md)
 
 ### 6.6 lm_head, logits and sampling
 
@@ -895,7 +895,7 @@ microseconds. Irrelevant.
 **This is still a hypothesis.** It is marked [estimate] and milestone M2 exists
 to validate it **or kill it**: if the gain falls below 20%, M2 is *cancelled*,
 not postponed, because maintaining two backends is a permanent cost.
-→ [`docs/03`](../docs/03-arquitetura.md), [`docs/05`](../docs/05-roadmap.md)
+→ [`docs/03`](../docs/03-architecture.md), [`docs/05`](../docs/05-roadmap.md)
 
 ### 8.4 What the measurement says about buying hardware
 
@@ -977,7 +977,7 @@ weight `j` in the low nibble and weight `j+32` in the high one. That way, loadin
 32 bytes at once with SIMD instructions, `v & 0x0F` yields 32 **contiguous**
 weights and `v >> 4` yields the next 32 — two vectors ready, no shuffling. The
 alternative (even/odd) would force permuting the activations for every group.
-→ [`docs/14`](../docs/14-formato-container.md)
+→ [`docs/14`](../docs/14-container-format.md)
 
 ### 10.3 What it costs in quality — and the surprise
 
@@ -1028,7 +1028,7 @@ all 47 layers, for every token**, and its error compounds with depth.
 
 v2's 95% interval **crosses zero**: the quantized version can no longer be
 distinguished from the original by this measure. Cost: 1.7% of size.
-→ [`docs/04`](../docs/04-modelo-alvo.md)
+→ [`docs/04`](../docs/04-target-model.md)
 
 ### 10.4 The `.tootega` container
 
@@ -1063,7 +1063,7 @@ f32 290 (25.7 MB), bf16 2 (1.27 GB). Resident: 18.38 GB.
 ## 11 — Memory: one copy, not one more
 
 The project's general rule: **a byte of weight exists in exactly one place.**
-→ [`docs/11`](../docs/11-memoria.md)
+→ [`docs/11`](../docs/11-memory.md)
 
 ### 11.1 The mapped file **is** the memory
 
@@ -1140,7 +1140,7 @@ slot, never by position. The reason is concrete: in streaming engine, one run di
 from the others because a persisted KV **from another conversation** partially
 matched the new prompt. The engine resumed from a state that did not correspond
 to that text. Partial matching does not exist: either the hash matches, or the
-block is ignored. → [`docs/12`](../docs/12-estado-persistente.md)
+block is ignored. → [`docs/12`](../docs/12-persistent-state.md)
 
 ### 11.5 Budgets: what counts and what does not
 
@@ -1154,7 +1154,7 @@ block is ignored. → [`docs/12`](../docs/12-estado-persistente.md)
 
 And the cap is **verified at runtime**, not just in the plan — planning estimates
 are wrong sometimes, and without verification "budget" becomes decoration.
-→ [`docs/09`](../docs/09-limites-de-recursos.md)
+→ [`docs/09`](../docs/09-resource-limits.md)
 
 Defaults for this machine:
 
@@ -1631,7 +1631,7 @@ postponed.
 
 The project is wrong if CPU-only does not exceed 10 tok/s at 4k, if the GPU/CPU
 split yields less than 20%, or if the output diverges from the oracle under any
-placement. → [`docs/01`](../docs/01-objetivos.md)
+placement. → [`docs/01`](../docs/01-goals.md)
 
 ---
 
@@ -1652,7 +1652,7 @@ One build option deserves a note: `/fp:precise`, with no FMA contraction. It
 stops the compiler from reassociating sums and from fusing multiply with add.
 It costs a little performance and buys **reproducibility**, which is an exit
 criterion, not a luxury. It was verified in the disassembly, not assumed.
-→ [`docs/10`](../docs/10-implementacao.md)
+→ [`docs/10`](../docs/10-implementation.md)
 
 ### 16.2 The commands
 
@@ -1771,26 +1771,26 @@ long as that does not enter `src/`. And a C tool **should reuse the sources in
 
 | # | document | what it decides |
 |---|---|---|
-| 01 | [Goals and scope](../docs/01-objetivos.md) | what it is and what it explicitly is not |
+| 01 | [Goals and scope](../docs/01-goals.md) | what it is and what it explicitly is not |
 | 02 | [Hardware model](../docs/02-hardware.md) | the measured bandwidths and the placement law |
-| 03 | [Architecture](../docs/03-arquitetura.md) | layers, contracts, the three caches |
-| 04 | [Target model](../docs/04-modelo-alvo.md) | GLM-4.7-Flash and quantisation |
+| 03 | [Architecture](../docs/03-architecture.md) | layers, contracts, the three caches |
+| 04 | [Target model](../docs/04-target-model.md) | GLM-4.7-Flash and quantisation |
 | 05 | [Roadmap](../docs/05-roadmap.md) | milestones with exit criteria |
-| 06 | [Lessons learned](../docs/06-licoes-aprendidas.md) | adopt, throw away, avoid |
+| 06 | [Lessons learned](../docs/06-lessons-learned.md) | adopt, throw away, avoid |
 | 07 | [Baseline](../docs/07-baseline.md) | the numbers to beat |
-| 08 | [Performance ceiling](../docs/08-teto-de-desempenho.md) | roofline |
-| 09 | [Resource limits](../docs/09-limites-de-recursos.md) | budgets and refusal |
-| 10 | [Implementation](../docs/10-implementacao.md) | C11, linkage, portability |
-| 11 | [Memory](../docs/11-memoria.md) | zero-copy, paged KV |
-| 12 | [Persistent state](../docs/12-estado-persistente.md) | starting warm |
-| 13 | [Pending decisions](../docs/13-decisoes-pendentes.md) | the D1–D14 scoreboard |
-| 14 | [Container format](../docs/14-formato-container.md) | the `.tootega` file byte by byte |
-| 15 | [Kernels and numerics](../docs/15-kernels-e-numerica.md) | W4A32, accumulation order |
+| 08 | [Performance ceiling](../docs/08-performance-ceiling.md) | roofline |
+| 09 | [Resource limits](../docs/09-resource-limits.md) | budgets and refusal |
+| 10 | [Implementation](../docs/10-implementation.md) | C11, linkage, portability |
+| 11 | [Memory](../docs/11-memory.md) | zero-copy, paged KV |
+| 12 | [Persistent state](../docs/12-persistent-state.md) | starting warm |
+| 13 | [Pending decisions](../docs/13-open-decisions.md) | the D1–D14 scoreboard |
+| 14 | [Container format](../docs/14-container-format.md) | the `.tootega` file byte by byte |
+| 15 | [Kernels and numerics](../docs/15-kernels-and-numerics.md) | W4A32, accumulation order |
 | 16 | [Tokenizer](../docs/16-tokenizer.md) | BPE, what to implement and how to test |
-| 17 | [Diagnosis](../docs/17-diagnostico.md) | the bugs, and why the tests missed them |
-| 19 | [Reference state](../docs/19-estado.md) | the snapshot of what exists and what was measured |
-| 20 | [Agent and protocols](../docs/20-agente.md) | tools, the CLI contract, the cost of reasoning |
-| 21 | [int8 KV](../docs/21-kv-int8.md) | measured, inconclusive, not adopted |
+| 17 | [Diagnosis](../docs/17-diagnosis.md) | the bugs, and why the tests missed them |
+| 19 | [Reference state](../docs/19-reference-state.md) | the snapshot of what exists and what was measured |
+| 20 | [Agent and protocols](../docs/20-agent.md) | tools, the CLI contract, the cost of reasoning |
+| 21 | [int8 KV](../docs/21-int8-kv.md) | measured, inconclusive, not adopted |
 
 > The documents themselves are written in Portuguese; the titles above are
 > translated for navigation.
@@ -1966,7 +1966,7 @@ code (which is commented in Portuguese but uses English identifiers).
 ## Where to go next
 
 1. [`docs/02`](../docs/02-hardware.md) — the measurement that inverts intuition;
-2. [`docs/08`](../docs/08-teto-de-desempenho.md) — the performance expectation;
-3. [`docs/13`](../docs/13-decisoes-pendentes.md) — the decision scoreboard, with
+2. [`docs/08`](../docs/08-performance-ceiling.md) — the performance expectation;
+3. [`docs/13`](../docs/13-open-decisions.md) — the decision scoreboard, with
    the reasoning of each one preserved, including the ones that went wrong;
 4. `src/forward.c` — if you want to see the 47 layers in code.

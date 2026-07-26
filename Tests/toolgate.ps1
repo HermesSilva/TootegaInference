@@ -37,7 +37,7 @@ $cases = @(
   @{ q='Procure por TODO nos arquivos .c, ignorando maiusculas.';         want='search_code' },
   @{ q='Rode o comando git status e me diga o resultado.';                want='run_command' },
   @{ q='Compile o projeto com build.ps1 e me diga se passou.';            want='run_command' },
-  @{ q='Quantas linhas tem o arquivo docs/03-arquitetura.md?';            want='run_command' },
+  @{ q='Quantas linhas tem o arquivo docs/03-architecture.md?';            want='run_command' },
   @{ q='Preciso ver o conteudo de CLAUDE.md.';                            want='read_file' },
   @{ q='Ache todas as chamadas de malloc no codigo.';                     want='search_code' },
   @{ q='Quem foi Alan Turing? Responda em uma frase.';                    want=$null }

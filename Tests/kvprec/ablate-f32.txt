@@ -1,0 +1,15 @@
+\ncorpus  corpus.txt -- 4 janelas de 4096 tokens, 16380 previsoes\nengine  avx2+fma, 20 threads, kv f32, build 0682cbf6fe4c
+
+  int4 g64 (base)        ....  nll  4.8042   ppl   122.017   1597.8 s
+  BF16 (referencia)      ....  nll  4.9641   ppl   143.183   3472.6 s   (9365 tensores)
+
+  int4 contra BF16 (custo da quantizacao)
+    delta de nll  -0.1600 +- 0.1348      perplexidade 0.8522 x (-14.78%)
+    intervalo 95% [-0.4242, +0.1042]
+    por janela    +0.025 -0.542 -0.158 +0.035
+    INCONCLUSIVO: o intervalo cruza zero.
+
+  ablate_raw.json escrito (nll por janela, para reanalise)
+
+  total 5071.2 s
+

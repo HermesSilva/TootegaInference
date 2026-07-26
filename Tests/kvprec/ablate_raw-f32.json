@@ -1,0 +1,1 @@
+{"chunks":4,"tokens":4096,"kv":"f32","corpus":"corpus.txt","build":"0682cbf6fe4c","configs":[{"label":"int4 g64 (base)","tensors":0,"nll":[2.377812,11.476356,3.113053,2.249415]},{"label":"BF16 (referencia)","tensors":9365,"nll":[2.353047,12.018286,3.270778,2.214395]}]}

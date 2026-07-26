@@ -92,12 +92,24 @@ ordem de acumulação.
   (M5).
 - **Build no Linux** — o `Makefile` existe e nunca foi compilado.
 
+## KV em int8 — medido, inconclusivo, não adotado
+
+`--kv-prec int8` cabe 202.752 posições em 5,83 GB contra 22,0 do f32. Medido
+em 4 janelas de 4096: **+2,47% de perplexidade** na configuração que roda, mas
+com o intervalo de 95% cruzando zero e uma janela degenerada (tabelas) virando
+a média. Geração não piorou (`match@ref` 32,4 → 37,3, `rep4` igual). O critério
+foi declarado antes e não foi cumprido: fica como opção. Detalhe em
+[21](21-kv-int8.md).
+
 ## Pendências de medição
 
 1. Reconverter o container com `--attn int4` (o v3 é int8 sem benefício).
 2. `gentest` completo com o forward e o sampler corretos — os resultados
    anteriores mediram dois bugs.
 3. Reescrever as tabelas de precisão de [04](04-modelo-alvo.md).
+4. Corpus de **prosa** com ~32k tokens. O `corpus_prosa.txt` tem 1.995 e não
+   dá nem uma janela de 4096; o `corpus.txt` é documentação com tabelas, e uma
+   janela dele estraga a média ([21](21-kv-int8.md)).
 
 ## Bugs achados, e o que cada um ensinou
 

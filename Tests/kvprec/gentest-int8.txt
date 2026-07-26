@@ -1,0 +1,15 @@
+
+12 prompts, ate 96 tokens cada, amostragem gulosa
+engine avx2+fma, 20 threads, kv int8, build 0682cbf6fe4c
+
+  BF16 (referencia) (9365 tensores em BF16) ............  287 s
+  models\glm47flash-v3\model.tootega     ............  131 s
+
+  container                              match@ref     rep4    parou    tok/s
+  BF16 (referencia) (9365 tensores em BF16)      96.0     7.2%      0/12     4.02
+  models\glm47flash-v3\model.tootega          37.3     5.4%      0/12     8.79
+
+  match@ref: tokens iniciais iguais aos do BF16 antes de divergir
+  rep4:      4-gramas repetidos; acima de ~15% e degeneracao
+  parou:     prompts que terminaram em EOS dentro do orcamento
+

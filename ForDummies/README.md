@@ -25,13 +25,13 @@ means *in this* context.
 
 ## Espelho da especificação / Specification mirror
 
-[`docs-html/`](docs-html/index.html) tem os 16 documentos de `docs/` em HTML, com
+[`docs-html/`](docs-html/index.html) tem os 20 documentos de `docs/` em HTML, com
 o mesmo visual, as mesmas dicas de glossário e a mesma busca. Existe por um
 motivo só: **navegador não renderiza `.md`**, então um link dentro do HTML tem de
 abrir HTML. A fonte normativa continua sendo o Markdown em `docs/`; onde
 divergirem, o Markdown ganha.
 
-[`docs-html/`](docs-html/index.html) holds the 16 documents from `docs/` as HTML,
+[`docs-html/`](docs-html/index.html) holds the 20 documents from `docs/` as HTML,
 same look, same glossary hints, same search. It exists for one reason: **browsers
 do not render `.md`**, so a link inside the HTML must open HTML. The normative
 source is still the Markdown in `docs/`; where they disagree, the Markdown wins.
@@ -52,13 +52,13 @@ Keyboard shortcuts in the HTML: `/` focuses search, `g` opens the glossary,
 
 ## Glossário / Glossary
 
-[`glossary.json`](glossary.json) é a **fonte única** dos termos: 186 entradas,
+[`glossary.json`](glossary.json) é a **fonte única** dos termos: 225 entradas,
 cada uma com termo, definição e apelidos em PT e EN, e — no grupo *outro
 sentido* — o que a palavra costuma significar fora daqui. As páginas HTML
 embutem esses dados,
 então os balões funcionam abrindo o arquivo direto, sem servidor.
 
-[`glossary.json`](glossary.json) is the **single source** for the terms: 186
+[`glossary.json`](glossary.json) is the **single source** for the terms: 225
 entries, each with term, definition and aliases in PT and EN, and — in the
 *other meaning* group — what the word usually means elsewhere. The HTML pages
 embed that data,
@@ -113,12 +113,37 @@ glossary tables and in the HTML cards — all three come from the same data. Whe
 this document disagrees with `docs/`, the numbered document wins.
 
 Os `.html` — inclusive tudo em `docs-html/` — são **artefatos gerados** a partir
-dos `.md` mais o `glossary.json`.
-Editar o HTML à mão funciona (ele é legível e autocontido), mas a próxima
-geração sobrescreve; o lugar certo de mudar conteúdo é o `.md`, e de mudar termo
-é o `.json`.
+dos `.md` mais o `glossary.json`, por [`build.py`](build.py). Editar o HTML à mão
+funciona (ele é legível e autocontido), mas a próxima geração sobrescreve; o
+lugar certo de mudar conteúdo é o `.md`, e de mudar termo é o `.json`.
 
 The `.html` files — including everything under `docs-html/` — are **generated
-artifacts** built from the `.md` files plus `glossary.json`. Hand-editing the HTML works (it is readable and self-contained),
-but the next generation overwrites it; the right place to change content is the
-`.md`, and to change a term, the `.json`.
+artifacts** built from the `.md` files plus `glossary.json`, by
+[`build.py`](build.py). Hand-editing the HTML works (it is readable and
+self-contained), but the next generation overwrites it; the right place to
+change content is the `.md`, and to change a term, the `.json`.
+
+## Gerar / Generate
+
+```powershell
+python ForDummiesuild.py            # os dois guias
+python ForDummiesuild.py --docs     # o espelho docs-html/
+python ForDummiesuild.py --check    # confere sem escrever nada
+python ForDummies\check.py            # ancoras, termos orfaos, tabelas
+```
+
+`--check` compara o corpo gerado com o que está no disco, byte a byte. É o
+portão: se o conversor mudar de comportamento sem que o `.md` tenha mudado, ele
+acusa antes de sobrescrever 22 arquivos.
+
+`--check` compares the generated body with what is on disk, byte for byte. It is
+the gate: if the converter changes behaviour without the `.md` changing, it says
+so before overwriting 22 files.
+
+Os cartões do glossário, as dicas em cada termo e a busca vêm todos do
+`glossary.json` — as tabelas dos capítulos 3, 4 e 5 dos `.md` são espelho do
+mesmo arquivo, geradas junto. Termo novo entra **só** no `.json`.
+
+The glossary cards, the per-term hints and the search all come from
+`glossary.json` — the tables in chapters 3, 4 and 5 of the `.md` mirror the same
+file and are generated with them. A new term goes **only** into the `.json`.

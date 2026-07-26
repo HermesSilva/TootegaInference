@@ -30,11 +30,13 @@ A ordem é deliberada: **primeiro as palavras, depois o sistema.**
 | 10 | [Como o modelo é guardado](#10--como-o-modelo-é-guardado) | int4, ablação, container |
 | 11 | [Memória: uma cópia, nenhuma a mais](#11--memória-uma-cópia-nenhuma-a-mais) | mmap, arena, os três caches |
 | 12 | [Como se sabe que está certo](#12--como-se-sabe-que-está-certo) | oráculo, 32/32, medição pareada |
-| 13 | [Onde estamos e o que vem](#13--onde-estamos-e-o-que-vem) | roadmap com critério de corte |
-| 14 | [Mãos à obra](#14--mãos-à-obra) | build e comandos, com leitura da saída |
-| 15 | [Mapa do repositório](#15--mapa-do-repositório) | onde cada coisa mora |
-| 16 | [Mal-entendidos comuns](#16--mal-entendidos-comuns) | FAQ |
-| 17 | [Índice PT ↔ EN](#17--índice-de-termos-pt--en) | para ler as duas versões em paralelo |
+| 13 | [O servidor, o protocolo e o agente](#13--o-servidor-o-protocolo-e-o-agente) | como o token vira produto |
+| 14 | [Como se mede a qualidade](#14--como-se-mede-a-qualidade) | perplexidade, entropia, o que engana |
+| 15 | [Onde estamos e o que vem](#15--onde-estamos-e-o-que-vem) | roadmap com critério de corte |
+| 16 | [Mãos à obra](#16--mãos-à-obra) | build e comandos, com leitura da saída |
+| 17 | [Mapa do repositório](#17--mapa-do-repositório) | onde cada coisa mora |
+| 18 | [Mal-entendidos comuns](#18--mal-entendidos-comuns) | FAQ |
+| 19 | [Índice PT ↔ EN](#19--índice-de-termos-pt--en) | para ler as duas versões em paralelo |
 
 ---
 
@@ -98,31 +100,33 @@ Três palavras já precisam de definição, e elas vêm nas seções seguintes: 
 
 ### A tese, em um parágrafo
 
-Existe um projeto anterior, o **engine anterior**, que provou ser possível rodar um
-modelo gigante (744 bilhões de parâmetros) numa máquina comum, lendo pedaços do
-disco conforme precisa. Ele funciona — e entrega **0,93 token por segundo**
-[medido] nesta máquina. É lento demais para uso interativo.
+Existe uma classe de engine que resolve o problema oposto: **engines de
+streaming**, que rodam um modelo grande demais para a RAM lendo pedaços do disco
+conforme precisam. Funciona — e entrega **0,93 token por segundo** [medido]
+nesta máquina, com um modelo de 744 bilhões de parâmetros. É lento demais para
+uso interativo, e é lento pelo motivo certo: o disco é ~370× mais lento que a
+RAM.
 
 A observação que originou o TootegaEngine é que **o gargalo não é o hardware**:
 é a razão entre o tamanho do modelo e a memória rápida disponível. Comprar mais
 RAM melhora pouco (mede-se `N^0,25`: quadruplicar a RAM dá ~1,4×). Trocar por um
 modelo **que caiba inteiro na RAM** muda de patamar: o disco sai do caminho e o
-teto passa a ser a banda da memória — **17 a 22 tokens por segundo** [estimativa
-de faixa realista], contra 0,93.
+teto passa a ser a banda da memória — **13,1 tokens por segundo** [medido],
+contra 0,93. Catorze vezes, sem trocar uma peça da máquina.
 
 O TootegaEngine é o engine desenhado para **esse regime**, e explicitamente
 **não** para esconder disco.
 
 ### A máquina de referência
 
-Todo número deste projeto foi medido aqui:
+Todo número deste projeto foi medido aqui, salvo onde marcado [estimativa]:
 
 ```
-CPU    Intel i9-14900K, 32 threads, AVX-VNNI
-RAM    64 GB DDR5-4800 dual channel      ~60 GB/s efetivos
+CPU    Intel i9-14900K, 32 threads, AVX2+FMA
+RAM    64 GB DDR5-4800 dual channel      68,7 GB/s medidos em runtime
 GPU    RTX 2060 SUPER, 8 GB, sm_75       448 GB/s de VRAM
 PCIe   gen 3 x16 (limite da GPU)         ~12 GB/s   <-- o elo mais lento
-Disco  RAID0 NVMe (F:)                   18,4 GB/s sequencial
+Disco  RAID0 NVMe                        18,4 GB/s sequencial
 SO     Windows 10 Pro 19045
 ```
 
@@ -137,20 +141,30 @@ token, 19,65 GB no formato do projeto, 202.752 tokens de contexto máximo.
 
 ### Estado atual
 
-**M1 completo, só em CPU.** O engine já:
+**M1 e M4 completos, em CPU.** O engine já:
 
 - reproduz o resultado da implementação de referência — **32 de 32 tokens
   idênticos** [medido];
 - produz saída **byte-idêntica** entre 1 e 24 threads [medido];
 - tokeniza com **36 de 36 casos idênticos** aos da biblioteca de referência
   [medido];
-- conversa em múltiplos turnos reaproveitando o cache: **92 de 100 tokens de
-  prompt vieram do cache no segundo turno** [medido];
+- tem perplexidade **8,63** contra **8,89** da referência externa, no mesmo
+  texto [medido];
+- conversa em múltiplos turnos reaproveitando o cache — **99% do prefill** num
+  turno típico [medido];
+- serve o protocolo OpenAI, com ferramentas e streaming, para qualquer cliente
+  ([§13](#13--o-servidor-o-protocolo-e-o-agente));
+- traz um agente com seis ferramentas locais, sandbox e aprovação;
 - recusa configurações que não cabem, dizendo o que reduzir.
 
-Velocidade atual [medido]: **9,79 tok/s** no decode de um exemplo curto;
-**15,32 tok/s** a 1.024 de contexto; **7,48 tok/s** com 4.096 de contexto cheio.
-Meta do marco: ≥ 10 tok/s a 4k. Ainda não batida na leitura estrita.
+Velocidade [medido]: **71 ms por token no decode quente — 13,1 tok/s**, contra
+um teto teórico de 24,0 tok/s calculado da banda medida. São **55% do teto**;
+os ~28 ms que faltam estão na atenção e nas barreiras, não nos matmuls, que já
+rodam a 90% da banda.
+
+O que **não** existe: vários pedidos ao mesmo tempo (M3), estado persistente,
+especulação, build no Linux compilado, e GPU — esta última foi escrita, medida
+e recusada ([§14.7](#147-a-medição-que-decidiu-não-usar-a-gpu)).
 
 ---
 
@@ -230,22 +244,22 @@ Esta é a seção que o resto da documentação assume que você já leu.
 | modelo | o "cérebro", algo abstrato | Um arquivo de números. Aqui é literalmente `model.tootega`, 19,65 GB de pesos. Não é um programa nem um serviço. |
 | expert | um especialista em um assunto | Um par de matrizes escolhido por uma nota, por token e por camada. Não tem assunto: não existe "o expert de matemática". |
 | cache | uma coisa só, memória rápida genérica | Aqui são três coisas diferentes com donos diferentes: cache de pesos, cache de KV e cache de prefixo. Misturá-las é a origem da maior parte da confusão de projeto. |
-| banda | banda de internet, medida em Mbps | Quantos gigabytes por segundo a memória entrega. Nada a ver com internet, e diferente de latência. |
+| banda | banda de internet, medida em Mbps | Quantos gigabytes por segundo a memória entrega. Nada a ver com internet, e **diferente de latência**: banda é quantos bytes por segundo, latência é quanto tempo até o primeiro byte. Quase toda conta deste projeto é de banda, porque no decode a leitura é grande, previsível e sequencial. Nesta máquina são **68,7 GB/s**, medidos em execução — não lidos da caixa. |
 | residente | que está instalado na máquina | Que está inteiro na RAM e não sai de lá durante a execução. Não é o mesmo que "instalado" nem que "carregado". |
-| quantização | discretizar qualquer sinal | Guardar cada peso em 4 ou 8 bits em vez de 16. Só os pesos: as contas continuam em 32 bits. |
+| quantização | discretizar qualquer sinal | Guardar cada peso em 4 ou 8 bits em vez de 16. Só os pesos: as contas continuam em 32 bits, e o kernel *desempacota* antes de multiplicar. Isso tem nome aqui — **W4A32**, pesos em 4 bits e ativações em 32. Custa perplexidade: medido, +5,26% com tudo em int4 e **−0,19%** (indistinguível de zero) deixando a atenção em int8. |
 | LoRA | técnica de ajuste fino de modelos | Aqui (`q_lora_rank`, `kv_lora_rank`) é só projeção de posto baixo, parte da arquitetura original. Não tem relação com a técnica de ajuste fino de mesmo nome. |
 | token | um símbolo, ou uma credencial de acesso | Um pedaço de texto, ~4 caracteres em média. O modelo só enxerga o número inteiro que representa esse pedaço. |
-| contexto | o assunto de que se está falando | O número máximo de tokens que cabem na janela da conversa. Custa memória: 52,9 KB por token. |
+| contexto | o assunto de que se está falando | O número máximo de tokens que cabem na janela da conversa — tudo o que o modelo consegue "ter em vista" de uma vez. Não é memória de longo prazo: o que sai da janela deixa de existir para ele. E custa RAM, linearmente: **105,8 KB por posição** no padrão f32, *por conversa*. No teto deste modelo, 202.752 posições, são 21,96 GB — mais do que os 18,54 GB dos pesos. |
 | grupo | agrupamento genérico | Dois homônimos independentes: `group=64` (quantos pesos compartilham uma escala) e `n_group` (limite de roteamento entre experts). |
 | página | página de um documento ou da web | Bloco de 4 KB (ou 2 MB) com que o sistema operacional gerencia memória. Nada de páginas de documento. |
 | plano | uma intenção ou um cronograma | A decisão de onde cada peso vai morar (RAM ou VRAM), calculada na inicialização a partir das bandas medidas. |
-| oráculo | um adivinho, ou um banco de dados | A implementação de referência em Python contra a qual o engine é comparado token a token. |
-| ablação | um procedimento médico | Desligar (ou restaurar) uma parte de cada vez para medir quanto ela contribui para o resultado. |
-| slot | um encaixe físico, um horário na agenda | Um contexto de conversa independente dentro do engine. Cada slot tem seu próprio KV. |
-| shard | fragmento genérico, partição de banco de dados | Um dos 48 arquivos em que o modelo original vem partido, por limite de tamanho. |
+| oráculo | um adivinho, ou um banco de dados | A implementação de referência em Python contra a qual o engine é comparado token a token. Ela é lenta e não importa: existe para ser *externa* — escrita por outra gente, a partir de outra leitura do modelo. Foi uma referência externa que pegou um RoPE na variante errada depois de três testes internos verdes, todos cegos ao mesmo engano. |
+| ablação | um procedimento médico | Desligar (ou restaurar) uma parte de cada vez para medir quanto ela contribui para o resultado. É emprestado da biologia experimental, e a lógica é a mesma: você não descobre para que serve uma peça olhando para ela, e sim tirando-a. Aqui é o que mostrou que a atenção em int8 não custa nada e que o resto do modelo em int4 custa 5%. |
+| slot | um encaixe físico, um horário na agenda | Um contexto de conversa independente dentro do engine, com o seu próprio cache KV. É o que permitiria atender várias pessoas ao mesmo tempo sem misturar as conversas. **Ainda não existe**: hoje é um pedido por vez, e o segundo espera calado na fila do TCP. É o marco M3. |
+| shard | fragmento genérico, partição de banco de dados | Um dos 48 arquivos em que o modelo original vem partido, por limite de tamanho de cada arquivo. Não têm significado próprio: um tensor pode começar num e terminar no seguinte. O conversor os lê todos e escreve um container único. |
 | kernel | o núcleo do sistema operacional | A rotina que faz a conta pesada — `matmul_int4_g`, por exemplo. Não é o núcleo do sistema operacional. |
-| draft | rascunho de um texto | Um palpite barato de token, gerado para ser confirmado ou descartado em bloco (especulação). |
-| temperatura | calor | Um número que controla o quanto a escolha do próximo token é aleatória. 0 = sempre o mais provável. |
+| draft | rascunho de um texto | Um palpite barato de token, gerado para ser confirmado ou descartado em bloco (especulação). A ideia: um modelo pequeno chuta vários tokens de uma vez e o grande confere todos numa passada só, pagando uma leitura de pesos em vez de N. Aqui é o marco M5, e ainda não existe. |
+| temperatura | calor | Um número que controla o quanto a escolha do próximo token é aleatória. 0 significa sempre o mais provável; acima de 1 as opções improváveis ganham chance. Não é um botão de "criatividade": é o quanto de risco você aceita na próxima peça. Em medição fica sempre em 0, senão mede-se o sorteio junto. |
 | engine | motor de carro, ou motor de jogo | O programa que executa o modelo: carrega os pesos, faz as contas, gerencia o cache. Não é o modelo, e não é a interface. |
 | agente | uma pessoa que representa outra | Um programa que usa o modelo em ciclo: pergunta, recebe uma resposta, executa ferramentas, realimenta o resultado. |
 | ferramenta | utensílio, ou programa de linha de comando | No sentido de agente: uma função que o modelo pode pedir para executar (ler arquivo, rodar comando). O esquema dela entra no prompt. |
@@ -300,25 +314,39 @@ geralmente logo depois de um erro custar tempo.
 | metade/metade | A convenção de empacotamento dos nibbles: o byte `j` guarda os pesos `j` e `j+32`, não `2j` e `2j+1`. |
 | arena de scratch | Um bloco de memória alocado uma vez na inicialização e fatiado para todos os buffers temporários. Zero `malloc` no laço de token. |
 | estável primeiro, volátil por último | A regra de ordenação do prompt que faz o cache funcionar: system → ferramentas → contexto longo → histórico → turno atual. |
-| critério de saída | O número que fecha um marco do roadmap. Sem número, o marco não fecha. |
+| critério de saída | O número que fecha um marco do roadmap. Sem número, o marco não fecha — e "está funcionando" não é número. É o que impede a conversa de virar discussão de opinião: ou o valor medido passou do limiar declarado *antes*, ou não passou. |
 | critério de corte | O número abaixo do qual a funcionalidade é cancelada, não adiada. O M2 tem um: ganho abaixo de 20% mata a partição GPU/CPU. |
 | file-backed | Memória que veio de um arquivo mapeado: o sistema operacional pode descartá-la e reler do disco. Por isso não conta no orçamento de RAM. |
 | memória anônima | Memória que só existe na RAM, sem arquivo por trás. Se for despejada, o conteúdo se perde — por isso conta no orçamento. |
 | publica-se o que foi medido | Quando a intuição diz uma coisa e a medição diz outra, publica-se a medição — mesmo que a alternativa pareça mais segura. |
 | teto | O limite superior de velocidade obtido dividindo bytes por banda, ignorando compute e overhead. Também chamado de roofline. |
-| engine anterior | O projeto anterior, de outro repositório, que resolve o problema oposto: modelos grandes demais, lidos do disco. Aqui é referência histórica — nada de código dele entra. |
+| engine de streaming | Engine que roda um modelo maior que a RAM lendo pedaços do disco conforme precisa. Funciona, e é lento pelo motivo certo: o disco é ~370× mais lento que a RAM. Medimos **0,93 tok/s** nesse regime, contra os 13,5 do TootegaEngine com o modelo inteiro na memória. |
 | container .tootega | O formato de arquivo do projeto: cabeçalho de 128 bytes, blobs alinhados a 64 bytes, índice JSON no fim. É lido direto, sem conversão. |
+| marco | Uma etapa do projeto com **critério de saída mensurável**, não com data. M0 converte e valida o modelo; M1 é o forward em CPU token-exato; M2 era a GPU; M3 é atender vários pedidos ao mesmo tempo; M4 é o agente; M5 é especulação. Um marco fecha quando o número aparece, não quando o código compila. |
+| decisão numerada | Cada escolha de projeto que teve alternativas reais ganha um número — D1 a D14 — e uma linha no placar com o estado: aberta, fechada, ou fechada com o número que a fechou. Serve para que ninguém precise reabrir a discussão por não saber que ela já aconteceu. |
+| licença MIT | Uma licença de software livre curta e permissiva: qualquer um pode usar, copiar, alterar e vender, desde que mantenha o aviso de copyright, e sem garantia nenhuma. É a licença deste engine. **Não cobre o modelo** — pesos e tokenizer têm licença própria, de quem os treinou. |
 
-### O apelido que mais aparece: **engine anterior**
+### O apelido que mais aparece: **engine de streaming**
 
-O `engine anterior` é o **projeto anterior**, de outra pessoa/outro repositório, que
-resolve o problema oposto (modelos grandes demais, lidos do disco). Ele é citado
-o tempo todo por dois motivos: forneceu os números de baseline, e forneceu a
-lista de erros a não repetir.
+Um `engine de streaming` resolve o problema **oposto** ao deste projeto: modelos
+grandes demais para a RAM, lidos do disco conforme a execução precisa. A
+expressão aparece o tempo todo aqui por dois motivos, e nenhum deles é elogio ou
+crítica — é contraste.
 
-**Regra dura do projeto:** nada de código ou toolchain do engine anterior entra aqui.
-As citações são históricas — referência de medição e lição aprendida, não
-permissão de reuso. → `CLAUDE.md`
+O primeiro é que ele fornece a **linha de base**: 0,93 tok/s com 744 bilhões de
+parâmetros nesta mesma máquina, que é o número contra o qual os 13,1 tok/s deste
+engine significam alguma coisa. Sem uma referência medida, "rápido" é adjetivo.
+
+O segundo é que ele mostra **o que não fazer quando o modelo cabe**. Todo o
+maquinário de esconder disco — prefetch entre camadas, mapa de calor de quais
+pesos manter, política de despejo, roteamento entre dois SSDs — é a maior parte
+do orçamento de complexidade de um engine desses, e **não serve para nada** com
+o modelo residente. Jogar isso fora é a principal vantagem estrutural do
+TootegaEngine; não é a velocidade, é o tamanho.
+
+**Regra dura do projeto:** nada de código ou de toolchain de terceiros entra
+aqui. As comparações são históricas — referência de medição e lição aprendida,
+nunca permissão de reuso. → `CLAUDE.md`
 
 ---
 
@@ -330,7 +358,7 @@ Referência rápida. Nada aqui é específico do projeto.
 
 | termo | uma linha |
 |---|---|
-| LLM | Large Language Model, modelo de linguagem grande: um programa que prevê o próximo token de um texto. |
+| LLM | Large Language Model, modelo de linguagem grande: um programa que prevê o próximo token de um texto. Toda a aparência de conversa vem daí — prever a próxima peça, milhares de vezes, cada vez com o resultado anterior na entrada. Não há plano, não há intenção guardada entre uma previsão e a seguinte. |
 | transformer | A arquitetura que praticamente todos os LLMs usam: uma pilha de camadas iguais, cada uma com atenção e um bloco de multiplicações. |
 | camada | Um bloco da pilha do transformer. Aqui são 47, executados em sequência — a saída de uma é a entrada da seguinte. |
 | peso | Um dos números aprendidos durante o treino. Aqui são 31,2 bilhões deles, e são eles que ocupam os 19,65 GB. |
@@ -343,7 +371,7 @@ Referência rápida. Nada aqui é específico do projeto.
 | softmax | A função que transforma notas em probabilidades que somam 1. Subtrai-se o máximo antes, para não estourar o expoente. |
 | RMSNorm | Normalização que reescala o vetor para uma magnitude previsível antes de cada bloco. Sem ela, 47 camadas empilhadas explodem ou somem. |
 | resíduo | Somar a entrada de volta na saída do bloco. Faz a camada corrigir o vetor em vez de substituí-lo, e é o que permite empilhar 47. |
-| atenção | O mecanismo pelo qual o token atual olha para todos os anteriores e decide de quais copiar informação. |
+| atenção | O mecanismo pelo qual o token atual olha para todos os anteriores e decide de quais aproveitar. É o que dá ao modelo a noção de contexto — e é o único ponto onde o custo cresce com o tamanho da conversa, porque o novo token precisa consultar tudo o que veio antes. Por isso existe o cache KV: sem ele, cada token recalcularia a conversa inteira. |
 | cabeça | Uma das 20 vistas paralelas dentro da atenção. Cada uma pode se especializar em um tipo de relação entre tokens. |
 | Q, K, V | Query, key e value: o que eu procuro, o que eu ofereço, o que eu entrego. A atenção compara Q com todos os K e mistura os V. |
 | RoPE | Codificação de posição por rotação do vetor. Aqui é parcial: só 64 das 256 dimensões de cada cabeça giram. |
@@ -359,9 +387,15 @@ Referência rápida. Nada aqui é específico do projeto.
 | vocabulário | As 154.880 peças de texto que o modelo conhece. Só 154.856 existem de fato; o resto é preenchimento. |
 | camada densa | Uma camada sem MoE, com um MLP comum. Aqui só a camada 0 é assim, com tamanho interno 10.240. |
 | arquitetura | O desenho do modelo: quantas camadas, de que tipo, com que tamanhos. Vem do `config.json`, que o container guarda inteiro. |
-| checkpoint | O conjunto de arquivos publicado com os pesos treinados. Aqui vem em 48 shards no formato safetensors. |
+| checkpoint | O conjunto de arquivos publicado com os pesos treinados. Aqui vem em 48 shards no formato `safetensors`, 62,4 GB em BF16, e é entrada do conversor — o engine não o lê em execução. A licença dele é de quem o treinou, e não a deste código. |
 | safetensors | O formato em que os pesos são publicados: um cabeçalho JSON dizendo nome, forma e offset, e os números crus em seguida. |
 | Hugging Face | O repositório público de onde o modelo e o tokenizer são baixados, e de onde vem a biblioteca usada como referência. |
+| chamada de ferramenta | Quando o modelo, em vez de responder, pede que um programa faça algo por ele — ler um arquivo, rodar um comando. Ele não executa nada: escreve um pedido, alguém executa, e o resultado volta como uma mensagem nova. Neste modelo o pedido usa `<tool_call>`, que é um **token único** do vocabulário, não um texto a ser reconhecido. |
+| diretiva | Uma instrução de como responder, dada antes da conversa começar: "responda no idioma da pergunta", "vá direto ao ponto". Vai numa mensagem de sistema no **início** do prompt — que é onde o cache de prefixo a reaproveita em todos os turnos. Mudá-la no meio invalidaria o cache inteiro. |
+| degeneração | Quando o modelo perde o fio e passa a repetir, dobrar palavras ou não parar. Não é um erro de programa — é o texto se enrolando sobre si mesmo. Foi assim que se descobriu que um container estava ruim mesmo com a perplexidade dizendo que estava bom. |
+| MHA | *Multi-Head Attention*: a atenção clássica, em que cada cabeça guarda a própria chave e o próprio valor. É a mais simples e a mais cara em memória — o oposto do MLA deste modelo, que comprime os dois num espaço menor e economiza 18× de tráfego. |
+| GLM | A família de modelos abertos em que este projeto roda. O alvo é o **GLM-4.7-Flash**: 31 bilhões de parâmetros no total, mas só ~3 bilhões ativos por token, porque é um MoE. É essa razão que o faz caber e ser rápido ao mesmo tempo. |
+| rascunho | O texto que o modelo escreve para si mesmo antes de responder, entre `<think>` e `</think>`. Medido neste modelo: com 400 tokens de orçamento ele **não termina 8 de 12 perguntas**, repete 8× mais e custa 4,5× o tempo — para "qual é a capital do Brasil" ele escreve seis etapas em inglês e é cortado antes de responder. |
 
 ### 5.2 A execução
 
@@ -374,11 +408,11 @@ Referência rápida. Nada aqui é específico do projeto.
 | prefill | Processar o prompt inteiro de uma vez, antes de gerar. Todos os tokens passam juntos, então os pesos são lidos uma vez para muitos tokens. |
 | decode | Gerar um token de cada vez, em cadeia. Cada token relê os 2,01 GB de peso inteiros — é aqui que a banda manda. |
 | TTFT | Time to first token: quanto tempo até a primeira palavra aparecer na tela. Não é meta deste projeto até o marco M3. |
-| tok/s | Tokens por segundo. A métrica principal do projeto. Sempre acompanhada do contexto em que foi medida. |
+| tok/s | Tokens por segundo, a métrica principal do projeto. Sempre acompanhada do contexto em que foi medida, porque o número muda com ele: **13,1 tok/s** no decode quente aqui, contra um teto de 24,0 calculado da banda. Citar tok/s sem dizer o contexto, se estava quente e quantas threads é o jeito mais fácil de publicar um número que ninguém consegue reproduzir. |
 | cache KV | O estado de atenção já calculado para os tokens anteriores. Guardá-lo evita refazer o prompt inteiro a cada palavra. |
 | cache de prefixo | Reaproveitar o KV do começo da conversa entre turnos. Vale até o primeiro token diferente; dali em diante tudo é refeito. |
 | teacher forcing | Rodar o modelo sobre um texto conhecido, forçando cada palavra correta, para comparar previsão a previsão com a referência. |
-| greedy | Escolher sempre o token de maior nota. É determinístico e é o modo usado em toda medição. |
+| greedy | Escolher sempre o token de maior nota, sem sorteio. É determinístico, e é o modo usado em toda medição — porque comparar duas configurações com amostragem aleatória mede o gerador de números aleatórios junto. Cuidado com a armadilha: greedy **não** garante saída igual entre máquinas; um empate decidido por um bit diferente separa os caminhos. |
 | top-p | Sortear entre os tokens de maior nota que, somados, atingem a probabilidade p. Também chamado de nucleus sampling. |
 | amostragem | A etapa que escolhe um token entre os 154.880 candidatos, a partir das notas. Greedy, temperatura, top-k e top-p são modos dela. |
 | batching contínuo | Atender várias conversas ao mesmo tempo, aproveitando a mesma leitura de peso para todas. É onde mora a segunda meta do projeto. |
@@ -389,7 +423,11 @@ Referência rápida. Nada aqui é específico do projeto.
 | turno | Uma rodada da conversa: o que o usuário disse mais o que o assistente respondeu. |
 | tokenizer | O componente que converte texto em ids e de volta. Erro nele não estoura: produz ids ligeiramente diferentes e resposta plausível e errada. |
 | BPE | Byte Pair Encoding: junta repetidamente os dois pedaços vizinhos mais baratos, segundo uma tabela de 321.649 regras. |
-| token especial | Um dos 36 marcadores como `<|user|>`, reconhecidos por texto exato antes do BPE. Delimitam quem fala. |
+| token especial | Um dos 36 marcadores como `<\|user\|>`, reconhecidos por texto exato antes do BPE. Delimitam quem fala. |
+| futex | O mecanismo pelo qual uma thread dorme esperando um valor mudar, e é **acordada por quem mudou** — em vez de acordar sozinha de tempos em tempos para conferir. A diferença aparece em número: dormir por tempo fez um matmul de 1,6 MB custar 26 ms em vez de 0,026 ms. |
+| barreira | O ponto em que todas as threads param e esperam a última chegar. É necessária e é cara: sincronizar 20 threads custa da mesma ordem de grandeza que o trabalho de um expert. Foi por isso que 15 barreiras por camada viraram 2 — fundindo os matmuls num despacho só. |
+| processo | Um programa em execução, com a própria memória. O servidor é um; o agente é outro, um por aba da interface. Separar assim tem preço e tem razão: se o agente morre, o servidor e os 18,5 GB que ele carregou continuam de pé. |
+| pipe | Um cano entre dois programas: o que um escreve, o outro lê. É por um pipe que a interface manda a pergunta ao agente. Tem uma armadilha que custou horas aqui: o programa pode ter *lido* os bytes para um buffer interno, e quem olha só o cano vê vazio — e conclui, errado, que nada chegou. |
 
 ### 5.3 A máquina
 
@@ -398,7 +436,7 @@ Referência rápida. Nada aqui é específico do projeto.
 | CPU | O processador principal. Aqui, um i9-14900K com 8 núcleos rápidos, 16 econômicos e 32 threads no total. |
 | GPU | A placa de vídeo, usada como acelerador de contas. Aqui é uma RTX 2060 SUPER de 8 GB — rápida por dentro, mal conectada por fora. |
 | RAM | A memória principal do computador. Aqui, 64 GB entregando ~60 GB/s. É onde o modelo inteiro precisa caber. |
-| VRAM | A memória da placa de vídeo. Rápida (448 GB/s) e pequena (8 GB), e só alcançável pelo PCIe. |
+| VRAM | A memória da placa de vídeo. Rápida (448 GB/s aqui) e pequena (8 GB), e só alcançável pelo PCIe — que nesta máquina entrega ~12 GB/s, menos que o disco. É a combinação dos três números que decide tudo: com o modelo em 18,54 GB, nada cabe permanentemente, e o que não cabe tem de atravessar o elo mais lento a cada camada. |
 | PCIe | O barramento que liga a GPU ao resto do computador. Aqui é gen 3: ~12 GB/s, o elo mais lento da máquina. |
 | NVMe | O padrão dos SSDs rápidos ligados direto ao barramento. Aqui, dois em RAID0 entregando 18,4 GB/s sequenciais. |
 | tier | Um nível da hierarquia de memória: VRAM, RAM, disco. Cada tier tem sua banda, sua capacidade e seu link de acesso. |
@@ -423,6 +461,12 @@ Referência rápida. Nada aqui é específico do projeto.
 | gargalo | O recurso que limita tudo o mais. Aqui é a banda de memória; otimizar qualquer outra coisa não muda o tempo total. |
 | overhead | Custo que não é o trabalho em si: chamar função, sincronizar threads, alocar memória. Invisível a 1 tok/s, percentual a 20. |
 | lei de Amdahl | A conta que diz quanto acelerar uma parte acelera o todo. Usada aqui para estimar o ganho de mover 39% das camadas para a GPU. |
+| CUDA | A plataforma da NVIDIA para rodar cálculo em placa de vídeo. Um programa CUDA tem duas metades: a que roda na CPU e a que roda na GPU, escritas em arquivos diferentes e compiladas por compiladores diferentes. Aqui ela foi escrita, medida e **não adotada** — vive na branch `GPU`. |
+| SMT | *Simultaneous Multithreading* — a Intel chama de Hyper-Threading. Um núcleo físico se apresenta como dois lógicos, que dividem as mesmas unidades de execução. Para trabalho limitado por memória, como o nosso, os dois irmãos brigam pelo mesmo recurso e não ajudam: por isso o pool usa **um lógico por núcleo físico**. |
+| P-core e E-core | Processadores modernos da Intel misturam dois tipos de núcleo: **P** de *performance*, grandes e rápidos, e **E** de *efficiency*, pequenos e econômicos. Espalhar um trabalho igual pelos dois faz os rápidos esperarem os lentos, então o engine prende as threads nos P-cores por padrão. |
+| DDR5-4800 | A geração e a velocidade da memória RAM. O número é a taxa nominal em milhões de transferências por segundo. Nominal não é real: os **68,7 GB/s** que este projeto usa em todas as contas foram *medidos em execução*, não lidos da caixa. |
+| RTX | A linha de placas de vídeo da NVIDIA para consumidor. A desta máquina é uma RTX 2060 SUPER com 8 GB. Os 8 GB são o número que decide: o modelo ocupa 18,5 GB, então ele **não cabe**, e qualquer uso de GPU vira partição — o que foi medido e não compensou. |
+| SO | Sistema operacional — Windows, Linux, macOS. É quem entrega memória, arquivos e threads ao programa. O engine toca o SO em **um único arquivo**, `compat.c`: é a fronteira onde as diferenças entre Windows e Linux moram, para que o resto do código não precise saber onde está rodando. |
 
 ### 5.4 A numérica
 
@@ -465,6 +509,10 @@ Referência rápida. Nada aqui é específico do projeto.
 | hash | Um número curto calculado a partir de um conteúdo, que muda se qualquer byte mudar. Usado para provar que duas saídas são idênticas. |
 | throughput | Quanto trabalho sai por unidade de tempo, somando todas as conversas. Diferente de latência, que é o tempo de uma só. |
 | latência | O tempo até a resposta começar. Banda alta com latência ruim é comum em disco; a RAM tem as duas boas. |
+| entropia | Quão espalhada está a opinião do modelo sobre o próximo token, medida em *bits*. Entropia baixa: ele tem poucos candidatos. Alta: muitos, quase empatados. Serve junto da perplexidade porque separa dois casos que ela confunde — **seguro e certeiro** de **seguro por falta de opção**, e o segundo é o que antecede repetição. |
+| rep4 | A fração de sequências de quatro tokens que já apareceram antes na mesma resposta. É o detector precoce de *degeneração*: o modelo começando a se repetir aparece aqui muito antes de incomodar quem lê. Acima de ~15% é degeneração declarada. |
+| match@ref | Quantos tokens iniciais uma geração tem em comum com a geração de referência antes de divergir. É a medida mais direta de "este container gera o que o original geraria". Divergir não é erro: dois caminhos quase idênticos se separam no primeiro empate. |
+| intervalo de confiança | A faixa em que o valor verdadeiro provavelmente está, dado o quanto as medidas variaram. Se a faixa **cruza o zero**, a medição não distingue "melhorou" de "piorou" — e a resposta honesta é *inconclusivo*, não "deu quase igual". |
 
 ### 5.6 O software e o sistema
 
@@ -487,6 +535,22 @@ Referência rápida. Nada aqui é específico do projeto.
 | loopback | O endereço `127.0.0.1`, que só a própria máquina alcança. É o padrão do servidor porque isto não é um serviço de produção. |
 | escrita atômica | Escrever num arquivo temporário e renomear no fim. Uma queda de energia no meio não deixa um arquivo pela metade com cara de válido. |
 | watchdog | Uma thread que compara o consumo real com o orçamento durante a execução. Sem ela, "orçamento" seria só uma opinião. |
+| MSVC | O compilador C e C++ da Microsoft, que vem com o Visual Studio. É o que transforma os arquivos `.c` em `tootega.exe` no Windows. O projeto o localiza com a ferramenta `vswhere` em vez de cravar o caminho: caminho fixo quebra quando a versão muda. |
+| ISO | Organização que publica normas internacionais. "C11 ISO" quer dizer que o código segue a norma da linguagem C de 2011 *como escrita*, sem extensões de um compilador específico. É o que faz o mesmo arquivo compilar no MSVC e no gcc sem alteração. |
+| SSE | *Server-Sent Events* — o jeito padrão de um servidor HTTP mandar texto em pedaços, conforme produz, sem que o cliente fique perguntando. É como a resposta aparece palavra por palavra na tela em vez de surgir pronta depois de meio minuto. |
+| CORS | *Cross-Origin Resource Sharing* — a regra do navegador que impede uma página de um endereço de chamar um servidor de outro, salvo se o servidor autorizar. Sem essa autorização, um cliente que roda *dentro* do navegador nem chega a fazer o pedido. |
+| NDJSON | *Newline-Delimited JSON*: um objeto JSON por linha, um evento por linha. É como o agente conversa com a interface — cada linha é completa em si, então quem lê pode processar a primeira sem esperar a última. |
+| stdin e stdout | Os dois canais de texto que todo programa recebe ao nascer: **stdin** é por onde entra, **stdout** é por onde sai. O agente e a interface conversam por eles — sem rede, sem porta, sem arquivo. Fechar o stdin é como desligar o telefone: o programa vê o fim e encerra. |
+| EOF | *End Of File*, fim do arquivo. O sinal de que não vem mais nada. Quando a interface fecha o canal do agente, ele recebe um EOF e sai na hora — é o mecanismo de desligamento limpo, mais confiável que qualquer temporizador. |
+| protocolo OpenAI | O formato de mensagem que a OpenAI publicou para conversar com modelos, e que virou padrão de fato: uma lista de mensagens com `role` e `content`, e a resposta no mesmo molde. Falar esse formato é o que permite ao Copilot, ao Continue e a qualquer outro cliente conectar neste servidor **sem uma linha de código nossa**. |
+| endpoint | Um endereço específico dentro de um servidor, com uma função. `/v1/chat/completions` gera texto; `/stats` conta como o servidor está. É o "ramal" do serviço: mesma máquina, mesma porta, propósitos diferentes. |
+| JSON Schema | Uma descrição, em JSON, de como outro JSON deve ser: quais campos, de que tipo, quais obrigatórios. O cliente manda o schema das ferramentas, e é por ele que o servidor sabe que `3` deve virar o **número** 3 e não o texto `"3"` — sem isso, toda ferramenta com argumento numérico chega errada. |
+| MCP | *Model Context Protocol* — um padrão para um agente descobrir e usar ferramentas oferecidas por outros programas, em vez de só as que ele mesmo tem. É hoje o "protocolo comum de ferramentas". O TootegaEngine **não o implementa**; está registrado como não feito. |
+| sandbox | Uma cerca em volta do que um programa pode tocar. No agente é a pasta de trabalho: todo caminho é resolvido contra ela e recusado se escapar — **inclusive com a aprovação automática ligada**. É a única coisa entre um modelo de 31 bilhões de parâmetros e o resto do disco. |
+| aprovação | A pergunta que o agente faz antes de executar algo que muda estado — escrever arquivo, rodar comando. Leitura não pergunta, de propósito: pedir confirmação para tudo, a 13 tokens por segundo, transforma a tarefa em meia hora de Enter — e **treina a pessoa a aprovar sem ler**, que é o pior resultado possível. |
+| branch | Uma linha paralela de desenvolvimento no controle de versão. Aqui a `master` é o engine em CPU pura e a `GPU` guarda todo o trabalho de placa de vídeo — escrito, medido, e não adotado. Separar assim é o que permite **manter a medição sem carregar o código**. |
+| CRLF | Os dois caracteres invisíveis com que o Windows termina cada linha de texto, contra um só no Linux. Invisível não quer dizer inofensivo: um trecho de código copiado com um estilo não casa com o arquivo salvo no outro, e a busca falha sem que nada apareça na tela para explicar. |
+| UUID | Um identificador longo o bastante para ser único sem que ninguém coordene quem usa qual. Serve para nomear uma conversa, um bloco, uma sessão — quando duas partes precisam falar do mesmo item sem um cadastro central. |
 
 ### 5.7 A matemática
 
@@ -634,7 +698,7 @@ diferentes na camada seguinte. Não há tema, não há especialidade nomeável.
 `n_group` e `topk_group` são parâmetros que, em outros modelos, restringem a
 escolha a certos blocos de experts. Neste modelo valem 1 — ou seja, **não há
 restrição**. É por isso que o projeto implementa só esse caminho no dia 1, mas
-deixa a variante declarada em vez de cravada no parser (o erro do engine anterior, que
+deixa a variante declarada em vez de cravada no parser (o erro do engine de streaming, que
 reduziu o universo de modelos compatíveis a uma família só).
 → [`docs/06`](../docs/06-licoes-aprendidas.md)
 
@@ -771,7 +835,7 @@ canal mais lento que o disco de onde veio, e cinco vezes mais lento que a RAM.
 
 ### 8.2 A armadilha, medida
 
-no engine anterior, a opção `CUDA_DENSE=1` coloca os tensores densos na GPU **mesmo
+no engine de streaming, a opção `CUDA_DENSE=1` coloca os tensores densos na GPU **mesmo
 quando eles não cabem**:
 
 ```
@@ -866,12 +930,12 @@ de residência**.
 > Escolher um modelo que já cabe rende 20 a 50×. Comprar hardware rende `N^0,25`.
 
 É a tese inteira do projeto em uma linha. E é o motivo pelo qual o TootegaEngine
-**joga fora** todo o maquinário de esconder disco que o engine anterior construiu —
+**joga fora** todo o maquinário de esconder disco que o engine de streaming construiu —
 prefetch, roteamento entre SSDs, `O_DIRECT`, conjunto de experts fixados,
 despejo por camada. Nada disso serve quando o modelo é residente, e tudo isso é a
 maior parte do orçamento de complexidade daquele projeto.
 
-**A principal vantagem estrutural do TootegaEngine sobre o engine anterior não é
+**A principal vantagem estrutural do TootegaEngine sobre o engine de streaming não é
 velocidade — é tamanho de código.**
 
 ---
@@ -1018,7 +1082,7 @@ Todos os buffers temporários do forward têm tamanho fixo, conhecido depois de 
 a configuração. São fatias de **uma arena dimensionada uma vez na inicialização**.
 O laço de token não chama o alocador nenhuma vez.
 
-O engine anterior faz ~500 `malloc`/`free` por token. A 0,93 tok/s isso é 0,01% e não
+O engine de streaming faz ~500 `malloc`/`free` por token. A 0,93 tok/s isso é 0,01% e não
 importa; a 22 tok/s importa — e a correção é estrutural, não uma
 micro-otimização para depois.
 
@@ -1061,7 +1125,7 @@ segundo turno** — 8 tokens de prefill em vez de 100. [medido]
 
 **Endereçamento por hash, e o bug que ele previne.** Um bloco de KV é endereçado
 pelo **hash acumulado da sequência exata de tokens que o produziu** — nunca pelo
-slot, nunca pela posição. O motivo é concreto: no engine anterior, uma execução divergiu
+slot, nunca pela posição. O motivo é concreto: no engine de streaming, uma execução divergiu
 das outras porque um KV persistido **de outra conversa** casava parcialmente com o
 novo prompt. O engine retomou de um estado que não correspondia àquele texto.
 Casamento parcial não existe: ou o hash bate, ou o bloco é ignorado.
@@ -1199,7 +1263,331 @@ primeiro comando a rodar depois de qualquer mudança.
 
 ---
 
-## 13 — Onde estamos e o que vem
+## 13 — O servidor, o protocolo e o agente
+
+As seções anteriores explicam como um token sai do modelo. Esta explica como
+esse token chega até um programa que serve para alguma coisa.
+
+### 13.1 Por que existe um servidor
+
+Carregar o modelo custa **5,3 segundos e 18,54 GB**. Se cada pergunta subisse um
+processo novo, cada pergunta pagaria isso de novo — e a máquina não tem RAM para
+dois ao mesmo tempo.
+
+Então o desenho é o de sempre em software de servidor, e vale para leigo e para
+especialista igual: **um processo caro que fica de pé, e clientes baratos que
+vão e voltam.** O servidor sobe, aquece a memória, e fica ocioso consumindo
+**0,2% de um núcleo e 0,04 GB**. Quem quiser falar com o modelo abre uma
+conexão, pergunta e desliga.
+
+O que ele expõe:
+
+| endereço | o que faz |
+|---|---|
+| `POST /v1/chat/completions` | a conversa: recebe as mensagens, devolve o texto |
+| `GET /v1/models` | diz que modelo está carregado |
+| `GET /stats` | quantos tokens, quanto tempo, quanto de cache aproveitado |
+| `GET /` | o chat web embutido no próprio executável |
+
+### 13.2 Falar o protocolo que o mundo já fala
+
+Um formato de mensagem virou padrão de fato: o que a OpenAI publicou. Uma lista
+de mensagens, cada uma com um **papel** (`system`, `user`, `assistant`,
+`tool`) e um **conteúdo**; a resposta vem no mesmo molde.
+
+Não há nada de especial nesse formato. O que há de especial é que **todo mundo
+já o implementou**. Copilot, Continue, Open WebUI, bibliotecas em dez
+linguagens: nenhum deles sabe que o TootegaEngine existe, e todos funcionam com
+ele — basta apontar a URL. Escrever um protocolo próprio, ainda que melhor,
+significaria escrever também cada um desses clientes.
+
+**Consequência de projeto, e ela é forte:** o engine não decide nada sobre a
+conversa. Ele recebe mensagens e devolve texto. Quem monta o histórico, quem
+decide chamar uma ferramenta, quem repete o ciclo — é o cliente. Diz-se que
+**o servidor é burro e o cliente é esperto**, e isso é elogio: é o que faz um
+programa escrito para outro engine funcionar aqui sem uma linha de código
+nossa.
+
+### 13.3 Por que a resposta aparece letra por letra
+
+A 13 tokens por segundo, uma resposta de 300 tokens leva **23 segundos**.
+Esperar 23 segundos olhando uma tela parada é insuportável; ver a frase se
+formando é confortável — e é exatamente o mesmo tempo.
+
+O mecanismo tem nome, é padrão de navegador e não é WebSocket: **SSE**,
+*Server-Sent Events*. O servidor mantém a conexão aberta e manda um pedaço de
+texto por vez, no formato `data: {...}`, até mandar `data: [DONE]`. O fluxo é
+de mão única — do servidor para o cliente — que é justamente o caso aqui.
+
+### 13.4 Ferramentas: o modelo pede, ele não executa
+
+Um modelo de linguagem só sabe produzir texto. Ele não abre arquivo, não roda
+comando, não acessa a internet. O que se convencionou é o seguinte teatro:
+
+1. o cliente descreve, no prompt, as ferramentas disponíveis e a forma dos
+   argumentos de cada uma;
+2. o modelo, em vez de responder, **escreve um pedido** de execução;
+3. o cliente executa o pedido de verdade e devolve o resultado como uma
+   mensagem nova;
+4. o modelo continua de onde parou, agora sabendo o resultado.
+
+O passo 3 é o único que toca o mundo real, e quem o executa é um programa
+comum, com as permissões de quem o rodou. **O modelo nunca executa nada.**
+
+Neste modelo o pedido não é texto solto a ser adivinhado: `<tool_call>`,
+`<arg_key>`, `<arg_value>` e `<|observation|>` são **tokens únicos do
+vocabulário**, colocados lá no treino. O servidor traduz o formato OpenAI para
+esses tokens e traduz a resposta de volta. É tradução, não invenção — e é por
+isso que funciona na primeira tentativa em vez de depender de expressão
+regular sobre a saída.
+
+**A parte que quase deu errado.** O JSON do protocolo distingue o número `3`
+do texto `"3"`; o modelo escreve os dois iguais. Sem consultar o **JSON
+Schema** que o cliente mandou junto das ferramentas, todo argumento numérico
+chegaria como texto do outro lado, e a ferramenta receberia `"3"` onde espera
+`3`. O servidor tipa cada argumento pelo schema declarado — e essa é a
+diferença entre uma integração que funciona e uma que quase funciona.
+
+### 13.5 O agente é o laço, não o modelo
+
+O **agente** (`tools/agent.exe`) é o programa que fecha o ciclo dos quatro
+passos acima até a tarefa acabar. Ele traz seis ferramentas:
+
+| ferramenta | o que faz | pergunta antes? |
+|---|---|---|
+| `Read` | lê um arquivo | não |
+| `Glob` | acha arquivos por padrão de nome | não |
+| `Grep` | procura texto dentro dos arquivos | não |
+| `Write` | escreve um arquivo | **sim** |
+| `Edit` | troca um trecho por outro | **sim** |
+| `Bash` | roda um comando | **sim** |
+
+Duas decisões dentro dessa tabela merecem ser lidas devagar.
+
+**A cerca.** Toda ferramenta resolve o caminho contra a pasta de trabalho e
+recusa o que sair dela — inclusive com a aprovação automática ligada. É a
+única coisa entre um modelo de 31 bilhões de parâmetros e o resto do disco.
+
+**Ler não pergunta.** Parece descuido e é o contrário. A 13 tokens por segundo,
+uma tarefa real faz dezenas de leituras; confirmar cada uma transforma o
+trabalho em meia hora de apertar Enter — e, pior, **ensina a pessoa a aprovar
+sem ler**. Pedir confirmação só onde algo muda de estado mantém a pergunta
+rara o bastante para ser lida.
+
+### 13.6 Como o agente conversa com uma interface
+
+O agente não abre porta de rede. Ele conversa por **stdin e stdout** — os dois
+canais de texto que todo programa recebe ao nascer — em **NDJSON**: um objeto
+JSON por linha, um evento por linha. Quem lê processa a primeira linha sem
+esperar a última.
+
+```
+{"type":"system","subtype":"init","session_id":"...","tools":[...]}
+{"type":"assistant","message":{...}}
+{"type":"user","message":{"content":[{"type":"tool_result",...}]}}
+{"type":"result","subtype":"success","duration_ms":8213}
+```
+
+Esse é o mesmo contrato de processo que o **Claude Code CLI** usa. A
+consequência é prática: uma interface escrita para aquele CLI fala com este
+agente **trocando o caminho do executável**, e nada mais. Foi assim que o
+Cockpit passou a rodar os dois lado a lado, N abas de um e uma do outro.
+
+Fechar o canal encerra o agente. Não há temporizador, não há sinal, não há
+processo órfão: quando a interface fecha o stdin, o agente recebe um **EOF** e
+sai. É o desligamento mais confiável que existe, porque é o próprio sistema
+operacional que o entrega.
+
+### 13.7 O chat que vem dentro do executável
+
+O servidor serve uma página de chat que **não existe como arquivo**: ela é uma
+cadeia de caracteres compilada dentro do `tootega.exe`. Não há pasta `www/`
+para esquecer de copiar, não há caminho relativo para errar, não há versão do
+HTML diferente da versão do binário.
+
+A tela de entrada pede três coisas, e cada uma tem uma razão:
+
+- **o nome** — é do interlocutor, e vai para a mensagem de sistema;
+- **as diretivas** — como o modelo deve responder ("responda no idioma da
+  pergunta", "vá direto ao ponto"). Ficam no **começo** do prompt, que é onde o
+  cache de prefixo as reaproveita em todos os turnos;
+- **raciocinar ou não** — desligado por padrão, pela medição de §14.6.
+
+### 13.8 O cache de prefixo, na prática
+
+O cache de prefixo é o mais mal-entendido dos três caches (§3.1). Ele não
+guarda perguntas nem respostas: guarda o **estado interno** correspondente aos
+primeiros N tokens do prompt. Se a próxima mensagem começa com exatamente os
+mesmos tokens, esse estado é reaproveitado e só o resto é calculado.
+
+"Exatamente os mesmos" é literal — um espaço a mais invalida dali para a
+frente. É por isso que a ordem do prompt é regra e não gosto:
+
+```
+sistema  ->  ferramentas  ->  contexto longo  ->  historico  ->  turno atual
+     estavel                                              volatil
+```
+
+O que muda a cada turno tem de ficar **no fim**. Com a ordem certa, um turno
+típico reaproveita **99% do prefill** — 1163 de 1172 tokens no exemplo do
+console. Com a ordem errada, reaproveita zero, e cada turno paga o prompt
+inteiro de novo.
+
+---
+
+## 14 — Como se mede a qualidade
+
+Velocidade é fácil de medir: cronômetro. Qualidade não tem cronômetro, e é
+onde quase toda avaliação de modelo vira opinião. Esta seção mostra os quatro
+números que este projeto usa, o que cada um vê, e — mais importante — o que
+cada um **não** vê.
+
+### 14.1 Perplexidade: quão surpreso o modelo ficou
+
+Dá-se ao modelo um texto que ele nunca escolheu e pergunta-se, posição a
+posição: *que probabilidade você dava para a palavra que de fato veio?*
+Perplexidade é a média dessas surpresas, transformada em um número com
+significado intuitivo: **em quantas opções o modelo estava efetivamente em
+dúvida**.
+
+Perplexidade 8 quer dizer "hesitando entre umas 8 possibilidades". Menor é
+melhor. É a régua padrão, e é objetiva: não depende de alguém achar a resposta
+boa.
+
+O número deste engine, contra a implementação de referência em Python, no
+mesmo texto:
+
+| medição | engine | `transformers` |
+|---|---|---|
+| 384 posições de prosa, pesos BF16 | **8,63** | **8,89** |
+| mesmo texto, container int4 | **5,66** | — |
+
+**Cuidado ao ler a segunda linha.** Perplexidade só se compara sobre o *mesmo
+texto e o mesmo vocabulário*. Números de perplexidade de dois artigos
+diferentes não se comparam — é o erro mais comum com essa métrica, e ele
+aparece em toda parte.
+
+### 14.2 Entropia e confiança: o que a perplexidade esconde
+
+Perplexidade mede o acerto *na palavra que veio*. Ela não distingue dois
+estados muito diferentes:
+
+- o modelo tinha **um** candidato forte e acertou;
+- o modelo tinha **quarenta** candidatos parecidos e um deles calhou de vir.
+
+**Entropia** separa os dois. Medida em *bits*, ela diz o quanto a opinião do
+modelo está espalhada: baixa, poucos candidatos; alta, muitos quase empatados.
+A **confiança** é o complemento prático — a probabilidade que ele deu ao
+primeiro colocado.
+
+O console do servidor imprime os quatro juntos, e é a leitura conjunta que
+informa:
+
+```
+prompt    perplexidade 3.41  nll 1.2267  entropia 2.18 bits  confianca 47.3%
+geracao   perplexidade 1.84  nll 0.6088  entropia 1.02 bits  confianca 71.9%
+```
+
+Entropia **muito** baixa por muito tempo não é sinal de excelência: é o
+sintoma que antecede o modelo entrar em laço e repetir.
+
+### 14.3 rep4: o detector de repetição
+
+`rep4` é a fração de sequências de **quatro tokens** que já apareceram antes na
+mesma resposta. Conta sequências, não palavras — e por isso enxerga o problema
+cedo, quando ainda não incomoda quem lê. Acima de ~15% é **degeneração**
+declarada: o texto se enrolando sobre si mesmo.
+
+Degeneração não é travamento. O programa está funcionando perfeitamente e
+produzindo lixo — o que a torna invisível para qualquer teste que só verifique
+se houve saída.
+
+### 14.4 match@ref: quantos tokens antes de divergir
+
+Quantos tokens iniciais uma geração tem em comum com a geração de referência
+antes de tomar outro caminho. É a medida mais direta de *"esta configuração
+gera o que a original geraria"*.
+
+Divergir não é erro. Duas execuções quase idênticas se separam no primeiro
+quase-empate, e daí para a frente escrevem textos diferentes e igualmente
+válidos. O que o número diz é **quando** a diferença numérica ficou grande o
+bastante para mudar uma escolha.
+
+### 14.5 A medição pareada, e por que ela existe
+
+Aqui está o erro que este projeto cometeu e que virou regra.
+
+Para comparar duas configurações, a coisa natural é medir a perplexidade média
+de cada uma e subtrair. Foi o que se fez. As duas primeiras tentativas deram
+**−4,2%** (int4 "melhor" que o original, o que é impossível) e depois
+**+2,5%**. O sinal **inverteu** ao dobrar a amostra.
+
+A causa: a perplexidade varia de **223 a 473 entre janelas** desse texto. Uma
+variação dessas engole um efeito de 5% sem deixar rastro.
+
+A correção é comparar **janela a janela**, sobre o mesmo texto, e medir a
+*diferença* — cujo desvio é vinte vezes menor, porque as duas configurações
+veem exatamente as mesmas palavras. Chama-se **medição pareada**, e sem ela o
+projeto teria publicado um número apresentável e errado.
+
+O acompanhante obrigatório é o **intervalo de confiança**: a faixa onde o
+valor verdadeiro provavelmente está. Se a faixa **cruza o zero**, a medição
+não distingue "melhorou" de "piorou", e a resposta honesta é *inconclusivo* —
+não "deu quase igual".
+
+**Foi exatamente o que aconteceu com o KV em int8.** O critério tinha sido
+fixado antes de medir; o resultado ficou com os dois intervalos cruzando o
+zero. A economia de memória era real e grande (105,8 KB por posição em f32
+contra 28,1 KB em int8), a tentação de adotar era enorme, e mesmo assim ficou
+registrado como **inconclusivo, não adotado** — disponível como opção, nunca
+como padrão. Mudar o critério depois de ver o número é a forma mais comum de
+mentir com estatística, e ela quase sempre é involuntária.
+
+### 14.6 Raciocinar antes de responder ajuda?
+
+O modelo sabe escrever um rascunho para si mesmo, entre `<think>` e
+`</think>`, antes de responder. A crença geral é que isso melhora a resposta.
+Medimos, com 12 perguntas, orçamento de 400 tokens:
+
+| | rep4 | terminou | tempo |
+|---|---|---|---|
+| sem raciocínio | 1,7% | 12/12 | 78 s |
+| **com raciocínio** | **13,8%** | **4/12** | **354 s** |
+
+Com raciocínio o modelo **não termina 8 dos 12 prompts**, repete 8× mais
+4-gramas — 13,8% encosta no limiar de degeneração — e custa **4,5× o tempo**.
+
+O caso que ilustra: para *"Qual é a capital do Brasil?"* ele escreve seis
+etapas de raciocínio em inglês, com três rascunhos alternativos de resposta, e
+é cortado pelo orçamento **antes de responder**.
+
+A leitura correta não é "raciocinar é ruim". É: **neste modelo, com esse
+orçamento, e para perguntas desse tamanho, raciocinar sai caro e responde
+pior.** Por isso o padrão é desligado — e a opção continua lá, para quem tiver
+perguntas maiores e paciência maior.
+
+### 14.7 A medição que decidiu não usar a GPU
+
+Vale como exemplo final de método, porque o resultado contraria a intuição de
+todo mundo.
+
+A GPU desta máquina tem 8 GB; o modelo tem 18,54 GB. Ele **não cabe**. Restaria
+partir o trabalho entre GPU e CPU. Escreveu-se o backend CUDA, otimizaram-se os
+kernels até ficarem **31× mais rápidos** que a primeira versão e **2,6×** mais
+rápidos que a CPU nos mesmos dados (179–190 GB/s contra 68,7).
+
+E o decode completo, medido, ficou **mais lento** — nas três configurações
+testadas. O motivo está em §8: o PCIe desta máquina (~12 GB/s) é mais lento que
+tudo, e qualquer partição paga esse pedágio a cada camada.
+
+Kernel rápido não é sistema rápido. O trabalho foi guardado numa branch
+separada, com a medição junto, e o engine continuou em CPU pura. **Um resultado
+negativo bem medido é um resultado** — economiza a próxima pessoa que tiver a
+mesma ideia boa.
+
+---
+
+## 15 — Onde estamos e o que vem
 
 ![Roadmap](img/14-marcos.pt.svg)
 
@@ -1209,10 +1597,10 @@ Dois deles têm **critério de corte**: se não pagar, é cancelado, não adiado
 | marco | o que entrega | critério de saída | estado |
 |---|---|---|---|
 | **M0** | converter e validar o modelo | container int4 alinhado + perplexidade medida | **feito** |
-| **M1** | forward só em CPU, token-exato | 32/32 no oráculo; ≥10 tok/s a 4k; RSS estável; `--ram-gb` respeitado | **feito** (velocidade na fronteira) |
-| **M2** | partição GPU/CPU por camada | saída byte-idêntica ao M1; **≥20% mais rápido, senão CANCELA** | à frente |
+| **M1** | forward só em CPU, token-exato | 32/32 no oráculo; ≥10 tok/s a 4k; RSS estável; `--ram-gb` respeitado | **feito** |
+| **M2** | partição GPU/CPU por camada | saída byte-idêntica ao M1; **≥20% mais rápido, senão CANCELA** | **cancelado pela medição** ([§14.7](#147-a-medição-que-decidiu-não-usar-a-gpu)) |
 | **M3** | servidor e batching contínuo | K=4 rende ≥2,5× o K=1; latência ≤2× | à frente |
-| **M4** | CLI agêntico | acerto de cache ≥90%; abertura quente ≤3 s | à frente |
+| **M4** | CLI agêntico | ferramentas, sandbox, contrato de processo | **feito** ([§13](#13--o-servidor-o-protocolo-e-o-agente)) |
 | **M5** | otimização, com número | cada item com antes/depois na mesma configuração | à frente |
 
 ### O que o projeto declara **não** ser
@@ -1231,9 +1619,9 @@ colocação. → [`docs/01`](../docs/01-objetivos.md)
 
 ---
 
-## 14 — Mãos à obra
+## 16 — Mãos à obra
 
-### 14.1 Compilar
+### 16.1 Compilar
 
 ```powershell
 .\build.ps1                    # engine (MSVC, encontrado por vswhere)
@@ -1250,7 +1638,7 @@ Isso custa um pouco de desempenho e compra **reprodutibilidade**, que é critér
 de saída, não luxo. Foi conferida no disassembly, não assumida.
 → [`docs/10`](../docs/10-implementacao.md)
 
-### 14.2 Os comandos
+### 16.2 Os comandos
 
 ```powershell
 .\tootega.exe selftest
@@ -1287,8 +1675,11 @@ Opções que aparecem em quase tudo:
 | `--ctx N` | capacidade do KV |
 | `--ram-gb N` | teto duro de memória |
 | `-v` | detalha o que está sendo feito |
+| `--kv-prec f32\|bf16\|int8` | precisão do cache KV. Default `f32`; as outras são opção medida, não padrão |
+| `--think\|--no-think` | liga ou desliga o rascunho antes da resposta. Default: desligado |
+| `--verbose` | no `serve`, imprime a forma e a estatística de cada pedido — nunca o conteúdo |
 
-### 14.3 Como fazer sua primeira medição sem errar
+### 16.3 Como fazer sua primeira medição sem errar
 
 Quatro regras, todas compradas com tempo perdido:
 
@@ -1303,18 +1694,20 @@ Quatro regras, todas compradas com tempo perdido:
 
 ---
 
-## 15 — Mapa do repositório
+## 17 — Mapa do repositório
 
-### 15.1 As pastas e a regra de cada uma
+### 17.1 As pastas e a regra de cada uma
 
 | pasta | o que é | regra |
 |---|---|---|
 | `src/` | o engine | C11 ISO, **zero dependências**; só `compat.c` tem `#ifdef` de SO |
-| `tools/` | ferramentas **nativas** | C ou Rust, uma pasta por ferramenta, o `.exe` fica na raiz de `tools/` |
-| `ptools/` | ferramentas em Python | legado e referências que exigem `transformers`/`numpy` |
+| `tools/` | ferramentas de **produção** | C ou Rust, uma pasta por ferramenta, o `.exe` na raiz de `tools/` |
+| `Tests/` | ferramentas de **medição** | mesma regra; medem o engine e podem usar o checkpoint original |
+| `ptools/` | ferramentas em Python | só o que exige `transformers`/`tokenizers` como referência externa |
 | `docs/` | a especificação | toda decisão com o porquê e o número que a sustenta |
 | `models/` | os containers | não versionado |
 | `ForDummies/` | este documento e as figuras | PT e EN em paralelo |
+| `LICENSE` | a licença MIT | vale para o código; o modelo tem a dele |
 
 **Ferramenta nova é C ou Rust, nunca Python.** A proibição de dependências vale
 para `src/` — o engine precisa ser auditável em uma sessão de leitura e consome
@@ -1322,7 +1715,7 @@ arquivos de terceiros. Ferramenta é outra coisa: pode linkar o que precisar,
 desde que não entre em `src/`. E ferramenta em C **deve reusar as fontes de
 `src/`**, para medir o engine e não uma reimplementação dele. → `CLAUDE.md`
 
-### 15.2 Os arquivos do engine
+### 17.2 Os arquivos do engine
 
 | arquivo | responsabilidade |
 |---|---|
@@ -1341,21 +1734,23 @@ desde que não entre em `src/`. E ferramenta em C **deve reusar as fontes de
 | `unicode_tables.h` | tabelas geradas para o pré-tokenizador |
 | `fixture_kernels.h` | as respostas corretas do `selftest` |
 
-### 15.3 As ferramentas
+### 17.3 As ferramentas
 
 | ferramenta | o que faz |
 |---|---|
 | `tools/convert` | BF16 → container int4/int8, com política de precisão por tensor |
-| `tools/ablate` | restaura grupos de tensores ao original e mede o efeito |
-| `tools/gentest` | gera fixtures |
-| `ptools/oracle.py` | a implementação de referência |
+| `tools/agent` | o cliente agêntico: seis ferramentas, sandbox, aprovação, modo `--tty` |
+| `Tests/ablate` | restaura grupos de tensores ao original e mede o efeito, pareado |
+| `Tests/gentest` | qualidade de geração: `rep4`, taxa de parada, `match@ref` |
+| `Tests/bench` | tempo, memória e a conta de roofline |
+| `ptools/oracle.py` | a implementação de referência em Python |
 | `ptools/perplexity.py` | a medida pareada de perplexidade |
 | `ptools/gen_*.py` | geradores de fixture e de tabelas Unicode |
 
 > Alguns documentos ainda citam `tools/oracle.py` e `tools/perplexity.py`. Os
 > arquivos em Python vivem hoje em **`ptools/`**.
 
-### 15.4 Os 16 documentos
+### 17.4 Os 20 documentos
 
 | # | documento | o que decide |
 |---|---|---|
@@ -1364,7 +1759,7 @@ desde que não entre em `src/`. E ferramenta em C **deve reusar as fontes de
 | 03 | [Arquitetura](../docs/03-arquitetura.md) | camadas, contratos, os três caches |
 | 04 | [Modelo alvo](../docs/04-modelo-alvo.md) | GLM-4.7-Flash e a quantização |
 | 05 | [Roadmap](../docs/05-roadmap.md) | marcos com critério de saída |
-| 06 | [Lições aprendidas](../docs/06-licoes-aprendidas.md) | copiar, jogar fora, consertar |
+| 06 | [Lições aprendidas](../docs/06-licoes-aprendidas.md) | adotar, jogar fora, evitar |
 | 07 | [Baseline](../docs/07-baseline.md) | os números a bater |
 | 08 | [Teto de desempenho](../docs/08-teto-de-desempenho.md) | roofline |
 | 09 | [Limites de recursos](../docs/09-limites-de-recursos.md) | orçamentos e a recusa |
@@ -1375,13 +1770,17 @@ desde que não entre em `src/`. E ferramenta em C **deve reusar as fontes de
 | 14 | [Formato do container](../docs/14-formato-container.md) | o `.tootega` byte a byte |
 | 15 | [Kernels e numérica](../docs/15-kernels-e-numerica.md) | W4A32, ordem de acumulação |
 | 16 | [Tokenizer](../docs/16-tokenizer.md) | BPE, o que implementar e como testar |
+| 17 | [Diagnóstico](../docs/17-diagnostico.md) | os bugs, e por que os testes não os pegaram |
+| 19 | [Estado de referência](../docs/19-estado.md) | a fotografia do que existe e do que foi medido |
+| 20 | [Agente e protocolos](../docs/20-agente.md) | ferramentas, o contrato do CLI, o custo do raciocínio |
+| 21 | [KV em int8](../docs/21-kv-int8.md) | medido, inconclusivo, não adotado |
 
 **Leia o 02 primeiro.** Contém a medição que inverte a intuição e da qual quase
 todas as outras decisões derivam. Depois o 08, que fixa a expectativa.
 
 ---
 
-## 16 — Mal-entendidos comuns
+## 18 — Mal-entendidos comuns
 
 **"É só usar a GPU."**
 A GPU desta máquina fala PCIe gen 3: ~12 GB/s. Qualquer peso que não *more* na
@@ -1404,8 +1803,11 @@ Não. A escolha é por token e por camada, e a divisão emergiu do treino sem
 significado atribuível.
 
 **"Aumentar o contexto é de graça."**
-São 52,9 KB por token de contexto, **por conversa**. A 64k isso é 3,5 GB — e o
-KV vira 63% do tráfego por token.
+São **105,8 KB por posição** de contexto no padrão f32, **por conversa**. A 64k isso é
+6,8 GB; no teto do modelo, 202.752 posições, são 21,96 GB — mais do que os
+pesos. Há as opções `bf16` (52,9 KB) e `int8` (28,1 KB), medidas e disponíveis,
+mas nenhuma virou padrão: nenhuma passou no critério fixado antes de medir.
+→ [§14.5](#145-a-medição-pareada-e-por-que-ela-existe)
 
 **"Cache de prompt é detalhe de conforto."**
 É a maior otimização disponível. Reaproveitar 100k tokens de KV evita um prefill
@@ -1423,9 +1825,48 @@ matmul limitado por banda pelos E-cores costuma piorar; o default é `p-cores`.
 Ele **recusa**, com uma mensagem dizendo o que reduzir. É decisão de projeto, e a
 medição que a motivou é a degradação de 13× em silêncio.
 
+
+**"O agente executa o que o modelo mandou."**
+Meio certo, e a metade errada importa. O **modelo** só escreve um pedido; quem
+executa é um programa comum, com as permissões de quem o iniciou, dentro de uma
+pasta da qual não pode sair. → [§13.4](#134-ferramentas-o-modelo-pede-ele-não-executa)
+
+**"Se ele raciocinar antes, responde melhor."**
+Medido neste modelo, com 400 tokens de orçamento: **não termina 8 de 12
+perguntas**, repete 8× mais e custa 4,5× o tempo. Para *"qual é a capital do
+Brasil"* ele é cortado antes de responder.
+→ [§14.6](#146-raciocinar-antes-de-responder-ajuda)
+
+**"Falar o protocolo da OpenAI exige a OpenAI."**
+Não exige nada além de implementar o formato, que é público. É justamente por
+falá-lo que Copilot, Continue e qualquer outro cliente conectam aqui sem uma
+linha de código nossa. → [§13.2](#132-falar-o-protocolo-que-o-mundo-já-fala)
+
+**"O cache guarda as perguntas e as respostas."**
+Guarda o **estado interno** dos primeiros N tokens do prompt. Por isso um espaço
+a mais no começo invalida tudo dali para a frente, e por isso a ordem do prompt
+é regra. → [§13.8](#138-o-cache-de-prefixo-na-prática)
+
+**"Kernel mais rápido, sistema mais rápido."**
+Os kernels da GPU ficaram 31× mais rápidos que a primeira versão e 2,6× mais
+rápidos que a CPU — e o decode inteiro ficou **mais lento**, três vezes seguidas.
+O gargalo estava no caminho entre os dois, não na conta.
+→ [§14.7](#147-a-medição-que-decidiu-não-usar-a-gpu)
+
+**"Perplexidade 8,63 é melhor que a perplexidade 12 daquele outro modelo."**
+Só se for exatamente o mesmo texto e o mesmo vocabulário. Comparar perplexidades
+de origens diferentes é o erro mais comum com essa métrica.
+→ [§14.1](#141-perplexidade-quão-surpreso-o-modelo-ficou)
+
+**"Deu quase igual, então pode adotar."**
+Se o intervalo de confiança cruza o zero, a medição não distingue melhora de
+piora. A resposta é *inconclusivo* — e foi o que aconteceu com o KV em int8,
+com a economia de memória toda a favor.
+→ [§14.5](#145-a-medição-pareada-e-por-que-ela-existe)
+
 ---
 
-## 17 — Índice de termos PT ↔ EN
+## 19 — Índice de termos PT ↔ EN
 
 Para ler as duas versões deste documento em paralelo, ou para procurar um termo
 no código (que é escrito em português, mas usa identificadores em inglês).
@@ -1434,33 +1875,63 @@ no código (que é escrito em português, mas usa identificadores em inglês).
 |---|---|---|
 | ablação | ablation | [§10.3](#103-quanto-custa-em-qualidade--e-a-surpresa) |
 | absorção (do MLA) | absorption | [§6.4](#64-atenção-e-o-cache-kv) |
-| afinidade | affinity | [§14.2](#142-os-comandos) |
+| afinidade | affinity | [§16.2](#162-os-comandos) |
+| agente (o laço) | agent (the loop) | [§13.5](#135-o-agente-é-o-laço-não-o-modelo) |
 | amostragem | sampling | [§6.6](#66-lm_head-logits-e-amostragem) |
+| aprovação | approval | [§13.5](#135-o-agente-é-o-laço-não-o-modelo) |
 | arena de scratch | scratch arena | [§11.2](#112-arena-de-scratch-zero-malloc-por-token) |
 | banda (de memória) | (memory) bandwidth | [§2](#ideia-3--o-gargalo-é-a-banda-de-memória-não-a-conta) |
+| barreira | barrier | [§11.2](#112-arena-de-scratch-zero-malloc-por-token) |
+| branch | branch | [§14.7](#147-a-medição-que-decidiu-não-usar-a-gpu) |
 | cabeça (de atenção) | (attention) head | [§5.1](#51-o-modelo) |
 | camada | layer | [§6.3](#63-as-47-camadas) |
 | camada densa | dense layer | [§6.3](#63-as-47-camadas) |
+| cerca (sandbox) | sandbox | [§13.5](#135-o-agente-é-o-laço-não-o-modelo) |
+| chamada de ferramenta | tool call | [§13.4](#134-ferramentas-o-modelo-pede-ele-não-executa) |
 | colocação | placement | [§8.2](#82-a-armadilha-medida) |
-| critério de corte | kill criterion | [§13](#13--onde-estamos-e-o-que-vem) |
-| critério de saída | exit criterion | [§13](#13--onde-estamos-e-o-que-vem) |
+| confiança | confidence | [§14.2](#142-entropia-e-confiança-o-que-a-perplexidade-esconde) |
+| CORS | CORS | [§13.2](#132-falar-o-protocolo-que-o-mundo-já-fala) |
+| critério de corte | kill criterion | [§15](#15--onde-estamos-e-o-que-vem) |
+| critério de saída | exit criterion | [§15](#15--onde-estamos-e-o-que-vem) |
+| CRLF | CRLF | [§5.6](#56-o-software-e-o-sistema) |
+| CUDA | CUDA | [§14.7](#147-a-medição-que-decidiu-não-usar-a-gpu) |
+| degeneração | degeneration | [§14.3](#143-rep4-o-detector-de-repetição) |
+| diretiva | directive | [§13.7](#137-o-chat-que-vem-dentro-do-executável) |
+| endpoint | endpoint | [§13.1](#131-por-que-existe-um-servidor) |
+| entropia | entropy | [§14.2](#142-entropia-e-confiança-o-que-a-perplexidade-esconde) |
+| EOF | EOF | [§13.6](#136-como-o-agente-conversa-com-uma-interface) |
 | escala (de quantização) | (quantization) scale | [§10.2](#102-como-funciona-em-concreto) |
 | especulação | speculative decoding | [§5.2](#52-a-execução) |
 | expert compartilhado | shared expert | [§6.5](#65-moe--64-guardados-5-usados) |
 | fração de residência | residency fraction | [§9.2](#92-por-que) |
+| futex | futex | [§11.2](#112-arena-de-scratch-zero-malloc-por-token) |
+| intervalo de confiança | confidence interval | [§14.5](#145-a-medição-pareada-e-por-que-ela-existe) |
+| JSON Schema | JSON Schema | [§13.4](#134-ferramentas-o-modelo-pede-ele-não-executa) |
 | lei de colocação | placement law | [§8.2](#82-a-armadilha-medida) |
+| marco | milestone |  |
+| match@ref | match@ref | [§14.4](#144-matchref-quantos-tokens-antes-de-divergir) |
+| MCP | MCP | [§13.4](#134-ferramentas-o-modelo-pede-ele-não-executa) |
 | medição pareada | paired measurement | [§12.2](#122-medição-pareada--e-o-erro-que-originou-a-regra) |
 | metade/metade | half/half | [§10.2](#102-como-funciona-em-concreto) |
+| NDJSON | NDJSON | [§13.6](#136-como-o-agente-conversa-com-uma-interface) |
+| ordem de redução | reduction order | [§5.4](#54-a-numérica) |
 | oráculo | oracle | [§12.1](#121-o-oráculo-e-o-3232) |
 | orçamento | budget | [§11.5](#115-orçamentos-o-que-conta-e-o-que-não-conta) |
-| ordem de redução | reduction order | [§5.4](#54-a-numérica) |
 | partição por camada | layer partition | [§8.3](#83-a-saída-partição-por-camada) |
-| peso | weight | [§5.1](#51-o-modelo) |
+| perplexidade | perplexity | [§14.1](#141-perplexidade-quão-surpreso-o-modelo-ficou) |
 | perplexidade | perplexity | [§12.2](#122-medição-pareada--e-o-erro-que-originou-a-regra) |
-| pool de threads | thread pool | [§15.2](#152-os-arquivos-do-engine) |
+| peso | weight | [§5.1](#51-o-modelo) |
+| pipe | pipe | [§13.6](#136-como-o-agente-conversa-com-uma-interface) |
+| pool de threads | thread pool | [§17.2](#172-os-arquivos-do-engine) |
+| processo | process | [§13.1](#131-por-que-existe-um-servidor) |
+| protocolo OpenAI | OpenAI protocol | [§13.2](#132-falar-o-protocolo-que-o-mundo-já-fala) |
+| rascunho (think) | draft (think) | [§14.6](#146-raciocinar-antes-de-responder-ajuda) |
+| rep4 | rep4 | [§14.3](#143-rep4-o-detector-de-repetição) |
 | residente | resident | [§9](#9--residência-a-decisão-que-vale-20) |
 | resíduo | residual | [§6.3](#63-as-47-camadas) |
 | roteador | router / gate | [§6.5](#65-moe--64-guardados-5-usados) |
+| SSE | SSE | [§13.3](#133-por-que-a-resposta-aparece-letra-por-letra) |
+| stdin e stdout | stdin and stdout | [§13.6](#136-como-o-agente-conversa-com-uma-interface) |
 | teto | roofline / ceiling | [§7.2](#72-a-conta) |
 | tokenizador | tokenizer | [§6.1](#61-tokenizer--de-texto-para-números) |
 | travessia | crossing | [§8.3](#83-a-saída-partição-por-camada) |

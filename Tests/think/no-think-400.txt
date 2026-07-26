@@ -91,9 +91,9 @@ def reverse_string_loop(text):
   --- Name three prime numbers greater than 10.
   [models\glm47flash-v3\model.tootega] Here are three prime numbers greater than 10:
 
-1.  **11**
-2.  **13**
-3.  **17**
+1. **11**
+2. **13**
+3. **17**
 
   --- Explique por que o ceu e azul, em uma frase.
   [models\glm47flash-v3\model.tootega] O céu é azul porque a atmosfera da Terra dispersa a luz solar, fazendo com que o azul seja a cor que mais se destaca ao nosso redor.

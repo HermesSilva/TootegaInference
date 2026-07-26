@@ -108,14 +108,14 @@ def reverse_string(text):
   --- Name three prime numbers greater than 10.
   [BF16 (referencia) (9365 tensores em BF16)] Here are three prime numbers greater than 10:
 
-1.  **11**
-2.  **13**
-3.  **17**
+1. **11**
+2. **13**
+3. **17**
   [models\glm47flash-v3\model.tootega] Here are three prime numbers greater than 10:
 
-1.  **11**
-2.  **13**
-3.  **17**
+1. **11**
+2. **13**
+3. **17**
 
   --- Explique por que o ceu e azul, em uma frase.
   [BF16 (referencia) (9365 tensores em BF16)] O céu é azul porque a atmosfera da Terra dispersa a luz solar, fazendo com que a luz azul seja a que mais se espalha pelo ar.

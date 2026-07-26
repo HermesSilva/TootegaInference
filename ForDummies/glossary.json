@@ -531,13 +531,13 @@
       "category": "projeto",
       "pt": {
         "term": "a armadilha desta máquina",
-        "definition": "A configuração <code>CUDA_DENSE=1</code> do colibrì, que não recusou o impossível e degradou 13× em silêncio: 0,684 → 0,054 tok/s.",
+        "definition": "A configuração <code>CUDA_DENSE=1</code> do engine anterior, que não recusou o impossível e degradou 13× em silêncio: 0,684 → 0,054 tok/s.",
         "usual": null,
         "aliases": []
       },
       "en": {
         "term": "this machine's trap",
-        "definition": "colibrì's <code>CUDA_DENSE=1</code> setting, which did not refuse the impossible and degraded 13x silently: 0.684 → 0.054 tok/s.",
+        "definition": "engine anterior's <code>CUDA_DENSE=1</code> setting, which did not refuse the impossible and degraded 13x silently: 0.684 → 0.054 tok/s.",
         "usual": null,
         "aliases": []
       }
@@ -810,16 +810,16 @@
       }
     },
     {
-      "id": "colibri",
+      "id": "engine anterior",
       "category": "projeto",
       "pt": {
-        "term": "colibrì",
+        "term": "engine anterior",
         "definition": "O projeto anterior, de outro repositório, que resolve o problema oposto: modelos grandes demais, lidos do disco. Aqui é referência histórica — nada de código dele entra.",
         "usual": null,
         "aliases": []
       },
       "en": {
-        "term": "colibrì",
+        "term": "engine anterior",
         "definition": "The previous project, from another repository, solving the opposite problem: models too big, streamed from disk. Here it is a historical reference - none of its code enters.",
         "usual": null,
         "aliases": []
@@ -2818,13 +2818,13 @@
       "category": "medicao",
       "pt": {
         "term": "baseline",
-        "definition": "O número de referência a ser batido. Aqui é 0,93 tok/s, medido com o colibrì e o modelo grande.",
+        "definition": "O número de referência a ser batido. Aqui é 0,93 tok/s, medido com o engine anterior e o modelo grande.",
         "usual": null,
         "aliases": []
       },
       "en": {
         "term": "baseline",
-        "definition": "The reference number to beat. Here it is 0.93 tok/s, measured with colibrì and the oversized model.",
+        "definition": "The reference number to beat. Here it is 0.93 tok/s, measured with engine anterior and the oversized model.",
         "usual": null,
         "aliases": []
       }

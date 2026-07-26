@@ -30,11 +30,11 @@ GLM-4.7-Flash   19,3 (pesos) + 11 (KV a 200k) = 30,3 GB   sobram 34 GB
 Ling-2.6-flash  53,7 (pesos) + 4,8 (KV a 131k) = 58,5 GB  sobram 5 GB
 ```
 
-Cinco GB de folga é a margem em que vimos o engine do colibrì **se recusar a
+Cinco GB de folga é a margem em que vimos aquele engine **se recusar a
 subir** por risco de OOM. Não é margem, é armadilha.
 
 O Qwen3-30B-A3B tem tamanho parecido e é bom, mas usa GQA sem `kv_lora_rank` —
-irrelevante para o TootegaEngine, que não terá a trava do colibrì, mas relevante
+irrelevante para o TootegaEngine, que não terá a trava do engine anterior, mas relevante
 para o M1, onde queremos comparar contra um engine que já funciona.
 
 Ressalva honesta: os números de benchmark são do fabricante comparando-se com
@@ -78,7 +78,7 @@ routed_scaling_factor    1.8
 ```
 
 **Especulação:** `num_nextn_predict_layers = 1` — há cabeça MTP. Testável, e o
-regime residente é exatamente onde a issue #467 do colibrì diz que especulação
+regime residente é exatamente onde a experiencia anterior diz que especulação
 finalmente paga (perto de residência total, não sob streaming).
 
 **Sem DSA:** não há `index_topk`. Atenção densa; o lightning indexer do GLM-5.2
@@ -101,13 +101,13 @@ não se aplica. Menos código a escrever.
 Alvo: **int4 com escalas f32 por grupo de 64** ao longo da dimensão de entrada —
 0,5625 byte por peso efetivo. É o formato que o cálculo de teto assume.
 
-**Bloqueio conhecido:** a fonte é BF16, e o conversor do colibrì
+**Bloqueio conhecido:** a fonte é BF16, e o conversor do engine anterior
 (`c/tools/convert_fp8_to_int4.py`) foi escrito para o checkpoint FP8 do GLM-5.2.
-O modelo é compatível com o *engine* do colibrì, mas o caminho de quantização
+O modelo é compatível com o *engine* do engine anterior, mas o caminho de quantização
 precisa aceitar BF16. Isso é código a escrever, não download — e é o primeiro
 item do M0 no [roadmap](05-roadmap.md).
 
-Precisão por tensor, seguindo a lição #8 do colibrì (cabeça MTP em int4 derruba
+Precisão por tensor, seguindo a lição aprendida (cabeça MTP em int4 derruba
 aceitação de draft para 0–4%). Contagens **lidas do índice do container já
 escrito**, não do `--dry-run`:
 
@@ -207,7 +207,7 @@ Fechar esse furo é o que ainda vale mais que qualquer ajuste de escala:
 
 | caminho | ganho esperado | custo |
 |---|---|---|
-| **rotação Hadamard** antes de quantizar | ataca o outlier na raiz | kernel precisa aplicar a rotação nas ativações; o colibrì tem `c/tools/iq3_pack.py` |
+| **rotação Hadamard** antes de quantizar | ataca o outlier na raiz | kernel precisa aplicar a rotação nas ativações |
 | **GPTQ** (compensação via Hessiana) | 2–4× no erro de saída | dados de calibração + horas de conversão; formato e kernel **idênticos** |
 | int8 no tensor sensível | ~18× | 2× os bytes daquele tensor |
 

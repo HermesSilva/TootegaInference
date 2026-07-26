@@ -306,7 +306,7 @@ Indefinido: pool próprio ou OpenMP; como o trabalho é particionado (por linha 
 matmul, por expert, por cabeça de atenção); onde ficam as barreiras.
 
 Restrições conhecidas: 47 camadas seriais, top-4 experts por camada, e o pinning
-em CPU híbrida tem de acontecer antes de `main()` ([09](09-limites-de-recursos.md)).
+em CPU híbrida tem de acontecer antes de `main` ([09](09-limites-de-recursos.md)).
 
 **Recomendação:** pool próprio com barreira por camada. OpenMP resolveria, mas
 arrasta `libgomp` e a promessa de [10](10-implementacao.md) é linkagem estática
@@ -407,7 +407,7 @@ velocidade seguem válidos: o bug não mudava a quantidade de trabalho.
 ## PODE ESPERAR
 
 ### D7. Protocolo engine ↔ serviço (M3)
-O colibrì usa protocolo de linha por stdin/stdout com quadros `SUBMIT`. Funciona
+O engine anterior usa protocolo de linha por stdin/stdout com quadros `SUBMIT`. Funciona
 e é fácil de depurar. Decidir no M3.
 
 ### D8. Detalhes do KV paginado (M1 simples, M3 completo)

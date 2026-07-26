@@ -1,6 +1,6 @@
 # 07 — Baseline
 
-Tudo medido nesta máquina, com colibrì v1.1.1 e GLM-5.2 int4 (383,7 GB) em
+Tudo medido nesta máquina, com engine anterior v1.1.1 e GLM-5.2 int4 (383,7 GB) em
 `F:\glm52_i4`. São os números que o TootegaEngine tem de bater.
 
 Protocolo: prompt fixo, `max_tokens=80`, `temperature=0` (greedy), `RAM_GB=45`
@@ -75,16 +75,16 @@ residência: com 60 GB de orçamento cacheamos ~15% dos 324 GB de experts frios.
 
 Um achado que vale como requisito, não só como observação: **CPU e CUDA
 produziram bytes idênticos** (mesmo SHA-256 da resposta), em servidores
-diferentes, com colocações diferentes. A promessa central do colibrì — *placement
+diferentes, com colocações diferentes. A promessa central do engine anterior — *placement
 only ever decides speed* — se sustenta.
 
-A única divergência observada veio de um `.coli_kv` persistido de **outra
+A única divergência observada veio de um KV persistido de **outra
 conversa**, cujo prefixo casava parcialmente. Runs 2 e 3 idênticas entre si
 descartaram não-determinismo de redução em ponto flutuante sob OpenMP: o engine é
 determinístico **por estado**.
 
 Isso vira teste no TootegaEngine: mesma colocação → mesmos bytes; estado de KV
-diferente → **também** mesmos bytes (aqui o colibrì não foi verificado a fundo).
+diferente → **também** mesmos bytes (aqui o engine anterior não foi verificado a fundo).
 
 ## Banda de disco não saturada
 
@@ -98,6 +98,6 @@ Q32T16). Não perseguimos — o TootegaEngine não lê expert do disco.
 
 ## Como reproduzir
 
-Scripts em `F:\colibri\`: `bench.ps1` (matriz de configs), `bench_repeat.ps1`
+Scripts em \`: `bench.ps1` (matriz de configs), `bench_repeat.ps1`
 (efeito de repetição), `scaling.ps1` (fases A/B/C), `roofline.py` (teto teórico).
 Resultados brutos em `bench_run.log`, `bench_repeat.log`, `scaling_run.log`.

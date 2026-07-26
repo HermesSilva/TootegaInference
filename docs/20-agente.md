@@ -297,15 +297,15 @@ O texto explica o número. Para *"Qual é a capital do Brasil? Responda em uma
 frase"*:
 
 ```
-1.  **Analyze the Request:** ... Constraint: "Responda em uma frase."
-2.  **Identify the Fact:** The capital of Brazil is Brasília.
-3.  **Draft the Response (Internal Monologue/Drafting):**
+1. **Analyze the Request:** ... Constraint: "Responda em uma frase."
+2. **Identify the Fact:** The capital of Brazil is Brasília.
+3. **Draft the Response (Internal Monologue/Drafting):**
     *Draft 1:* A capital do Brasil é Brasília.
     *Draft 2:* Brasília é a capital do Brasil.
     *Draft 3:* A cidade de Brasília é a capital do Brasil.
-4.  **Select the Best Option:** ...
-5.  **Final Polish (Portuguese):** ...
-6.  **Check Constraints:** Is it one sente          <- cortado aqui
+4. **Select the Best Option:** ...
+5. **Final Polish (Portuguese):** ...
+6. **Check Constraints:** Is it one sente          <- cortado aqui
 ```
 
 Seis etapas em inglês e três rascunhos alternativos para um fato de uma

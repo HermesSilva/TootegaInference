@@ -37,7 +37,7 @@ case-insensitive e lookahead negativo.
 
 **Não implementar um motor de regex.** A alternativa correta é uma máquina de
 estados escrita à mão para *este* padrão, com tabelas Unicode geradas — que é
-exatamente o que o colibrì faz em `c/tok_unicode.h` e `c/tok_unicode_o200k.h`,
+exatamente o que o engine anterior faz em `c/tok_unicode.h` e `c/tok_unicode_o200k.h`,
 geradas por `c/tools/gen_unicode.py`. Reaproveitar a abordagem (e possivelmente
 o gerador) poupa a parte mais chata e mais sujeita a erro sutil.
 
@@ -96,7 +96,7 @@ Tudo pré-compilado e persistido conforme [12](12-estado-persistente.md): parsea
 321.649 merges de JSON a cada abertura é desperdício puro. Carga = `mmap`.
 
 A busca de merge é o laço quente do encode. Hash aberto com chave de 64 bits
-`(id_esquerdo << 32) | id_direito`; o colibrì aprendeu na dor que varredura
+`(id_esquerdo << 32) | id_direito`; o engine anterior aprendeu na dor que varredura
 linear aqui custa *"decine di secondi"*.
 
 ## Teste

@@ -97,7 +97,7 @@ sections: *model*, *MoE*, *fits entirely*.
 
 ### The thesis, in one paragraph
 
-There is a previous project, **colibrì**, which proved you can run a giant model
+There is a previous project, **engine anterior**, which proved you can run a giant model
 (744 billion parameters) on an ordinary machine by streaming pieces from disk as
 needed. It works — and it delivers **0.93 tokens per second** [measured] on this
 machine. Too slow for interactive use.
@@ -290,7 +290,7 @@ after a mistake cost time.
 | placement law | "Put on the GPU only what fits there permanently; never stream weights over a link slower than the source tier." |
 | layer partition | Splitting the model between GPU and CPU by layers, not by tensors. Weights stay pinned where the layer is computed; only 8 KB crosses between layers. |
 | residency fraction | What percentage of the model sits in fast memory. It is the variable that governs speed, more than any hardware spec. |
-| this machine's trap | colibrì's `CUDA_DENSE=1` setting, which did not refuse the impossible and degraded 13x silently: 0.684 → 0.054 tok/s. |
+| this machine's trap | engine anterior's `CUDA_DENSE=1` setting, which did not refuse the impossible and degraded 13x silently: 0.684 → 0.054 tok/s. |
 | refuse instead of degrade | If the plan does not fit the declared budget, the engine exits with an error naming what to reduce. It never accepts and gets slow. |
 | 32/32 | The acceptance criterion: 32 test positions, all matching the reference token. Binary, and it blocks merges. |
 | paired measurement | Comparing two configurations window by window over the same text, never by global mean. The global mean already produced a sign-flipped number. |
@@ -306,17 +306,17 @@ after a mistake cost time.
 | anonymous memory | Memory that exists only in RAM, with no file behind it. If evicted, the content is lost - hence it counts against the budget. |
 | publish what was measured | When intuition says one thing and measurement says another, the measurement is published - even if the alternative looks safer. |
 | ceiling | The upper speed bound obtained by dividing bytes by bandwidth, ignoring compute and overhead. Also called the roofline. |
-| colibrì | The previous project, from another repository, solving the opposite problem: models too big, streamed from disk. Here it is a historical reference - none of its code enters. |
+| engine anterior | The previous project, from another repository, solving the opposite problem: models too big, streamed from disk. Here it is a historical reference - none of its code enters. |
 | .tootega container | The project's file format: a 128-byte header, blobs aligned to 64 bytes, a JSON index at the end. Read directly, with no conversion step. |
 
-### The nickname that shows up most: **colibrì**
+### The nickname that shows up most: **engine anterior**
 
-`colibrì` is the **previous project**, from another repository, solving the
+`engine anterior` is the **previous project**, from another repository, solving the
 opposite problem (models too big, streamed from disk). It is cited constantly for
 two reasons: it supplied the baseline numbers, and it supplied the list of
 mistakes not to repeat.
 
-**Hard project rule:** no colibrì code or toolchain enters here. The citations
+**Hard project rule:** no engine anterior code or toolchain enters here. The citations
 are historical — measurement reference and lessons learned, not permission to
 reuse. → `CLAUDE.md`
 
@@ -458,7 +458,7 @@ Quick reference. Nothing here is project-specific.
 | fixture | A file of precomputed correct answers, generated once and compared against on every test run. |
 | selftest | The test built into the binary: kernels, JSON parser, thread pool, tokenizer and sampler against fixtures. It runs in seconds. |
 | regression test | A test that exists only to keep an old bug from returning. The `CUDA_DENSE` case became one. |
-| baseline | The reference number to beat. Here it is 0.93 tok/s, measured with colibrì and the oversized model. |
+| baseline | The reference number to beat. Here it is 0.93 tok/s, measured with engine anterior and the oversized model. |
 | benchmark | A controlled, repeatable measurement. Without a fixed budget, warm-up and an output hash, it is worthless. |
 | warm-up | A discarded run before measuring, so the cost of filling caches does not land entirely on the first measurement. |
 | reproducibility | The property of getting exactly the same result on repetition. Here it is an exit criterion, not a convenience. |
@@ -636,9 +636,9 @@ different experts in the next layer. There is no topic, no nameable specialty.
 `n_group` and `topk_group` are parameters that, in other models, restrict the
 choice to certain blocks of experts. In this model they are both 1 — meaning
 **no restriction**. That is why the project implements only this path on day one,
-but keeps the variant declared rather than hard-wired into the parser (colibrì's
+but keeps the variant declared rather than hard-wired into the parser (engine anterior's
 mistake, which shrank the universe of compatible models to a single family).
-→ [`docs/06`](../docs/06-licoes-colibri.md)
+→ [`docs/06`](../docs/06-licoes-aprendidas.md)
 
 ### 6.6 lm_head, logits and sampling
 
@@ -775,7 +775,7 @@ slower than the disk it came from, and five times slower than RAM.
 
 ### 8.2 The trap, measured
 
-In colibrì, the `CUDA_DENSE=1` option places the dense tensors on the GPU **even
+In engine anterior, the `CUDA_DENSE=1` option places the dense tensors on the GPU **even
 when they do not fit**:
 
 ```
@@ -871,11 +871,11 @@ the residency threshold**.
 > `N^0.25`.
 
 That is the whole thesis in one line. And it is why TootegaEngine **throws away**
-all the disk-hiding machinery colibrì built — prefetch, dual-SSD routing,
+all the disk-hiding machinery engine anterior built — prefetch, dual-SSD routing,
 `O_DIRECT`, learned pin sets, per-layer eviction. None of it helps when the model
 is resident, and all of it is the bulk of that project's complexity budget.
 
-**TootegaEngine's main structural advantage over colibrì is not speed — it is
+**TootegaEngine's main structural advantage over engine anterior is not speed — it is
 code size.**
 
 ---
@@ -1024,7 +1024,7 @@ Every temporary buffer in the forward pass has a fixed size, known once the
 configuration is read. They are slices of **one arena sized once at startup**.
 The token loop never calls the allocator.
 
-colibrì does ~500 `malloc`/`free` per token. At 0.93 tok/s that is 0.01% and does
+engine anterior does ~500 `malloc`/`free` per token. At 0.93 tok/s that is 0.01% and does
 not matter; at 22 tok/s it does — and the fix is structural, not a
 micro-optimization for later.
 
@@ -1070,7 +1070,7 @@ second turn** — 8 tokens of prefill instead of 100. [measured]
 
 **Hash addressing, and the bug it prevents.** A KV block is addressed by the
 **accumulated hash of the exact token sequence that produced it** — never by
-slot, never by position. The reason is concrete: in colibrì, one run diverged
+slot, never by position. The reason is concrete: in engine anterior, one run diverged
 from the others because a persisted KV **from another conversation** partially
 matched the new prompt. The engine resumed from a state that did not correspond
 to that text. Partial matching does not exist: either the hash matches, or the
@@ -1378,7 +1378,7 @@ long as that does not enter `src/`. And a C tool **should reuse the sources in
 | 03 | [Architecture](../docs/03-arquitetura.md) | layers, contracts, the three caches |
 | 04 | [Target model](../docs/04-modelo-alvo.md) | GLM-4.7-Flash and quantization |
 | 05 | [Roadmap](../docs/05-roadmap.md) | milestones with exit criteria |
-| 06 | [Lessons from colibrì](../docs/06-licoes-colibri.md) | copy, discard, fix |
+| 06 | [Lessons learned](../docs/06-licoes-aprendidas.md) | copy, discard, fix |
 | 07 | [Baseline](../docs/07-baseline.md) | the numbers to beat |
 | 08 | [Performance ceiling](../docs/08-teto-de-desempenho.md) | roofline |
 | 09 | [Resource limits](../docs/09-limites-de-recursos.md) | budgets and the refusal |

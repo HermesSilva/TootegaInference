@@ -9,7 +9,7 @@ Duas metas mensuráveis:
 
 1. **≥ 15 tok/s** single-stream com GLM-4.7-Flash em int4, contexto de 4k, só na
    CPU — e **≥ 25 tok/s** com a partição GPU/CPU, se ela se pagar.
-   Baseline a bater: 0,93 tok/s do colibrì com GLM-5.2.
+   Baseline a bater: 0,93 tok/s do engine anterior com GLM-5.2.
    Roofline: 27 tok/s CPU, 44 split ([08](08-teto-de-desempenho.md)).
 2. **Throughput agregado escalando quase linear** com sessões concorrentes até
    saturar a banda de memória. Baseline a bater: `N^0,27` medido sob streaming.
@@ -24,11 +24,11 @@ sequências em vez de multiplicá-la.
 
 ## O que explicitamente não é
 
-**Não é um engine de streaming de disco.** Todo o maquinário que o colibrì
+**Não é um engine de streaming de disco.** Todo o maquinário que o streaming
 construiu para esconder disco — PILOT, prefetch cross-layer, roteamento
 dual-SSD, ajuste de `O_DIRECT`, pin set aprendido, tier LRU por camada — é a
 maior parte do orçamento de complexidade dele e **não serve para nada** quando o
-modelo é residente. Fica de fora. Se o modelo não cabe, use o colibrì.
+modelo é residente. Fica de fora. Se o modelo não cabe, este não é o engine certo.
 
 **Não é multi-GPU.** Uma GPU, um host. Sharding entre placas é problema de outra
 escala.
@@ -48,10 +48,10 @@ que medimos em 0,054 tok/s. O planner resolve um custo por token contra as banda
 
 **Validação token-exata, inegociável.** Todo forward é comparado contra um
 oráculo `transformers` com teacher-forcing. É o que separa engine de gerador de
-plausibilidade, e o colibrì acertou nisso — mantém-se.
+plausibilidade, e o engine anterior acertou nisso — mantém-se.
 
-**Arquitetura como configuração, não como pressuposto compilado.** O colibrì
-crava `n_group == 1` e MLA obrigatório no parser (`colibri.c:934` e `:943`) e sai
+**Arquitetura como configuração, não como pressuposto compilado.** O engine anterior
+crava `n_group == 1` e MLA obrigatório no parser e sai
 com erro fatal fora dessa janela. Foi isso que reduziu o universo de modelos
 compatíveis à família GLM-5.x e transformou "testar outro modelo" numa
 investigação que terminou sem opção. Aqui: config → IR, com atenção (MHA / GQA /
@@ -69,7 +69,7 @@ em silêncio. Medimos o custo de acomodar em vez de recusar: 13×. Detalhe em
 [09-limites-de-recursos.md](09-limites-de-recursos.md).
 
 **Medir antes de otimizar, e publicar o número.** Toda otimização entra com o
-antes/depois na mesma máquina. O colibrì faz isso e é por isso que o código dele
+antes/depois na mesma máquina. O engine anterior faz isso e é por isso que o código dele
 é audível; a diferença é que aqui os números vão para
 [07-baseline.md](07-baseline.md) com a config completa, porque descobrimos que
 comparar duas medições com `RAM_GB` diferente não significa nada.

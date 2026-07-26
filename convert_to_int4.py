@@ -12,8 +12,7 @@ Marco M0 do roadmap. Tres propriedades que o engine depende:
      62,4 GB e a saida ~19,3 GB (medido; a estimativa antiga de 15,6 GB nao
      contava escalas, MTP em int8 nem os dois `embed_tokens` em bf16).
 
-Precisao por tensor segue docs/04-modelo-alvo.md, incluindo a licao #8 do
-colibri: cabeca MTP em int4 derruba a aceitacao de draft para 0-4%, entao a
+Precisao por tensor segue docs/04-modelo-alvo.md, incluindo a licao #8 do engine anterior: cabeca MTP em int4 derruba a aceitacao de draft para 0-4%, entao a
 camada MTP inteira vai em int8.
 
 Uso:
@@ -43,7 +42,7 @@ if sys.platform == "win32":
         except (AttributeError, OSError):
             pass
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve.parent
 DEFAULT_SRC = HERE / "models" / "glm47flash-bf16"
 DEFAULT_OUT = HERE / "models" / "glm47flash-int4" / "model.tootega"
 
@@ -247,15 +246,15 @@ class Writer:
         self.index = {}
 
     def _align(self):
-        pad = (-self.f.tell()) % ALIGN
+        pad = (-self.f.tell) % ALIGN
         if pad:
             self.f.write(b"\0" * pad)
-        return self.f.tell()
+        return self.f.tell
 
     def blob(self, array: np.ndarray) -> tuple:
-        off = self._align()
+        off = self._align
         data = np.ascontiguousarray(array)
-        self.f.write(data.tobytes())
+        self.f.write(data.tobytes)
         return off, data.nbytes
 
     def add(self, name, kind, shape, data_off, data_len,
@@ -268,7 +267,7 @@ class Writer:
         }
 
     def close(self, meta: dict):
-        index_off = self._align()
+        index_off = self._align
         blob = json.dumps({"meta": meta, "tensors": self.index},
                           separators=(",", ":")).encode("utf-8")
         self.f.write(blob)
@@ -276,9 +275,9 @@ class Writer:
         self.f.write(MAGIC)
         self.f.write(struct.pack("<IIQQQ", FORMAT_VERSION, 0,
                                  len(self.index), index_off, len(blob)))
-        self.f.flush()
-        os.fsync(self.f.fileno())
-        self.f.close()
+        self.f.flush
+        os.fsync(self.f.fileno)
+        self.f.close
         # Troca atomica: uma queda no meio nao deixa um container meio escrito
         # com aparencia de valido.
         os.replace(self.tmp, self.path)
@@ -318,7 +317,7 @@ def convert_tensor(name, kind, raw, src_dtype, writer, rows_per_chunk, err_stats
         raise ValueError(f"{name}: dim de entrada {cols} nao divide por {GROUP}")
 
     bits = 4 if kind == "int4" else 8
-    data_off = writer._align()
+    data_off = writer._align
     total = 0
     all_scales = np.empty((rows, cols // GROUP), dtype=np.float32)
 
@@ -326,7 +325,7 @@ def convert_tensor(name, kind, raw, src_dtype, writer, rows_per_chunk, err_stats
         stop = min(start + rows_per_chunk, rows)
         block = as_f32(raw[start:stop], src_dtype)
         codes, scales = quant_grouped(block, bits)
-        writer.f.write(np.ascontiguousarray(codes).tobytes())
+        writer.f.write(np.ascontiguousarray(codes).tobytes)
         total += codes.nbytes
         all_scales[start:stop] = scales
 
@@ -345,8 +344,8 @@ def convert_tensor(name, kind, raw, src_dtype, writer, rows_per_chunk, err_stats
         # motivo de a rotacao Hadamard estar em docs/04.
         if start == 0:
             recon = dequant_grouped(codes, scales, bits, cols)
-            denom = np.abs(block).mean() or 1.0
-            per_weight = float(np.abs(recon - block).mean() / denom)
+            denom = np.abs(block).mean or 1.0
+            per_weight = float(np.abs(recon - block).mean / denom)
 
             rng = np.random.default_rng(0)          # fixo: comparavel entre runs
             x = rng.standard_normal(cols, dtype=np.float32)
@@ -367,11 +366,11 @@ def convert_tensor(name, kind, raw, src_dtype, writer, rows_per_chunk, err_stats
 def plan(src: Path, mtp_layer: int, lm_head: str, mtp: str):
     """(entradas, totais por classe). Nao le dado, so cabecalhos."""
     index = json.loads((src / "model.safetensors.index.json").read_text("utf-8"))
-    shards = sorted(set(index["weight_map"].values()))
+    shards = sorted(set(index["weight_map"].values))
     entries, totals = [], {}
     for shard in shards:
         header, base = read_st_header(src / shard)
-        for name, info in header.items():
+        for name, info in header.items:
             if name == "__metadata__":
                 continue
             kind = classify(name, mtp_layer, lm_head, mtp)
@@ -413,19 +412,19 @@ def verify(out: Path):
 
     print(f"  formato v{version} · {n} tensores · indice em {index_off:,}")
     bad = 0
-    for name, e in idx["tensors"].items():
+    for name, e in idx["tensors"].items:
         for field in ("data", "scales"):
             span = e.get(field)
             if span and span[0] % ALIGN:
                 print(f"  DESALINHADO {name}.{field} @ {span[0]}")
                 bad += 1
-    size = out.stat().st_size
+    size = out.stat.st_size
     print(f"  tamanho {size / 1e9:.2f} GB · desalinhados: {bad}")
     print(f"  {'OK' if bad == 0 else 'FALHOU'}")
     return bad == 0
 
 
-def main():
+def main:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--src", default=str(DEFAULT_SRC))
@@ -445,10 +444,10 @@ def main():
                     help="lm_head e 8,9%% do trafego por token; int4 economiza "
                          "0,16 GB/token mas pode custar qualidade (default int8)")
     ap.add_argument("--mtp", choices=("int4", "int8"), default="int8",
-                    help="camada MTP; a licao #8 do colibri diz int8 (default)")
+                    help="camada MTP; a licao #8 do engine anterior diz int8 (default)")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--verify", action="store_true")
-    args = ap.parse_args()
+    args = ap.parse_args
 
     global GROUP, CLIP_RATIOS
     if args.group < 8 or args.group % 8:
@@ -504,7 +503,7 @@ def main():
     # shutil.disk_usage funciona nos dois SOs; os.statvfs nao existe no Windows.
     import shutil
     probe = out.parent
-    while not probe.exists() and probe.parent != probe:
+    while not probe.exists and probe.parent != probe:
         probe = probe.parent
     need_gb = est / 1e9 * 1.1
     free_gb = shutil.disk_usage(probe).free / 1e9
@@ -514,7 +513,7 @@ def main():
 
     writer = Writer(out)
     err_stats, done, written, failure = {}, 0, 0, None
-    started = time.time()
+    started = time.time
     by_shard = {}
     for shard, name, info, base, kind in entries:
         by_shard.setdefault(shard, []).append((name, info, base, kind))
@@ -525,7 +524,7 @@ def main():
                 continue
             path = src / shard
             with open(path, "rb") as f, \
-                 mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
+                 mmap.mmap(f.fileno, 0, access=mmap.ACCESS_READ) as mm:
                 for name, info, base, kind in by_shard[shard]:
                     src_dtype = info["dtype"]
                     if src_dtype not in ST_DTYPES:
@@ -555,7 +554,7 @@ def main():
                 bad, error = failure
                 raise RuntimeError(f"falhou em {bad}: {error}") from None
             pct = 100 * done / len(entries)
-            rate = written / 1e6 / max(time.time() - started, 1e-9)
+            rate = written / 1e6 / max(time.time - started, 1e-9)
             print(f"  [{pct:5.1f}%] {shard}  ·  {written / 1e9:6.2f} GB "
                   f"escritos  ·  {rate:5.0f} MB/s", flush=True)
 
@@ -568,12 +567,12 @@ def main():
             "config": cfg,
         })
     except KeyboardInterrupt:
-        writer.f.close()
+        writer.f.close
         writer.tmp.unlink(missing_ok=True)
         print("\ninterrompido; parcial descartado")
         return 130
 
-    elapsed = time.time() - started
+    elapsed = time.time - started
     print(f"\n  {done:,} tensores · {written / 1e9:.2f} GB · {elapsed / 60:.1f} min")
 
     fallbacks = err_stats.pop("_fallback_f32", [])
@@ -586,7 +585,7 @@ def main():
     print("\n  erro de quantizacao (o que decide e a coluna 'saida'):")
     print(f"    {'classe':<7} {'por peso':>10} {'saida matmul':>14} "
           f"{'pior saida':>12} {'n':>7}")
-    for kind, s in sorted(err_stats.items()):
+    for kind, s in sorted(err_stats.items):
         print(f"    {kind:<7} {np.mean(s['peso']):>9.2%} "
               f"{np.mean(s['saida']):>13.2%} {max(s['saida']):>11.2%} "
               f"{len(s['saida']):>7,}")
@@ -600,10 +599,10 @@ def main():
     print("      Hadamard/GPTQ    2-4x menos erro, formato e kernel iguais.")
     print("    E lembre que x da sonda e gaussiano iid: o numero e otimista.")
 
-    print()
+    print
     verify(out)
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main)

@@ -93,7 +93,7 @@ Aplicando 60–80% sobre o roofline:
 | CPU-only, contexto de agente (32k) | ~15 | **10–12 tok/s** |
 | split, contexto de agente (32k) | ~24 | **15–19 tok/s** |
 
-Baseline a bater: **0,93 tok/s** (colibrì + GLM-5.2, medido). O ganho está entre
+Baseline a bater: **0,93 tok/s** (engine anterior + GLM-5.2, medido). O ganho está entre
 **11× e 34×**, conforme contexto e se o split se pagar.
 
 ## Duas consequências de projeto
@@ -116,5 +116,5 @@ primeira ordem, não de higiene.
 
 ## Reproduzir
 
-`F:\colibri\roofline.py` calcula a tabela a partir do config baixado do Hub.
+\roofline.py` calcula a tabela a partir do config baixado do Hub.
 Reexecutar após qualquer troca de modelo alvo.

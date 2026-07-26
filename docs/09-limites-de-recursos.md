@@ -6,14 +6,14 @@ não couber, em vez de acomodar.
 
 ## Por que, com evidência
 
-Três coisas que medimos no colibrì e que este documento existe para não repetir.
+Três coisas que medimos no engine anterior e que este documento existe para não repetir.
 
 **Acomodar em vez de recusar custa 13×.** `CUDA_DENSE=1` com 10,9 GB de tensores
 densos e 8,6 GB de VRAM não deu erro: aceitou e passou a trafegar peso pelo PCIe
 a cada camada, a cada token. Resultado medido: **0,054 tok/s** contra 0,684.
 Uma configuração impossível degradou em silêncio.
 
-**Orçamento automático flutuante torna medição incomparável.** O colibrì escolheu
+**Orçamento automático flutuante torna medição incomparável.** O engine anterior escolheu
 `RAM_GB=47,1` numa execução e `60,5` na seguinte, conforme o que o SO tinha
 devolvido no momento. Duas medições feitas assim não dizem nada uma sobre a
 outra — tivemos de refazer a matriz de benchmark inteira com o valor fixado.
@@ -54,9 +54,8 @@ qualquer medição, fixe.
 | `--affinity MODO` | `TOOTEGA_AFFINITY` | `p-cores` | `p-cores` \| `all` \| `none` \| lista explícita (`0-15`) |
 
 O 14900K é híbrido: 8 P-cores (16 threads SMT) e 16 E-cores. Espalhar um matmul
-memory-bound pelos E-cores costuma piorar, e o colibrì tem código
-(`colibri.c:6301`) para se re-exec justamente porque o pinning precisa acontecer
-antes de `main()`. Default `p-cores`, com `all` disponível para medir.
+memory-bound pelos E-cores costuma piorar, e o engine anterior tem código para se re-exec justamente porque o pinning precisa acontecer
+antes de `main`. Default `p-cores`, com `all` disponível para medir.
 
 ### GPU
 
@@ -65,8 +64,8 @@ antes de `main()`. Default `p-cores`, com `all` disponível para medir.
 | `--gpu MODO` | `TOOTEGA_GPU` | `auto` | `auto` \| `none` \| índice do device |
 | `--gpu-layers N` | `TOOTEGA_GPU_LAYERS` | auto | camadas residentes em VRAM; o resto na CPU |
 
-`--gpu none` é o desligamento duro. O colibrì tem uma armadilha aqui — no Windows
-ele **auto-habilita** CUDA em execução nua, e só um `COLI_CUDA=0` explícito
+`--gpu none` é o desligamento duro. O engine anterior tem uma armadilha aqui — no Windows
+ele **auto-habilita** CUDA em execução nua, e só um uma variável de ambiente explícita explícito
 suprime isso. Aqui: `auto` significa "use se ajudar, conforme o planner", e a
 decisão fica no log.
 
@@ -94,7 +93,7 @@ sugestao: --ram-gb 21, ou --gpu-layers para mover peso para a VRAM
 ```
 
 **2. O que conta contra cada orçamento é enumerado, não implícito.** O `RAM_GB`
-do colibrì era ambíguo — pesos densos, cache de expert e workspace entravam de
+do engine anterior era ambíguo — pesos densos, cache de expert e workspace entravam de
 formas diferentes. Aqui:
 
 | orçamento | inclui |
@@ -124,8 +123,7 @@ Saída: para cada camada, o tier que hospeda seus pesos.
 
 Objetivo: minimizar `Σ (bytes_lidos_por_token_no_tier / banda_do_tier)`, sujeito
 a caber em **cada** orçamento — e contabilizando o **link de transferência**,
-não só a banda do tier de destino. É essa segunda parte que faltava no `plan` do
-colibrì, e é por isso que ele recomendou um tier de VRAM que, medido, não pagou.
+não só a banda do tier de destino. É essa segunda parte que faltava no `plan` do engine anterior, e é por isso que ele recomendou um tier de VRAM que, medido, não pagou.
 
 Consequência nesta máquina: com PCIe a 12 GB/s, o planner **nunca** propõe
 transmitir peso para a GPU. Ou a camada mora lá, ou é computada na CPU.
@@ -166,6 +164,6 @@ Entra nos marcos do [roadmap](05-roadmap.md):
 
 - **M1**: `--ram-gb` e `--threads` respeitados e verificados; `--plan` recusa o
   que não cabe com mensagem acionável.
-- **M2**: `--vram-gb` e `--gpu-layers` idem; **o caso `CUDA_DENSE` do colibrì
+- **M2**: `--vram-gb` e `--gpu-layers` idem; **o caso `CUDA_DENSE` do engine anterior
   vira teste de regressão** — pedir mais VRAM do que existe tem de sair com erro,
   não render 0,054 tok/s.

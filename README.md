@@ -40,7 +40,7 @@ numpy sobre o mesmo container, `gen_kernel_fixture.py` e
 
 ## A tese em um parágrafo
 
-O colibrì provou que dá para rodar um MoE de 744B numa máquina comum transmitindo
+O engine anterior provou que dá para rodar um MoE de 744B numa máquina comum transmitindo
 experts do disco — e mediu **0,93 tok/s** aqui. Medimos também que escalar hardware
 nesse regime rende `N^0,25`: quadruplicar RAM ou concorrência dá ~1,4×. O gargalo
 não é hardware, é a razão entre o tamanho do modelo e a memória rápida. Um MoE
@@ -66,7 +66,7 @@ A conta completa está em [08-teto-de-desempenho.md](docs/08-teto-de-desempenho.
 | 03 | [Arquitetura](docs/03-arquitetura.md) | camadas, contratos, os três caches e seus donos |
 | 04 | [Modelo alvo](docs/04-modelo-alvo.md) | GLM-4.7-Flash: o que o engine tem de implementar |
 | 05 | [Roadmap](docs/05-roadmap.md) | marcos com critério de saída mensurável |
-| 06 | [Lições do colibrì](docs/06-licoes-colibri.md) | o que copiar, o que jogar fora, o que consertar |
+| 06 | [Lições aprendidas](docs/06-licoes-aprendidas.md) | o que copiar, o que jogar fora, o que consertar |
 | 07 | [Baseline](docs/07-baseline.md) | os números a bater, todos medidos nesta máquina |
 | 08 | [Teto de desempenho](docs/08-teto-de-desempenho.md) | roofline: quanto dá para extrair desta máquina |
 | 09 | [Limites de recursos](docs/09-limites-de-recursos.md) | orçamentos de CPU/GPU/RAM e a regra de recusar em vez de degradar |

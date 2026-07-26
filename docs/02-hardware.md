@@ -31,7 +31,7 @@ estritamente pior que computar na CPU direto da RAM — 12 GB/s contra 60 GB/s.
 
 ### Isto não é teoria — foi medido
 
-`CUDA_DENSE=1` no colibrì, que coloca os tensores densos na GPU quando eles não
+`CUDA_DENSE=1` no engine anterior, que coloca os tensores densos na GPU quando eles não
 cabem na VRAM:
 
 ```
@@ -58,7 +58,7 @@ custo_por_token = Σ_tier (bytes_lidos_no_tier / banda_do_tier)
 ```
 
 sujeito às capacidades — e contabilizando o **link de transferência**, não só a
-banda do tier de destino. É essa segunda parte que o colibrì omite: o `plan` dele
+banda do tier de destino. É essa segunda parte que o engine anterior omite: o `plan` dele
 recomendou um tier de VRAM que, medido, não pagou.
 
 ## O corolário que salva o projeto

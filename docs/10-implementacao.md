@@ -3,7 +3,7 @@
 ## C puro, C11
 
 Núcleo em **C11**, sem C++ no caminho de execução. Sem BLAS, sem protobuf, sem
-biblioteca de JSON, sem libcurl. Parser de JSON próprio (o `json.h` do colibrì
+biblioteca de JSON, sem libcurl. Parser de JSON próprio (o `json.h` do engine anterior
 tem 7 KB e resolve), leitor de safetensors próprio, tokenizer próprio lendo
 `tokenizer.json`.
 
@@ -33,13 +33,13 @@ Meta: **um binário que roda sem instalar nada**, exceto o backend de GPU.
 
 MinGW-w64 com `-static` funciona por completo, e `LoadLibrary` funciona
 normalmente dentro de um binário estático. Já construímos exatamente isso ao
-compilar o colibrì nesta máquina:
+compilar o engine anterior nesta máquina:
 
 ```
-gcc -O3 -march=native -fopenmp ... -o colibri.exe -lm -fopenmp -static -lpsapi
+gcc -O3 -march=native -fopenmp ... -o engine anterior.exe -lm -fopenmp -static -lpsapi
 ```
 
-Resultado: 895 KB, sem DLL de runtime, carregando `coli_cuda.dll` em execução.
+Resultado: 895 KB, sem DLL de runtime, carregando a DLL do backend em execução.
 Esse é o modelo.
 
 ### Linux — há um conflito real, e ele decide o formato do release
@@ -63,7 +63,7 @@ O de GPU é opcional e assumidamente mais frágil.
 ### OpenMP
 
 Linkado estaticamente nos dois SOs (`libgomp.a`). É a única dependência de
-runtime que o colibrì carrega e ela é evitável.
+runtime que o engine anterior carrega e ela é evitável.
 
 ## Backend de GPU: C ABI atrás de carregamento dinâmico
 
@@ -78,8 +78,8 @@ libtootega_cuda.so / .dll  compilado com nvcc, expõe C ABI
 
 O host **nunca** linka `cudart`. Se a DLL não existe, não carrega, ou a placa
 sumiu, o engine roda em CPU e diz isso no log. É o padrão do
-`backend_loader.c` do colibrì e ele funciona — a única armadilha que encontramos
-foi de diagnóstico: a mensagem `coli_cuda.dll not found` na verdade significava
+o carregador de backend do engine anterior e ele funciona — a única armadilha que encontramos
+foi de diagnóstico: a mensagem a DLL do backend not found` na verdade significava
 "a dependência dela, `cudart64_12.dll`, não estava no PATH". **A nossa mensagem
 tem de distinguir os dois casos**, senão custa o mesmo tempo de depuração que
 custou aqui.
@@ -131,7 +131,7 @@ sem `#ifdef` fora de `compat.c`.
 -static-pie                          (onde disponível; -fPIE conflita com -static)
 ```
 
-O hardening é explícito porque o colibrì **não** o tem (`c/Makefile:57`: só
+O hardening é explícito porque o engine anterior **não** o tem (o Makefile dele: só
 `-O3 -Wall -Wextra`) num engine em C que consome arquivos de modelo de terceiros
 e entrada de rede. Custo de incluir: uma linha.
 

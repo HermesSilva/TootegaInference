@@ -19,8 +19,8 @@ O modelo alvo tem ~9.500 tensores espalhados por 48 shards. Abrir significa ler
 o cabeçalho JSON de cada shard, parsear e construir o mapa nome → (arquivo,
 offset, forma, quantização).
 
-O colibrì aprendeu isso na dor: a varredura linear sobre ~120k tensores custava
-*"decine di secondi per token"* até trocarem por hash aberto (`st.h`). Aqui o
+O engine anterior aprendeu isso na dor: a varredura linear sobre ~120k tensores custava
+*"decine di secondi per token"* até trocarem por hash aberto (outro módulo dele). Aqui o
 problema é menor — 9,5k entradas — mas o parse dos cabeçalhos ainda é trabalho
 repetido a cada abertura.
 
@@ -65,7 +65,7 @@ prefixo de 20k tokens
 Três ordens de grandeza. Os blocos de KV do prefixo estável ([11](11-memoria.md))
 são gravados uma vez e mapeados de volta na abertura seguinte.
 
-Medimos isso funcionando no colibrì:
+Medimos isso funcionando no engine anterior:
 
 ```
 [KV] resumed conversation from disk: 106 tokens in 0.0s (no re-prefill)
@@ -74,7 +74,7 @@ Medimos isso funcionando no colibrì:
 ### E medimos também como isso quebra
 
 Na bateria de determinismo, uma execução divergiu das demais. A causa **não** era
-a colocação — CPU e CUDA deram bytes idênticos. Era um `.coli_kv` persistido de
+a colocação — CPU e CUDA deram bytes idênticos. Era um KV persistido de
 **outra conversa**, cujo prefixo casava parcialmente com o novo prompt. O engine
 retomou de um estado que não correspondia àquele texto.
 
@@ -89,7 +89,7 @@ torna impossível a classe de bug que observamos.
 
 ## Estatísticas: honestidade sobre o que vale
 
-O colibrì persiste `.coli_usage` — mapa de calor de quais experts o seu workload
+O engine anterior persiste um mapa de calor persistido — mapa de calor de quais experts o seu workload
 roteia — e usa para fixar os mais quentes. **Nesse regime faz todo sentido**: com
 15% de residência, escolher os 15% certos é a diferença entre 0,65 e 0,93 tok/s.
 
@@ -108,7 +108,7 @@ O que continua valendo a pena registrar:
 
 Nenhuma dessas realimenta a colocação. São observabilidade, não política — e a
 distinção é deliberada, porque foi assumir o contrário que produziu metade da
-complexidade do colibrì.
+complexidade do engine anterior.
 
 ## Regras de integridade
 
@@ -123,7 +123,7 @@ Todo artefato persistido carrega cabeçalho com:
 Divergência em qualquer campo → o artefato é **descartado e regenerado**, com uma
 linha no log dizendo qual campo divergiu. Nunca migração silenciosa.
 
-Escrita é **atômica**: arquivo temporário, `fsync`, `rename`. O colibrì acerta
+Escrita é **atômica**: arquivo temporário, `fsync`, `rename`. O engine anterior acerta
 isso (`telemetry.h:168`, escreve `.tmp` e renomeia) e é o mínimo — um artefato
 truncado por queda de energia não pode virar um índice corrompido que o engine
 aceita.

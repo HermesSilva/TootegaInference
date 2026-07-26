@@ -6,11 +6,12 @@ está especificado em `docs/`; leia `docs/02-hardware.md` primeiro e
 
 ## Independência
 
-**Nada de dependência do projeto colibrì (`F:\colibri`)** — nem código, nem
-toolchain. Os documentos citam o colibrì como referência de medições e lições
-aprendidas; isso é histórico, não permissão de reuso. Onde um documento sugerir
-reaproveitar código de lá (`json.h`, `tok_unicode.h`, `gen_unicode.py`),
-escrever do zero.
+**Nada de dependência de projeto externo** — nem código, nem toolchain. Tudo
+que este engine usa foi escrito aqui: parser JSON, tokenizer, tabelas Unicode,
+pool de threads, kernels.
+
+Onde um documento citar medição ou lição de trabalho anterior, é **histórico
+de aprendizado, não origem de código**. Nada foi reaproveitado.
 
 ## Onde cada coisa mora
 
@@ -73,7 +74,7 @@ reprodutibilidade de `docs/15` exige.
   medida de perplexidade deu o **sinal invertido**.
 - **Mudança de saída não entra em silêncio.** Qualquer alteração
   algebricamente equivalente (absorção do MLA, precisão de KV) só é adotada com
-  **32/32 tokens idênticos** contra `ref32.json`. bf16 e int8 no KV reprovaram
+ **32/32 tokens idênticos** contra `ref32.json`. bf16 e int8 no KV reprovaram
   e ficaram como opção, não como default.
 - **Trocar trabalho por memória precisa da conta de tráfego antes.** A primeira
   versão da absorção materializou `kv_b` em fp32 e ficou 2× mais lenta.

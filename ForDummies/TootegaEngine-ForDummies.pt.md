@@ -98,7 +98,7 @@ Três palavras já precisam de definição, e elas vêm nas seções seguintes: 
 
 ### A tese, em um parágrafo
 
-Existe um projeto anterior, o **colibrì**, que provou ser possível rodar um
+Existe um projeto anterior, o **engine anterior**, que provou ser possível rodar um
 modelo gigante (744 bilhões de parâmetros) numa máquina comum, lendo pedaços do
 disco conforme precisa. Ele funciona — e entrega **0,93 token por segundo**
 [medido] nesta máquina. É lento demais para uso interativo.
@@ -290,7 +290,7 @@ geralmente logo depois de um erro custar tempo.
 | lei de colocação | "Coloque na GPU apenas o que couber lá permanentemente; nunca transmita pesos por um link mais lento que o tier de origem." |
 | partição por camada | Dividir o modelo entre GPU e CPU por camadas, não por tensores. Os pesos ficam fixos onde a camada é calculada; entre camadas cruzam só 8 KB. |
 | fração de residência | Que porcentagem do modelo está na memória rápida. É a variável que governa a velocidade, mais que qualquer especificação de hardware. |
-| a armadilha desta máquina | A configuração `CUDA_DENSE=1` do colibrì, que não recusou o impossível e degradou 13× em silêncio: 0,684 → 0,054 tok/s. |
+| a armadilha desta máquina | A configuração `CUDA_DENSE=1` do engine anterior, que não recusou o impossível e degradou 13× em silêncio: 0,684 → 0,054 tok/s. |
 | recusar em vez de degradar | Se o plano não cabe no orçamento declarado, o engine sai com erro dizendo o que reduzir. Nunca aceita e fica lento. |
 | 32/32 | O critério de aceitação: 32 posições de teste, todas com o mesmo token da referência. Binário, e bloqueia merge. |
 | medição pareada | Comparar duas configurações janela a janela sobre o mesmo texto, nunca por média global. A média global já produziu um número invertido. |
@@ -306,17 +306,17 @@ geralmente logo depois de um erro custar tempo.
 | memória anônima | Memória que só existe na RAM, sem arquivo por trás. Se for despejada, o conteúdo se perde — por isso conta no orçamento. |
 | publica-se o que foi medido | Quando a intuição diz uma coisa e a medição diz outra, publica-se a medição — mesmo que a alternativa pareça mais segura. |
 | teto | O limite superior de velocidade obtido dividindo bytes por banda, ignorando compute e overhead. Também chamado de roofline. |
-| colibrì | O projeto anterior, de outro repositório, que resolve o problema oposto: modelos grandes demais, lidos do disco. Aqui é referência histórica — nada de código dele entra. |
+| engine anterior | O projeto anterior, de outro repositório, que resolve o problema oposto: modelos grandes demais, lidos do disco. Aqui é referência histórica — nada de código dele entra. |
 | container .tootega | O formato de arquivo do projeto: cabeçalho de 128 bytes, blobs alinhados a 64 bytes, índice JSON no fim. É lido direto, sem conversão. |
 
-### O apelido que mais aparece: **colibrì**
+### O apelido que mais aparece: **engine anterior**
 
-O `colibrì` é o **projeto anterior**, de outra pessoa/outro repositório, que
+O `engine anterior` é o **projeto anterior**, de outra pessoa/outro repositório, que
 resolve o problema oposto (modelos grandes demais, lidos do disco). Ele é citado
 o tempo todo por dois motivos: forneceu os números de baseline, e forneceu a
 lista de erros a não repetir.
 
-**Regra dura do projeto:** nada de código ou toolchain do colibrì entra aqui.
+**Regra dura do projeto:** nada de código ou toolchain do engine anterior entra aqui.
 As citações são históricas — referência de medição e lição aprendida, não
 permissão de reuso. → `CLAUDE.md`
 
@@ -458,7 +458,7 @@ Referência rápida. Nada aqui é específico do projeto.
 | fixture | Um arquivo com respostas corretas pré-calculadas, gerado uma vez e comparado a cada execução do teste. |
 | selftest | O teste embutido no binário: kernels, parser JSON, pool de threads, tokenizer e sampler contra fixtures. Roda em segundos. |
 | teste de regressão | Um teste que existe só para impedir que um bug antigo volte. O caso `CUDA_DENSE` virou um. |
-| baseline | O número de referência a ser batido. Aqui é 0,93 tok/s, medido com o colibrì e o modelo grande. |
+| baseline | O número de referência a ser batido. Aqui é 0,93 tok/s, medido com o engine anterior e o modelo grande. |
 | benchmark | Uma medição controlada e repetível. Sem orçamento fixado, aquecimento e hash da saída, ela não vale nada. |
 | aquecimento | Uma execução descartada antes de medir, para que o custo de encher os caches não caia toda na primeira medida. |
 | reprodutibilidade | A propriedade de obter exatamente o mesmo resultado ao repetir. Aqui é critério de saída, não conveniência. |
@@ -634,9 +634,9 @@ diferentes na camada seguinte. Não há tema, não há especialidade nomeável.
 `n_group` e `topk_group` são parâmetros que, em outros modelos, restringem a
 escolha a certos blocos de experts. Neste modelo valem 1 — ou seja, **não há
 restrição**. É por isso que o projeto implementa só esse caminho no dia 1, mas
-deixa a variante declarada em vez de cravada no parser (o erro do colibrì, que
+deixa a variante declarada em vez de cravada no parser (o erro do engine anterior, que
 reduziu o universo de modelos compatíveis a uma família só).
-→ [`docs/06`](../docs/06-licoes-colibri.md)
+→ [`docs/06`](../docs/06-licoes-aprendidas.md)
 
 ### 6.6 lm_head, logits e amostragem
 
@@ -771,7 +771,7 @@ canal mais lento que o disco de onde veio, e cinco vezes mais lento que a RAM.
 
 ### 8.2 A armadilha, medida
 
-No colibrì, a opção `CUDA_DENSE=1` coloca os tensores densos na GPU **mesmo
+no engine anterior, a opção `CUDA_DENSE=1` coloca os tensores densos na GPU **mesmo
 quando eles não cabem**:
 
 ```
@@ -866,12 +866,12 @@ de residência**.
 > Escolher um modelo que já cabe rende 20 a 50×. Comprar hardware rende `N^0,25`.
 
 É a tese inteira do projeto em uma linha. E é o motivo pelo qual o TootegaEngine
-**joga fora** todo o maquinário de esconder disco que o colibrì construiu —
+**joga fora** todo o maquinário de esconder disco que o engine anterior construiu —
 prefetch, roteamento entre SSDs, `O_DIRECT`, conjunto de experts fixados,
 despejo por camada. Nada disso serve quando o modelo é residente, e tudo isso é a
 maior parte do orçamento de complexidade daquele projeto.
 
-**A principal vantagem estrutural do TootegaEngine sobre o colibrì não é
+**A principal vantagem estrutural do TootegaEngine sobre o engine anterior não é
 velocidade — é tamanho de código.**
 
 ---
@@ -1018,7 +1018,7 @@ Todos os buffers temporários do forward têm tamanho fixo, conhecido depois de 
 a configuração. São fatias de **uma arena dimensionada uma vez na inicialização**.
 O laço de token não chama o alocador nenhuma vez.
 
-O colibrì faz ~500 `malloc`/`free` por token. A 0,93 tok/s isso é 0,01% e não
+O engine anterior faz ~500 `malloc`/`free` por token. A 0,93 tok/s isso é 0,01% e não
 importa; a 22 tok/s importa — e a correção é estrutural, não uma
 micro-otimização para depois.
 
@@ -1061,7 +1061,7 @@ segundo turno** — 8 tokens de prefill em vez de 100. [medido]
 
 **Endereçamento por hash, e o bug que ele previne.** Um bloco de KV é endereçado
 pelo **hash acumulado da sequência exata de tokens que o produziu** — nunca pelo
-slot, nunca pela posição. O motivo é concreto: no colibrì, uma execução divergiu
+slot, nunca pela posição. O motivo é concreto: no engine anterior, uma execução divergiu
 das outras porque um KV persistido **de outra conversa** casava parcialmente com o
 novo prompt. O engine retomou de um estado que não correspondia àquele texto.
 Casamento parcial não existe: ou o hash bate, ou o bloco é ignorado.
@@ -1364,7 +1364,7 @@ desde que não entre em `src/`. E ferramenta em C **deve reusar as fontes de
 | 03 | [Arquitetura](../docs/03-arquitetura.md) | camadas, contratos, os três caches |
 | 04 | [Modelo alvo](../docs/04-modelo-alvo.md) | GLM-4.7-Flash e a quantização |
 | 05 | [Roadmap](../docs/05-roadmap.md) | marcos com critério de saída |
-| 06 | [Lições do colibrì](../docs/06-licoes-colibri.md) | copiar, jogar fora, consertar |
+| 06 | [Lições aprendidas](../docs/06-licoes-aprendidas.md) | copiar, jogar fora, consertar |
 | 07 | [Baseline](../docs/07-baseline.md) | os números a bater |
 | 08 | [Teto de desempenho](../docs/08-teto-de-desempenho.md) | roofline |
 | 09 | [Limites de recursos](../docs/09-limites-de-recursos.md) | orçamentos e a recusa |

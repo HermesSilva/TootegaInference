@@ -89,30 +89,29 @@ camadas k+1..46  -> pesos residentes em RAM, computadas na CPU
 `k` sai do planner: o maior `k` cujos pesos cabem na VRAM utilizável, menos a
 reserva de workspace e KV.
 
-Isso é o oposto do que o colibrì faz (mover *pesos* para a GPU sob demanda) e é
+Isso é o oposto do que o engine anterior faz (mover *pesos* para a GPU sob demanda) e é
 consequência direta do PCIe gen 3. **Marcado como hipótese**: o M2 existe para
 validá-la contra o CPU-only do M1, e o critério de corte está em
 [01-objetivos.md](01-objetivos.md).
 
 ## Estruturas de dados: as regras
 
-Derivadas do que medimos no colibrì (ver [06](06-licoes-colibri.md)):
+Derivadas do que medimos no engine anterior (ver [06](06-licoes-aprendidas.md)):
 
-**Movimento de bloco grande é troca de ponteiro, nunca cópia.** O colibrì acerta
-isso com swap de struct (`colibri.c:3493`) e slab reciclado por capacidade
+**Movimento de bloco grande é troca de ponteiro, nunca cópia.** O engine anterior acerta
+isso com swap de struct e slab reciclado por capacidade
 (`:1527`). Manter.
 
-**Scratch é arena persistente, não `malloc` por token.** O colibrì faz ~500
+**Scratch é arena persistente, não `malloc` por token.** O engine anterior faz ~500
 `malloc`/`free` por token em buffers de tamanho fixo conhecidos na init. A 1 tok/s
 não custa nada; a 50 tok/s vira percentual. Todos os buffers de forward saem de
 uma arena dimensionada uma vez.
 
-**Env lido uma vez, na init.** O colibrì chama `getenv` dentro do laço de camadas
-(`colibri.c:3505`, `:4158`) — ~300 varreduras de `environ` por token. Config vira
+**Env lido uma vez, na init.** O engine anterior chama `getenv` dentro do laço de camadas — ~300 varreduras de `environ` por token. Config vira
 struct imutável na init.
 
 **Busca de expert é O(1).** Varredura linear sobre o pin set custa ~150k
-comparações por token no colibrì. Com residência total o problema quase some,
+comparações por token no engine anterior. Com residência total o problema quase some,
 mas o índice é `layer × expert → slot` direto, sem busca.
 
 ## Correção
@@ -120,7 +119,7 @@ mas o índice é `layer × expert → slot` direto, sem busca.
 - **Oráculo `transformers`, teacher-forcing, token-exato.** Bloqueia merge.
 - **A colocação não pode alterar a saída.** Rodar o mesmo prompt em CPU-only,
   GPU-parcial e configurações de tier diferentes tem de dar bytes idênticos.
-  Verificamos isso no colibrì e ele passou — CPU e CUDA deram o mesmo hash.
+  Verificamos isso no engine anterior e ele passou — CPU e CUDA deram o mesmo hash.
 - **Determinismo é por estado, não global.** Duas execuções no mesmo estado dão
   saída idêntica; estados diferentes podem divergir legitimamente. O teste tem
   de fixar o estado, não assumir que greedy basta.

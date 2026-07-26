@@ -14,39 +14,39 @@ engine avx2+fma, 20 threads, kv f32, build 118ac8a1a06f
   parou:     prompts que terminaram em EOS dentro do orcamento
 
   --- Qual e a capital do Brasil? Responda em uma frase.
-  [BF16 (referencia) (9365 tensores em BF16)] 1.  **Analyze the user's request:**
+  [BF16 (referencia) (9365 tensores em BF16)] 1. **Analyze the user's request:**
     *   Question: "Qual e a capital do Brasil?" (What is the capital of Brazil?)
     *   Constraint: "Responda em uma frase." (Answer in one sentence.)
 
-2.  **Identify the core fact:**
+2. **Identify the core fact:**
     *   The capital of Brazil is Brasília.
 
-3.  **Draft the response (internal monologue/drafting):**
+3. **Draft the response (internal monologue/drafting):**
     *   *Draft 
-  [models\glm47flash-v3\model.tootega] 1.  **Analyze the Request:**
+  [models\glm47flash-v3\model.tootega] 1. **Analyze the Request:**
     *   Question: "Qual e a capital do Brasil?" (What is the capital of Brazil?)
     *   Constraint: "Responda em uma frase." (Answer in one sentence.)
 
-2.  **Identify the Fact:**
+2. **Identify the Fact:**
     *   The capital of Brazil is Brasília.
 
-3.  **Draft the Response (Internal Monologue/Drafting):**
+3. **Draft the Response (Internal Monologue/Drafting):**
     *   *Draft 1:* A
 
   --- Quanto e 17 vezes 23? Mostre a conta.
-  [BF16 (referencia) (9365 tensores em BF16)] 1.  **Analyze the user's request:**
-    *   **Question:** "Quanto e 17 vezes 23?" (Portuguese for "How much is 17 times 23?").
-    *   **Requirement:** "Mostre a conta." (Portuguese for "Show the calculation/account").
-    *   **Language:** Portuguese.
+  [BF16 (referencia) (9365 tensores em BF16)] 1. **Analyze the user's request:**
+    * **Question:** "Quanto e 17 vezes 23?" (Portuguese for "How much is 17 times 23?").
+    * **Requirement:** "Mostre a conta." (Portuguese for "Show the calculation/account").
+    * **Language:** Portuguese.
 
-2.  **Determine the mathematical operation:**
+2. **Determine the mathematical operation:**
     *   Multiplication: $17 \times
-  [models\glm47flash-v3\model.tootega] 1.  **Analyze the Request:**
-    *   **Question:** "Quanto e 17 vezes 23?" (What is 17 times 23?)
-    *   **Requirement:** "Mostre a conta." (Show the calculation).
-    *   **Language:** Portuguese.
+  [models\glm47flash-v3\model.tootega] 1. **Analyze the Request:**
+    * **Question:** "Quanto e 17 vezes 23?" (What is 17 times 23?)
+    * **Requirement:** "Mostre a conta." (Show the calculation).
+    * **Language:** Portuguese.
 
-2.  **Perform the Calculation:**
+2. **Perform the Calculation:**
     *   Method 1: Standard Multiplication (Vertical)
         ```text
           17
@@ -54,99 +54,99 @@ engine avx2+fma, 20 threads, kv f32, build 118ac8a1a06f
        
 
   --- Escreva uma frase curta sobre o mar.
-  [BF16 (referencia) (9365 tensores em BF16)] 1.  **Analyze the Request:**
-    *   **Topic:** O mar (the sea).
-    *   **Constraint:** Uma frase curta (a short sentence).
-    *   **Language:** Portuguese.
+  [BF16 (referencia) (9365 tensores em BF16)] 1. **Analyze the Request:**
+    * **Topic:** O mar (the sea).
+    * **Constraint:** Uma frase curta (a short sentence).
+    * **Language:** Portuguese.
 
-2.  **Brainstorming Imagery & Themes:**
+2. **Brainstorming Imagery & Themes:**
     *   *Movement:* Waves, tides, endless, restless.
     *   *Color:* Blue, turquoise, deep, dark.
     *   *Sound:* Roar,
-  [models\glm47flash-v3\model.tootega] 1.  **Analyze the Request:**
-    *   **Topic:** The sea (o mar).
-    *   **Constraint:** Short sentence (frase curta).
-    *   **Language:** Portuguese.
+  [models\glm47flash-v3\model.tootega] 1. **Analyze the Request:**
+    * **Topic:** The sea (o mar).
+    * **Constraint:** Short sentence (frase curta).
+    * **Language:** Portuguese.
 
-2.  **Brainstorming Imagery & Themes:**
+2. **Brainstorming Imagery & Themes:**
     *   *Blue/Color:* Azul, turquesa, profundo.
     *   *Sound:* Ondas, vento, silêncio, rugido.
 
 
   --- Liste tres cores primarias, uma por linha.
-  [BF16 (referencia) (9365 tensores em BF16)] 1.  **Analyze the Request:**
-    *   **Topic:** Primary colors (cores primárias).
-    *   **Quantity:** Three (três).
-    *   **Format:** One per line (uma por linha).
+  [BF16 (referencia) (9365 tensores em BF16)] 1. **Analyze the Request:**
+    * **Topic:** Primary colors (cores primárias).
+    * **Quantity:** Three (três).
+    * **Format:** One per line (uma por linha).
 
-2.  **Identify the Subject Matter:**
+2. **Identify the Subject Matter:**
     *   In the context of color theory, there are two main systems:
         *   *Subtractive color mixing* (paints, inks, dyes): Red,
-  [models\glm47flash-v3\model.tootega] 1.  **Analyze the Request:**
-    *   **Topic:** Primary colors (cores primárias).
-    *   **Quantity:** Three (três).
-    *   **Format:** One per line (uma por linha).
+  [models\glm47flash-v3\model.tootega] 1. **Analyze the Request:**
+    * **Topic:** Primary colors (cores primárias).
+    * **Quantity:** Three (três).
+    * **Format:** One per line (uma por linha).
 
-2.  **Identify the Subject Matter:**
+2. **Identify the Subject Matter:**
     *   There are two main color models used in art and science:
         *   *Subtractive (RYB):* Red, Yellow, Blue. (Traditional art).
        
 
   --- Explique em duas frases o que e memoria cache.
-  [BF16 (referencia) (9365 tensores em BF16)] 1.  **Analyze the Request:**
-    *   **Topic:** Memory Cache (Memória Cache).
-    *   **Constraint:** Explain in exactly two sentences (em duas frases).
-    *   **Language:** Portuguese.
+  [BF16 (referencia) (9365 tensores em BF16)] 1. **Analyze the Request:**
+    * **Topic:** Memory Cache (Memória Cache).
+    * **Constraint:** Explain in exactly two sentences (em duas frases).
+    * **Language:** Portuguese.
 
-2.  **Define "Memory Cache":**
+2. **Define "Memory Cache":**
     *   What is it? A high-speed intermediate storage area.
     *   Where is it? Between the CPU and the main memory (RAM).
     *   What is its purpose
-  [models\glm47flash-v3\model.tootega] 1.  **Analyze the Request:**
-    *   **Topic:** Memory Cache (Memória Cache).
-    *   **Constraint:** Explain in exactly two sentences (em duas frases).
-    *   **Language:** Portuguese.
+  [models\glm47flash-v3\model.tootega] 1. **Analyze the Request:**
+    * **Topic:** Memory Cache (Memória Cache).
+    * **Constraint:** Explain in exactly two sentences (em duas frases).
+    * **Language:** Portuguese.
 
-2.  **Define "Memory Cache":**
+2. **Define "Memory Cache":**
     *   What is it? A high-speed data storage layer.
     *   What does it do? Stores frequently used data so the CPU doesn't have to wait for the slower main
 
   --- Traduza para o ingles: o gato dorme no sofa.
-  [BF16 (referencia) (9365 tensores em BF16)] 1.  **Analyze the Request:**
+  [BF16 (referencia) (9365 tensores em BF16)] 1. **Analyze the Request:**
     *   Source text: "o gato dorme no sofa."
     *   Language: Portuguese.
     *   Target language: English.
     *   Grammar point: Present tense (habitual or current state), subject-verb-object, prepositions.
 
-2.  **Analyze the Source Sentence:**
+2. **Analyze the Source Sentence:**
     *   "o gato": the cat (subject, masculine singular).
     *   "dorm
-  [models\glm47flash-v3\model.tootega] 1.  **Analyze the Request:**
+  [models\glm47flash-v3\model.tootega] 1. **Analyze the Request:**
     *   Source text: "o gato dorme no sofa" (Portuguese).
     *   Target language: English.
     *   Goal: Translate the sentence accurately.
 
-2.  **Analyze the Source Sentence:**
+2. **Analyze the Source Sentence:**
     *   "o gato": The cat (subject).
     *   "dorme": sleeps (verb, 3rd person singular present indicative).
     *   "
 
   --- What is the capital of France? Answer in one sentence.
-  [BF16 (referencia) (9365 tensores em BF16)] 1.  **Analyze the Request:**
+  [BF16 (referencia) (9365 tensores em BF16)] 1. **Analyze the Request:**
     *   Question: "What is the capital of France?"
     *   Constraint: "Answer in one sentence."
 
-2.  **Identify the Fact:**
+2. **Identify the Fact:**
     *   The capital of France is Paris.
 
-3.  **Draft the Answer:**
+3. **Draft the Answer:**
     *   *Draft 1:* The capital of France is Paris. (Simple, direct, one sentence).
     *   *Draft 2:* Paris is
-  [models\glm47flash-v3\model.tootega] 1.  **Analyze the Request:** The user is asking for the capital of France and specifies that the answer must be in one sentence.
+  [models\glm47flash-v3\model.tootega] 1. **Analyze the Request:** The user is asking for the capital of France and specifies that the answer must be in one sentence.
 
-2.  **Identify the Fact:** The capital of France is Paris.
+2. **Identify the Fact:** The capital of France is Paris.
 
-3.  **Draft the Answer:**
+3. **Draft the Answer:**
     *   *Draft 1:* The capital of France is Paris. (Simple, direct, one sentence).
     *   *Draft 2:* Paris is the capital city of France. (Also correct
 
@@ -155,71 +155,71 @@ engine avx2+fma, 20 threads, kv f32, build 118ac8a1a06f
   [models\glm47flash-v3\model.tootega] We need to write a Python function that reverses a string. The user likely expects a simple solution. However, we need to consider the context: The instruction says "Write a Python function that reverses a string." That's straightforward. We can provide a function definition, maybe with docstring, and an example usage. But the user might be expecting just the code. Since it's a ChatGPT conversation, we should output the function. Possibly we need to include a
 
   --- Name three prime numbers greater than 10.
-  [BF16 (referencia) (9365 tensores em BF16)] 1.  **Analyze the Request:** The user wants three prime numbers that are greater than 10.
+  [BF16 (referencia) (9365 tensores em BF16)] 1. **Analyze the Request:** The user wants three prime numbers that are greater than 10.
 
-2.  **Define "Prime Number":** A prime number is a natural number greater than 1 that has no positive divisors other than 1 and itself.
+2. **Define "Prime Number":** A prime number is a natural number greater than 1 that has no positive divisors other than 1 and itself.
 
-3.  **Identify the Constraint:** The numbers must be greater than 10.
+3. **Identify the Constraint:** The numbers must be greater than 10.
 
-4.  **List Potential Candidates:**
+4. **List Potential Candidates:**
     *   11 (Divisible by 1 and 
-  [models\glm47flash-v3\model.tootega] 1.  **Analyze the Request:** The user wants three prime numbers that are greater than 10.
+  [models\glm47flash-v3\model.tootega] 1. **Analyze the Request:** The user wants three prime numbers that are greater than 10.
 
-2.  **Define "Prime Number":** A prime number is a natural number greater than 1 that has no positive divisors other than 1 and itself.
+2. **Define "Prime Number":** A prime number is a natural number greater than 1 that has no positive divisors other than 1 and itself.
 
-3.  **Define "Greater than 10":** I need to look at the sequence of integers starting from 11.
+3. **Define "Greater than 10":** I need to look at the sequence of integers starting from 11.
 
-4.  **Identify Primes > 10:**
+4. **Identify Primes > 10:**
    
 
   --- Explique por que o ceu e azul, em uma frase.
-  [BF16 (referencia) (9365 tensores em BF16)] 1.  **Analyze the Request:**
-    *   **Question:** "Explique por que o ceu e azul, em uma frase." (Explain why the sky is blue in one sentence.)
-    *   **Language:** Portuguese.
-    *   **Constraint:** "Em uma frase" (In one sentence).
+  [BF16 (referencia) (9365 tensores em BF16)] 1. **Analyze the Request:**
+    * **Question:** "Explique por que o ceu e azul, em uma frase." (Explain why the sky is blue in one sentence.)
+    * **Language:** Portuguese.
+    * **Constraint:** "Em uma frase" (In one sentence).
 
-2.  **Identify the Scientific Principle:**
+2. **Identify the Scientific Principle:**
     *   The sky is blue due to Rayleigh scattering.
     *   Sunlight
-  [models\glm47flash-v3\model.tootega] 1.  **Analyze the Request:**
-    *   **Question:** "Explique por que o ceu e azul, em uma frase." (Explain why the sky is blue, in one sentence.)
-    *   **Language:** Portuguese.
-    *   **Constraint:** "Em uma frase" (In one sentence).
+  [models\glm47flash-v3\model.tootega] 1. **Analyze the Request:**
+    * **Question:** "Explique por que o ceu e azul, em uma frase." (Explain why the sky is blue, in one sentence.)
+    * **Language:** Portuguese.
+    * **Constraint:** "Em uma frase" (In one sentence).
 
-2.  **Identify the Scientific Cause:**
+2. **Identify the Scientific Cause:**
     *   Rayleigh scattering.
     *   Sunlight hits the atmosphere.
    
 
   --- Complete: era uma vez uma casa
-  [BF16 (referencia) (9365 tensores em BF16)] 1.  **Analyze the Request:**
-    *   **Input:** "Complete: era uma vez uma casa" (Portuguese).
-    *   **Meaning:** "Complete: once upon a time there was a house."
-    *   **Intent:** The user wants me to finish the sentence or continue the story based on the opening phrase "Era uma vez uma casa" (Once upon a time there was a house).
-    *   **Tone
-  [models\glm47flash-v3\model.tootega] 1.  **Analyze the Request:**
+  [BF16 (referencia) (9365 tensores em BF16)] 1. **Analyze the Request:**
+    * **Input:** "Complete: era uma vez uma casa" (Portuguese).
+    * **Meaning:** "Complete: once upon a time there was a house."
+    * **Intent:** The user wants me to finish the sentence or continue the story based on the opening phrase "Era uma vez uma casa" (Once upon a time there was a house).
+    * **Tone
+  [models\glm47flash-v3\model.tootega] 1. **Analyze the Request:**
     *   Input: "Complete: era uma vez uma casa" (Portuguese).
     *   Task: Complete the sentence/story.
     *   Context: This is a classic "Once upon a time" (Era uma vez) opening, usually leading to a fairy tale or a story about a house.
 
-2.  **Determine the Tone/Style:**
+2. **Determine the Tone/Style:**
     *   Fairy tales are usually whimsical
 
   --- Qual a diferenca entre RAM e disco? Uma frase.
-  [BF16 (referencia) (9365 tensores em BF16)] 1.  **Analyze the Request:**
-    *   **Topic:** Difference between RAM (Random Access Memory) and Disk (Storage).
-    *   **Constraint:** "Uma frase" (One sentence).
-    *   **Language:** Portuguese.
+  [BF16 (referencia) (9365 tensores em BF16)] 1. **Analyze the Request:**
+    * **Topic:** Difference between RAM (Random Access Memory) and Disk (Storage).
+    * **Constraint:** "Uma frase" (One sentence).
+    * **Language:** Portuguese.
 
-2.  **Identify Key Concepts:**
-    *   **RAM:** Fast, volatile (data lost when power off), used for active tasks (OS, apps).
-    *   **Disk (HDD/SS
-  [models\glm47flash-v3\model.tootega] 1.  **Analyze the Request:**
-    *   **Topic:** Difference between RAM (Random Access Memory) and Disk (Storage).
-    *   **Constraint:** "Uma frase" (One sentence).
-    *   **Language:** Portuguese.
+2. **Identify Key Concepts:**
+    * **RAM:** Fast, volatile (data lost when power off), used for active tasks (OS, apps).
+    * **Disk (HDD/SS
+  [models\glm47flash-v3\model.tootega] 1. **Analyze the Request:**
+    * **Topic:** Difference between RAM (Random Access Memory) and Disk (Storage).
+    * **Constraint:** "Uma frase" (One sentence).
+    * **Language:** Portuguese.
 
-2.  **Identify Key Concepts:**
+2. **Identify Key Concepts:**
     *   RAM: Volatile, fast, temporary, used for active tasks (OS, apps).
     *   Disk (HDD/SSD): Non-volatile
 

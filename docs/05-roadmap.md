@@ -119,7 +119,7 @@ Onde vive a segunda meta de [01](01-objetivos.md).
 
 Só depois do M4, e cada item entra com antes/depois na mesma configuração:
 
-- Especulação MTP — a #467 do colibrì diz que só paga perto de residência total;
+- Especulação MTP — a experiencia anterior diz que só paga perto de residência total;
   aqui estamos nesse regime, então **é a primeira a testar**
 - Sobreposição compute/leitura, se o M1 mostrar que não sobrepõe
 - Kernels tensor-core W4A16 em sm_75

@@ -66,7 +66,7 @@
 <text x="439" y="200" class="sm" text-anchor="middle">por token.</text>
 <text x="439" y="214" class="sm" text-anchor="middle">Irrelevante.</text>
 <rect x="20" y="246" width="840" height="74" rx="10" fill="var(--critf)" stroke="var(--crit)" stroke-width="1.5"/>
-<text x="38" y="270" class="lbb" text-anchor="start" fill="var(--crit)">O caminho errado (medido no colibrì)</text>
+<text x="38" y="270" class="lbb" text-anchor="start" fill="var(--crit)">O caminho errado (medido no engine anterior)</text>
 <text x="38" y="292" class="sm" text-anchor="start">mover PESO para a GPU a cada camada, a cada token</text>
 <text x="38" y="310" class="sm" text-anchor="start">4,7 MB por expert atravessando 12 GB/s  -&gt;  0,054 tok/s</text>
 <text x="20" y="348" class="lbb" text-anchor="start">Lei de colocação: só vai para a GPU o que couber lá permanentemente.</text>

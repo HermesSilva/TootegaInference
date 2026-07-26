@@ -15,7 +15,7 @@ channel, RTX 2060 SUPER 8 GB, RAID0 NVMe on F:):
     202,752-token context -- and 19.3 GB of weights leaves ~34 GB of RAM for
     the KV cache an agent loop actually consumes.
   * MLA attention with kv_lora_rank=512 and n_group=1, the narrow architectural
-    window the colibri engine accepts (it exits hard otherwise), so the model
+    window the previous engine engine accepts (it exits hard otherwise), so the model
     is testable on the existing engine before TootegaEngine exists.
   * num_nextn_predict_layers=1, so the MTP speculation path is testable.
 
@@ -40,13 +40,13 @@ import time
 from pathlib import Path
 
 # Both must be set BEFORE huggingface_hub is imported, which is why the import
-# is deferred into main(): the symlink warning fires at import time on Windows
+# is deferred into main: the symlink warning fires at import time on Windows
 # without developer mode, and it is pure noise for a local_dir download.
 os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
 os.environ.setdefault("PYTHONUNBUFFERED", "1")
 
-# A plain Windows console is cp1252; any non-ASCII in a print() raises
-# UnicodeEncodeError and kills the run. Force UTF-8 the way the colibri
+# A plain Windows console is cp1252; any non-ASCII in a print raises
+# UnicodeEncodeError and kills the run. Force UTF-8 the way the previous engine
 # converters do (c/tools/convert_olmoe.py).
 if sys.platform == "win32":
     for stream in (sys.stdout, sys.stderr):
@@ -56,7 +56,7 @@ if sys.platform == "win32":
             pass
 
 REPO = "zai-org/GLM-4.7-Flash"
-DEFAULT_OUT = str(Path(__file__).resolve().parent / "models" / "glm47flash-bf16")
+DEFAULT_OUT = str(Path(__file__).resolve.parent / "models" / "glm47flash-bf16")
 HEADROOM_GB = 5.0            # index files, partial writes, filesystem slack
 
 
@@ -66,27 +66,27 @@ def human(gb):
 
 def local_bytes(out: Path) -> int:
     """Bytes already materialized, ignoring hf_hub's staging dir."""
-    if not out.exists():
+    if not out.exists:
         return 0
-    return sum(f.stat().st_size for f in out.rglob("*")
-               if f.is_file() and ".cache" not in f.parts)
+    return sum(f.stat.st_size for f in out.rglob("*")
+               if f.is_file and ".cache" not in f.parts)
 
 
 def staged_bytes(out: Path) -> int:
     """Bytes sitting in hf_hub's staging dir as partial shards. These are real
     progress -- a resumed run continues from them -- but they are invisible to
-    local_bytes(), so a run that fetched 2 GB of half-shards would otherwise
+    local_bytes, so a run that fetched 2 GB of half-shards would otherwise
     report 0% and look like nothing was saved."""
     staging = out / ".cache" / "huggingface" / "download"
-    if not staging.exists():
+    if not staging.exists:
         return 0
-    return sum(f.stat().st_size for f in staging.rglob("*") if f.is_file())
+    return sum(f.stat.st_size for f in staging.rglob("*") if f.is_file)
 
 
 def free_space_gb(target: Path) -> float:
     """Free space on the volume that will actually hold the files."""
     probe = target
-    while not probe.exists() and probe.parent != probe:
+    while not probe.exists and probe.parent != probe:
         probe = probe.parent
     return shutil.disk_usage(probe).free / 1e9
 
@@ -95,7 +95,7 @@ def check_space(target: Path, need_gb: float, wait: bool) -> float:
     """Refuse to start without room. With --wait-space, poll instead of dying:
     a 62 GB download that aborts an hour in for lack of a few GB is worse than
     waiting for a cleanup that is already under way."""
-    deadline = time.time() + 3600
+    deadline = time.time + 3600
     warned = False
     while True:
         free_gb = free_space_gb(target)
@@ -111,7 +111,7 @@ def check_space(target: Path, need_gb: float, wait: bool) -> float:
             print(f"aguardando espaco: {human(free_gb)} livres, faltam {human(deficit)}")
             print("  checando a cada 30s por ate 1h (Ctrl+C para sair)")
             warned = True
-        if time.time() > deadline:
+        if time.time > deadline:
             sys.exit(f"espaco nao apareceu em 1h (faltam {human(deficit)})")
         time.sleep(30)
 
@@ -132,7 +132,7 @@ def remote_manifest(repo: str):
     """{filename: size} straight from the Hub. This is the only thing that can
     tell a finished download from a short one."""
     from huggingface_hub import HfApi
-    info = HfApi().model_info(repo, files_metadata=True)
+    info = HfApi.model_info(repo, files_metadata=True)
     return {f.rfilename: (f.size or 0) for f in info.siblings}
 
 
@@ -141,14 +141,14 @@ def verify(out: Path, manifest: dict) -> bool:
     without raising is NOT proof of completeness -- a truncated or missing
     shard looks exactly like success until the engine fails to load it."""
     missing, short = [], []
-    for name, size in sorted(manifest.items()):
+    for name, size in sorted(manifest.items):
         path = out / name
-        if not path.exists():
+        if not path.exists:
             missing.append(name)
-        elif size and path.stat().st_size != size:
-            short.append((name, path.stat().st_size, size))
+        elif size and path.stat.st_size != size:
+            short.append((name, path.stat.st_size, size))
 
-    total = sum(manifest.values())
+    total = sum(manifest.values)
     print(f"\n  esperado: {len(manifest)} arquivos, {human(total / 1e9)}")
     print(f"  em disco: {len(manifest) - len(missing)} arquivos, "
           f"{human(local_bytes(out) / 1e9)}")
@@ -161,7 +161,7 @@ def verify(out: Path, manifest: dict) -> bool:
         print(f"  TRUNCADO  {name}: {got:,} de {want:,} bytes")
 
     for required in ("config.json", "tokenizer.json", "generation_config.json"):
-        mark = "ok" if (out / required).exists() else "AUSENTE"
+        mark = "ok" if (out / required).exists else "AUSENTE"
         print(f"  {required:<24} {mark}")
 
     ok = not missing and not short
@@ -169,7 +169,7 @@ def verify(out: Path, manifest: dict) -> bool:
     return ok
 
 
-def main():
+def main:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--repo", default=REPO)
@@ -184,7 +184,7 @@ def main():
                         help="check an existing download against the Hub and exit")
     parser.add_argument("--wait-space", action="store_true",
                         help="poll until the disk has room instead of exiting")
-    args = parser.parse_args()
+    args = parser.parse_args
 
     out = Path(args.out)
     print(f"repo    {args.repo}")
@@ -195,7 +195,7 @@ def main():
     except Exception as error:
         sys.exit(f"nao consegui ler o repo no Hub: {type(error).__name__}: {error}")
 
-    expected_gb = sum(manifest.values()) / 1e9
+    expected_gb = sum(manifest.values) / 1e9
     have_gb = local_bytes(out) / 1e9
     # Only the remainder has to fit: re-running after a partial download must
     # not demand room for bytes that are already on disk.
@@ -222,7 +222,7 @@ def main():
     from huggingface_hub import snapshot_download
 
     out.mkdir(parents=True, exist_ok=True)
-    started = time.time()
+    started = time.time
 
     try:
         for attempt in range(1, args.retries + 1):
@@ -247,7 +247,7 @@ def main():
         print("\ninterrompido - reexecute para continuar de onde parou")
         return 130
 
-    elapsed = time.time() - started
+    elapsed = time.time - started
     # Rate is bytes fetched THIS run, not everything on disk: a resumed run
     # would otherwise report a wildly inflated speed.
     fetched_gb = max(0.0, local_bytes(out) / 1e9 - have_gb)
@@ -259,9 +259,9 @@ def main():
         return 1
 
     print("\nproximo passo: quantizar para int4. A fonte e bfloat16, entao o "
-          "conversor precisa aceitar BF16 (o do colibri e FP8->int4).")
+          "conversor precisa aceitar BF16 (o do engine anterior e FP8->int4).")
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main)

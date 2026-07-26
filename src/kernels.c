@@ -358,7 +358,7 @@ static void mm_job_run(void *arg, int64_t row0, int64_t row1)
 #define TT_PARALLEL_MIN_MACS (256 * 1024)
 
 typedef struct {
-    float           **y;
+    float **y;
     const tt_tensor **w;
     const float      *x;
     int64_t           start[TT_BATCH_MAX + 1];  /* prefixo de linhas */

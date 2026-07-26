@@ -17,7 +17,7 @@ qt->q4 = (uint8_t*)(base + tensor->offset);   /* nao ha memcpy */
 qt->s  = (float*)  (base + scales->offset);
 ```
 
-O colibrì tem esse caminho (`colibri.c:1479-1520`) e o comentário dele descreve
+O engine anterior tem esse caminho (aquele código) e o comentário dele descreve
 exatamente o ganho: *"This is pread's I/O without the copy and without the slab."*
 A diferença aqui é que **é o único caminho**, não uma alternativa a um caminho de
 cópia.
@@ -34,8 +34,8 @@ Consequências:
 
 **Requisito que volta para o conversor (M0):** o container int4 tem de emitir
 tensores **alinhados a 64 bytes**, senão a leitura direta com SIMD precisa de um
-caminho de cópia para realinhar — e aí perde-se o zero-copy inteiro. O colibrì
-tropeça nisso e cai para `pread` quando `(off & 3)` (`colibri.c:1483`). O nosso
+caminho de cópia para realinhar — e aí perde-se o zero-copy inteiro. O engine anterior
+tropeça nisso e cai para `pread` quando `(off & 3)`. O nosso
 formato garante o alinhamento na escrita.
 
 ## 2. Pre-fault e lock, dentro do orçamento
@@ -80,7 +80,7 @@ arena dimensionada na init**.
 
 O laço de token não chama o allocator. Nem uma vez.
 
-O colibrì faz ~500 `malloc`/`free` por token ([06](06-licoes-colibri.md)); a
+O engine anterior faz ~500 `malloc`/`free` por token ([06](06-licoes-aprendidas.md)); a
 0,93 tok/s isso é 0,01% e não importa. A 22 tok/s importa, e a correção é
 estrutural, não uma micro-otimização a fazer depois.
 
@@ -119,8 +119,8 @@ para os experts ativos custaria 4× a leitura e destruiria a conta do
 [08](08-teto-de-desempenho.md).
 
 Corolário: fundir operações que releriam a mesma entrada. `gate` e `up` de um
-expert leem o mesmo `x` — uma passada, duas saídas. O colibrì mede ~33% do tempo
-de matmul de expert nisso (`colibri.c:469`).
+expert leem o mesmo `x` — uma passada, duas saídas. O engine anterior mede ~33% do tempo
+de matmul de expert nisso.
 
 ## 7. Operações in-place
 

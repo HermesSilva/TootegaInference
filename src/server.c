@@ -857,6 +857,7 @@ int tt_cmd_serve(int argc, char **argv)
     int64_t ctx = 8192;
     double ram_gb = 0, vram_gb = 0;
     const char *gpu_dll = NULL;
+    tt_offload_mode gpu_mode = TT_OFFLOAD_MOE;
 
     for (int i = 0; i < argc; i++) {
         const char *a = argv[i];
@@ -875,6 +876,13 @@ int tt_cmd_serve(int argc, char **argv)
              * DLL.  O proximo token so e consumido se nao for outra opcao. */
             gpu_dll = (has && argv[i + 1][0] != '-') ? argv[++i]
                                                      : "tootega_cuda.dll";
+        /* `--gpu-all` inclui atencao e lm_head, que sao chamados um a um e
+         * pagam o protocolo inteiro em cada matmul.  Fica como opcao porque em
+         * placa com mais VRAM a conta muda; o default e so MoE. */
+        else if (!strcmp(a, "--gpu-all")) {
+            gpu_mode = TT_OFFLOAD_ALL;
+            if (!gpu_dll) gpu_dll = "tootega_cuda.dll";
+        }
         else if (a[0] == '-') return tt_fail("serve: opcao desconhecida '%s'", a);
         else if (!path) path = a;
         else return tt_fail("serve: argumento extra '%s'", a);
@@ -919,7 +927,7 @@ int tt_cmd_serve(int argc, char **argv)
      * tocado na RAM depois. */
     tt_gpu_plan gplan;
     if (gpu_dll) {
-        tt_gpu_place(&model.c, gpu_dll, vram_gb, &gplan);
+        tt_gpu_place(&model.c, gpu_dll, vram_gb, gpu_mode, &gplan);
         tt_gpu_print(&gplan);
     }
 

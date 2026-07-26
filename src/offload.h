@@ -31,12 +31,24 @@ typedef struct {
     char     device[64];
 } tt_gpu_plan;
 
-/* Carrega o backend e sobe o que couber em `vram_gb` (0 = livre menos 1 GB).
+/* Que tipo de tensor sobe.
+ *
+ * A diferenca nao e de tamanho, e de COMO o tensor e chamado.  Matmul isolado
+ * paga ~17 us de protocolo; os 15 de uma camada MoE vao juntos num
+ * `matmul_many` e pagam uma vez.  Por isso ha um modo so-experts: ele nao
+ * precisa de KV na VRAM nem de atencao no device, e mesmo assim pega 61% do
+ * trafego. */
+typedef enum {
+    TT_OFFLOAD_ALL = 0,        /* atencao + lm_head + experts */
+    TT_OFFLOAD_MOE,            /* so os experts, em lote */
+} tt_offload_mode;
+
+/* Carrega o backend e sobe o que couber em `vram_gb` (0 = livre menos 1,6 GB).
  *
  * Nunca e erro fatal: sem DLL, sem placa ou sem VRAM, devolve `enabled = 0` e
  * o engine roda em CPU. A razao vai para o log. */
 int  tt_gpu_place(tt_container *c, const char *dll, double vram_gb,
-                  tt_gpu_plan *out);
+                  tt_offload_mode mode, tt_gpu_plan *out);
 
 /* Libera os tensores e zera os handles.  Seguro sem colocacao. */
 void tt_gpu_release(tt_container *c);

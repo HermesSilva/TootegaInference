@@ -89,7 +89,7 @@ static uint64_t put(const tt_backend *be, tt_tensor *t, uint64_t *left)
 }
 
 int tt_gpu_place(tt_container *c, const char *dll, double vram_gb,
-                 tt_gpu_plan *out)
+                 tt_offload_mode mode, tt_gpu_plan *out)
 {
     memset(out, 0, sizeof(*out));
 
@@ -111,30 +111,32 @@ int tt_gpu_place(tt_container *c, const char *dll, double vram_gb,
                                 : (be->vram_free > headroom
                                    ? be->vram_free - headroom : 0);
 
-    /* --- 1. atencao de todas as camadas ------------------------------- */
-    int layers = 0;
-    for (size_t i = 0; i < c->n_tensors; i++) {
-        tt_tensor *t = &c->tensors[i];
-        if (!has(t, "self_attn")) continue;
-        if (put(be, t, &left)) {
-            out->bytes += tensor_bytes(t);
-            out->tensors++;
+    if (mode == TT_OFFLOAD_ALL) {
+        /* --- 1. atencao de todas as camadas ---------------------------- */
+        int layers = 0;
+        for (size_t i = 0; i < c->n_tensors; i++) {
+            tt_tensor *t = &c->tensors[i];
+            if (!has(t, "self_attn")) continue;
+            if (put(be, t, &left)) {
+                out->bytes += tensor_bytes(t);
+                out->tensors++;
+            }
         }
-    }
-    for (size_t i = 0; i < c->n_tensors; i++) {
-        const tt_tensor *t = &c->tensors[i];
-        if (has(t, "o_proj") && t->dev) layers++;
-    }
-    out->attn_layers = layers;
+        for (size_t i = 0; i < c->n_tensors; i++) {
+            const tt_tensor *t = &c->tensors[i];
+            if (has(t, "o_proj") && t->dev) layers++;
+        }
+        out->attn_layers = layers;
 
-    /* --- 2. lm_head ---------------------------------------------------- */
-    for (size_t i = 0; i < c->n_tensors; i++) {
-        tt_tensor *t = &c->tensors[i];
-        if (!has(t, "lm_head")) continue;
-        if (put(be, t, &left)) {
-            out->bytes += tensor_bytes(t);
-            out->tensors++;
-            out->lm_head = 1;
+        /* --- 2. lm_head ------------------------------------------------ */
+        for (size_t i = 0; i < c->n_tensors; i++) {
+            tt_tensor *t = &c->tensors[i];
+            if (!has(t, "lm_head")) continue;
+            if (put(be, t, &left)) {
+                out->bytes += tensor_bytes(t);
+                out->tensors++;
+                out->lm_head = 1;
+            }
         }
     }
 
@@ -148,6 +150,7 @@ int tt_gpu_place(tt_container *c, const char *dll, double vram_gb,
         for (size_t i = 0; i < c->n_tensors; i++) {
             const tt_tensor *t = &c->tensors[i];
             if (layer_of(t) != L || t->dev || !uploadable(t)) continue;
+            if (mode == TT_OFFLOAD_MOE && !has(t, "experts.")) continue;
             need += tensor_bytes(t);
             found = 1;
         }
@@ -158,6 +161,7 @@ int tt_gpu_place(tt_container *c, const char *dll, double vram_gb,
         for (size_t i = 0; i < c->n_tensors; i++) {
             tt_tensor *t = &c->tensors[i];
             if (layer_of(t) != L) continue;
+            if (mode == TT_OFFLOAD_MOE && !has(t, "experts.")) continue;
             if (put(be, t, &left)) {
                 out->bytes += tensor_bytes(t);
                 out->tensors++;

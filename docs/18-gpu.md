@@ -180,14 +180,31 @@ tensor, e `--gpu` liga tudo. Funciona, é opcional, e **é mais lento que não
 usar GPU nenhuma**:
 
 ```
-CPU pura                                14,30 e 14,47 tok/s
---gpu, tudo o que couber (6,14 GB)      13,67 e 13,72 tok/s
---gpu, so tensores grandes (6,40 GB)    12,00 e 12,26 tok/s   VRAM esgotada
---gpu, com 1,6 GB de folga (5,71 GB)    13,58 e 11,74 tok/s
+CPU pura                                14,30  14,47 tok/s
+--gpu-all, tudo o que couber (6,14 GB)  13,67  13,72 tok/s
+--gpu-all, so tensores grandes          12,00  12,26 tok/s   VRAM esgotada
+--gpu-all, com 1,6 GB de folga          13,58  11,74 tok/s
+--gpu, so experts em lote (5,52 GB)     12,85  12,79  13,32 tok/s
 ```
 
 Mesmo prompt, mesmo container, `temperature 0`. **Nenhuma configuração ganha
-da CPU.**
+da CPU** — nem a que existia justamente para fugir do protocolo por matmul.
+
+A última linha é a mais informativa. Só experts, 16 camadas residentes, todas
+chamadas em lote (`matmul_many`, um protocolo por camada). A conta previa
+ganho:
+
+```
+por camada residente   CPU 344 us   GPU 133 + 17 us   economia 194 us
+16 camadas                                            economia 3,1 ms/token
+70 ms -> 67 ms                                        14,9 tok/s previstos
+```
+
+Mediu **13,0**. Faltam ~4 ms que a conta não explica, e a suspeita é o pool:
+enquanto a thread principal espera a GPU, os outros 19 trabalhadores estão na
+espera ativa dos dois primeiros degraus (`src/pool.c`), queimando ciclo e banda
+de memória que a parte da CPU precisa. Não foi medido — fica como hipótese
+declarada, não como conclusão.
 
 ### Por quê
 

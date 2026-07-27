@@ -82,6 +82,53 @@ int tt_matmul_rows(float *y, const tt_tensor *w, const float *x,
                    int64_t row0, int64_t row1);
 int tt_matmul(float *y, const tt_tensor *w, const float *x);
 
+/* ------------------------------------------------------- matmul in batch */
+
+/* The SAME weight against `batch` different inputs:
+ *
+ *     y[b*ldy + o] = sum_i W[o][i] * x[b*ldx + i]
+ *
+ * Decode reads one weight per token and throws it away, which is why it is
+ * memory-bound (docs/08).  Prefill and training are not: they have many inputs
+ * for the same weight, and reading it once instead of `batch` times is the
+ * whole difference.  For int4 there is a second saving, larger than it looks --
+ * unpacking a group costs an `and`, a `shift`, two converts and two multiplies,
+ * and batched it happens ONCE for the whole batch instead of once per input.
+ *
+ * The reduction order is untouched.  The batch loop sits INSIDE, around the
+ * FMA, so element `b` sees exactly the sequence of operations it would see
+ * alone -- which is what lets prefill be batched without changing a single
+ * token (docs/15: the order is fixed and independent of how the work is split).
+ * `tt_kernels_selftest` checks that bit for bit against the loop of singles.
+ *
+ * `batch == 1` is the same as the non-batched call, and costs the same. */
+
+void tt_matmul_f32_rows_b (float *y, int64_t ldy, const float *w,
+                           const float *x, int64_t ldx, int64_t batch,
+                           int64_t cols, int64_t row0, int64_t row1);
+
+void tt_matmul_bf16_rows_b(float *y, int64_t ldy, const uint16_t *w,
+                           const float *x, int64_t ldx, int64_t batch,
+                           int64_t cols, int64_t row0, int64_t row1);
+
+void tt_matmul_int8_rows_b(float *y, int64_t ldy, const int8_t *w,
+                           const float *scales, const float *x, int64_t ldx,
+                           int64_t batch, int64_t cols, int group,
+                           int64_t row0, int64_t row1);
+
+void tt_matmul_int4_rows_b(float *y, int64_t ldy, const uint8_t *w,
+                           const float *scales, const float *x, int64_t ldx,
+                           int64_t batch, int64_t cols, int group,
+                           int64_t row0, int64_t row1);
+
+int tt_matmul_rows_b(float *y, int64_t ldy, const tt_tensor *w,
+                     const float *x, int64_t ldx, int64_t batch,
+                     int64_t row0, int64_t row1);
+
+/* Whole-tensor version, threaded through the pool like `tt_matmul`. */
+int tt_matmul_b(float *y, int64_t ldy, const tt_tensor *w,
+                const float *x, int64_t ldx, int64_t batch);
+
 /* Several INDEPENDENT matmuls over the same input, in a single dispatch.
  *
  * It exists because of a barrier calculation: a 1536x2048 expert takes 26 us

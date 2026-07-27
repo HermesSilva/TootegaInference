@@ -235,6 +235,171 @@ static void mm_int4_simd(float *y, const uint8_t *w, const float *scales,
     }
 }
 
+/* ------------------------------------------------- matmul em lote (SIMD)
+ *
+ * Cada kernel abaixo e o seu par nao-lote com UM laco a mais, o de `b`, posto
+ * por dentro -- em volta do FMA e nunca em volta da soma.  Assim o elemento `b`
+ * ve exatamente a mesma sequencia de operacoes que veria sozinho, e o resultado
+ * bate BIT A BIT com o laco de chamadas simples.  Nao e detalhe: se batesse so
+ * com tolerancia, o prefill em lote mudaria tokens e o 32/32 cairia por
+ * construcao (docs/15).
+ *
+ * O que se ganha e o que sai de dentro do laco: a leitura do peso, e no int4 e
+ * no int8 tambem o desempacotamento e a escala.  Sao 6 operacoes por 16 pesos
+ * que passam a ser pagas uma vez para o lote inteiro.
+ *
+ * O ladrilho existe por pressao de registrador: sao 16 ymm no total, e alguns
+ * ja estao ocupados pelo peso desempacotado, pela escala e pelas mascaras.
+ *
+ * O limite do laco de `b` e a CONSTANTE MM_TILE, nunca uma variavel.  A
+ * primeira versao passava o resto do ladrilho como parametro, e o compilador,
+ * sem saber o limite, punha os acumuladores na pilha: cada FMA virava
+ * load-modify-store e o kernel rodava a 33 GFLOP/s em vez de 89.  O resto do
+ * lote sai pelo kernel simples, que da os mesmos bits por definicao.
+ *
+ * Tamanho escolhido por medicao (Tests/mmbatch, 1 thread, tensores reais):
+ *
+ *     ladrilho   lote 4   lote 8   lote 32
+ *            4     80,5     80,4      80,9      <- uniforme, o escolhido
+ *            8     25,0     89,3      88,5      <- +11%, mas zera em 4..7
+ *           16     25,5     25,8      72,6      <- derrama registrador
+ *
+ * O 8 e 11% mais rapido no lote grande e perde TUDO entre 4 e 7, que e faixa
+ * real: com 1024 tokens e top-4 de 64, um expert raro recebe meia duzia.
+ * Uniformidade vale mais que 11% num caso. */
+#define MM_TILE 4
+
+static void mm_f32_simd_b(float *y, int64_t ldy, const float *w,
+                          const float *x, int64_t ldx,
+                          int64_t cols, int64_t row0, int64_t row1)
+{
+    const int64_t n8 = cols & ~(int64_t)7;
+
+    for (int64_t o = row0; o < row1; o++) {
+        const float *wr = w + o * cols;
+        __m256 acc[MM_TILE];
+        for (int b = 0; b < MM_TILE; b++) acc[b] = _mm256_setzero_ps();
+
+        for (int64_t i = 0; i < n8; i += 8) {
+            const __m256 wv = _mm256_loadu_ps(wr + i);
+            for (int b = 0; b < MM_TILE; b++)
+                acc[b] = _mm256_fmadd_ps(wv, _mm256_loadu_ps(x + b * ldx + i),
+                                         acc[b]);
+        }
+        for (int b = 0; b < MM_TILE; b++) {
+            const float *xb = x + b * ldx;
+            float sum = hsum8(acc[b]);
+            for (int64_t i = n8; i < cols; i++) sum += wr[i] * xb[i];
+            y[b * ldy + o] = sum;
+        }
+    }
+}
+
+static void mm_bf16_simd_b(float *y, int64_t ldy, const uint16_t *w,
+                           const float *x, int64_t ldx,
+                           int64_t cols, int64_t row0, int64_t row1)
+{
+    const int64_t n8 = cols & ~(int64_t)7;
+
+    for (int64_t o = row0; o < row1; o++) {
+        const uint16_t *wr = w + o * cols;
+        __m256 acc[MM_TILE];
+        for (int b = 0; b < MM_TILE; b++) acc[b] = _mm256_setzero_ps();
+
+        for (int64_t i = 0; i < n8; i += 8) {
+            __m128i h = _mm_loadu_si128((const __m128i *)(wr + i));
+            __m256i u = _mm256_slli_epi32(_mm256_cvtepu16_epi32(h), 16);
+            const __m256 wv = _mm256_castsi256_ps(u);
+            for (int b = 0; b < MM_TILE; b++)
+                acc[b] = _mm256_fmadd_ps(wv, _mm256_loadu_ps(x + b * ldx + i),
+                                         acc[b]);
+        }
+        for (int b = 0; b < MM_TILE; b++) {
+            const float *xb = x + b * ldx;
+            float sum = hsum8(acc[b]);
+            for (int64_t i = n8; i < cols; i++)
+                sum += tt_bf16_to_f32(wr[i]) * xb[i];
+            y[b * ldy + o] = sum;
+        }
+    }
+}
+
+static void mm_int8_simd_b(float *y, int64_t ldy, const int8_t *w,
+                           const float *scales, const float *x, int64_t ldx,
+                           int64_t cols, int group,
+                           int64_t row0, int64_t row1)
+{
+    const int64_t ngroups = cols / group;
+    const int     chunks  = group / 8;
+
+    for (int64_t o = row0; o < row1; o++) {
+        const int8_t *wr = w + o * cols;
+        const float  *sr = scales + o * ngroups;
+        __m256 acc[MM_TILE];
+        for (int b = 0; b < MM_TILE; b++) acc[b] = _mm256_setzero_ps();
+
+        for (int64_t g = 0; g < ngroups; g++) {
+            const __m256  s = _mm256_set1_ps(sr[g]);
+            const int8_t *p = wr + g * group;
+            for (int j = 0; j < chunks; j++) {
+                __m128i bb = _mm_loadl_epi64((const __m128i *)(p + j * 8));
+                __m256  f  = _mm256_cvtepi32_ps(_mm256_cvtepi8_epi32(bb));
+                const __m256 wv = _mm256_mul_ps(f, s);
+                const int64_t at = g * group + j * 8;
+                for (int b = 0; b < MM_TILE; b++)
+                    acc[b] = _mm256_fmadd_ps(wv,
+                                 _mm256_loadu_ps(x + b * ldx + at), acc[b]);
+            }
+        }
+        for (int b = 0; b < MM_TILE; b++) y[b * ldy + o] = hsum8(acc[b]);
+    }
+}
+
+static void mm_int4_simd_b(float *y, int64_t ldy, const uint8_t *w,
+                           const float *scales, const float *x, int64_t ldx,
+                           int64_t cols, int group,
+                           int64_t row0, int64_t row1)
+{
+    const int64_t ngroups = cols / group;
+    const int     half    = group / 2;
+    const int     chunks  = half / 8;
+    const int64_t stride  = cols / 2;
+
+    const __m256i lomask = _mm256_set1_epi32(0x0F);
+    const __m256  eight  = _mm256_set1_ps(8.0f);
+
+    for (int64_t o = row0; o < row1; o++) {
+        const uint8_t *wr = w + o * stride;
+        const float   *sr = scales + o * ngroups;
+        __m256 acc[MM_TILE];
+        for (int b = 0; b < MM_TILE; b++) acc[b] = _mm256_setzero_ps();
+
+        for (int64_t g = 0; g < ngroups; g++) {
+            const __m256   s = _mm256_set1_ps(sr[g]);
+            const uint8_t *p = wr + g * half;
+
+            for (int j = 0; j < chunks; j++) {
+                __m128i bb  = _mm_loadl_epi64((const __m128i *)(p + j * 8));
+                __m256i u32 = _mm256_cvtepu8_epi32(bb);
+
+                __m256 flo = _mm256_cvtepi32_ps(_mm256_and_si256(u32, lomask));
+                __m256 fhi = _mm256_cvtepi32_ps(_mm256_srli_epi32(u32, 4));
+                flo = _mm256_mul_ps(_mm256_sub_ps(flo, eight), s);
+                fhi = _mm256_mul_ps(_mm256_sub_ps(fhi, eight), s);
+
+                const int64_t alo = g * group + j * 8;
+                const int64_t ahi = g * group + half + j * 8;
+                for (int b = 0; b < MM_TILE; b++) {
+                    const float *xb = x + b * ldx;
+                    acc[b] = _mm256_fmadd_ps(flo, _mm256_loadu_ps(xb + alo), acc[b]);
+                    acc[b] = _mm256_fmadd_ps(fhi, _mm256_loadu_ps(xb + ahi), acc[b]);
+                }
+            }
+        }
+        for (int b = 0; b < MM_TILE; b++) y[b * ldy + o] = hsum8(acc[b]);
+    }
+}
+
 #endif /* TT_HAVE_AVX2 */
 
 /* ---------------------------------------------------------- despacho */
@@ -283,6 +448,129 @@ void tt_matmul_int4_rows(float *y, const uint8_t *w, const float *scales,
     }
 #endif
     mm_int4_ref(y, w, scales, x, cols, group, row0, row1);
+}
+
+/* ------------------------------------------------- despacho, em lote
+ *
+ * Sem SIMD o "lote" e o laco de chamadas simples -- que e a definicao do
+ * resultado esperado, entao o caminho escalar nao pode divergir nem em
+ * principio.  E o mesmo arranjo de docs/15: a referencia ingenua continua
+ * existindo, e e contra ela que o vetorial responde. */
+
+void tt_matmul_f32_rows_b(float *y, int64_t ldy, const float *w,
+                          const float *x, int64_t ldx, int64_t batch,
+                          int64_t cols, int64_t row0, int64_t row1)
+{
+#if defined(TT_HAVE_AVX2)
+    if (g_impl != TT_IMPL_SCALAR) {
+        int64_t b0 = 0;
+        for (; b0 + MM_TILE <= batch; b0 += MM_TILE)
+            mm_f32_simd_b(y + b0 * ldy, ldy, w, x + b0 * ldx, ldx,
+                          cols, row0, row1);
+        for (int64_t b = b0; b < batch; b++)
+            mm_f32_simd(y + b * ldy, w, x + b * ldx, cols, row0, row1);
+        return;
+    }
+#endif
+    for (int64_t b = 0; b < batch; b++)
+        mm_f32_ref(y + b * ldy, w, x + b * ldx, cols, row0, row1);
+}
+
+void tt_matmul_bf16_rows_b(float *y, int64_t ldy, const uint16_t *w,
+                           const float *x, int64_t ldx, int64_t batch,
+                           int64_t cols, int64_t row0, int64_t row1)
+{
+#if defined(TT_HAVE_AVX2)
+    if (g_impl != TT_IMPL_SCALAR) {
+        int64_t b0 = 0;
+        for (; b0 + MM_TILE <= batch; b0 += MM_TILE)
+            mm_bf16_simd_b(y + b0 * ldy, ldy, w, x + b0 * ldx, ldx,
+                           cols, row0, row1);
+        for (int64_t b = b0; b < batch; b++)
+            mm_bf16_simd(y + b * ldy, w, x + b * ldx, cols, row0, row1);
+        return;
+    }
+#endif
+    for (int64_t b = 0; b < batch; b++)
+        mm_bf16_ref(y + b * ldy, w, x + b * ldx, cols, row0, row1);
+}
+
+void tt_matmul_int8_rows_b(float *y, int64_t ldy, const int8_t *w,
+                           const float *scales, const float *x, int64_t ldx,
+                           int64_t batch, int64_t cols, int group,
+                           int64_t row0, int64_t row1)
+{
+#if defined(TT_HAVE_AVX2)
+    if (g_impl != TT_IMPL_SCALAR && group % 8 == 0) {
+        int64_t b0 = 0;
+        for (; b0 + MM_TILE <= batch; b0 += MM_TILE)
+            mm_int8_simd_b(y + b0 * ldy, ldy, w, scales, x + b0 * ldx, ldx,
+                           cols, group, row0, row1);
+        for (int64_t b = b0; b < batch; b++)
+            mm_int8_simd(y + b * ldy, w, scales, x + b * ldx, cols, group, row0, row1);
+        return;
+    }
+#endif
+    for (int64_t b = 0; b < batch; b++)
+        mm_int8_ref(y + b * ldy, w, scales, x + b * ldx, cols, group, row0, row1);
+}
+
+void tt_matmul_int4_rows_b(float *y, int64_t ldy, const uint8_t *w,
+                           const float *scales, const float *x, int64_t ldx,
+                           int64_t batch, int64_t cols, int group,
+                           int64_t row0, int64_t row1)
+{
+#if defined(TT_HAVE_AVX2)
+    if (g_impl != TT_IMPL_SCALAR && group % 16 == 0) {
+        int64_t b0 = 0;
+        for (; b0 + MM_TILE <= batch; b0 += MM_TILE)
+            mm_int4_simd_b(y + b0 * ldy, ldy, w, scales, x + b0 * ldx, ldx,
+                           cols, group, row0, row1);
+        for (int64_t b = b0; b < batch; b++)
+            mm_int4_simd(y + b * ldy, w, scales, x + b * ldx, cols, group, row0, row1);
+        return;
+    }
+#endif
+    for (int64_t b = 0; b < batch; b++)
+        mm_int4_ref(y + b * ldy, w, scales, x + b * ldx, cols, group, row0, row1);
+}
+
+static void mm_rows_dispatch_b(float *y, int64_t ldy, const tt_tensor *t,
+                               const float *x, int64_t ldx, int64_t batch,
+                               int64_t row0, int64_t row1)
+{
+    switch (t->kind) {
+    case TT_KIND_F32:
+        tt_matmul_f32_rows_b(y, ldy, (const float *)t->data, x, ldx, batch,
+                             t->cols, row0, row1);
+        break;
+    case TT_KIND_BF16:
+        tt_matmul_bf16_rows_b(y, ldy, (const uint16_t *)t->data, x, ldx, batch,
+                              t->cols, row0, row1);
+        break;
+    case TT_KIND_INT8:
+        tt_matmul_int8_rows_b(y, ldy, (const int8_t *)t->data, t->scales,
+                              x, ldx, batch, t->cols, t->group, row0, row1);
+        break;
+    default:
+        tt_matmul_int4_rows_b(y, ldy, (const uint8_t *)t->data, t->scales,
+                              x, ldx, batch, t->cols, t->group, row0, row1);
+        break;
+    }
+}
+
+int tt_matmul_rows_b(float *y, int64_t ldy, const tt_tensor *t,
+                     const float *x, int64_t ldx, int64_t batch,
+                     int64_t row0, int64_t row1)
+{
+    if (t->ndim < 2)
+        return tt_fail("matmul: %.*s tem %d dimensao(oes)",
+                       (int)t->name_len, t->name, t->ndim);
+    if (t->kind >= TT_KIND_COUNT)
+        return tt_fail("matmul: kind %d nao implementado", (int)t->kind);
+    if (batch <= 0) return 0;
+    mm_rows_dispatch_b(y, ldy, t, x, ldx, batch, row0, row1);
+    return 0;
 }
 
 static void mm_rows_dispatch(float *y, const tt_tensor *t, const float *x,
@@ -344,12 +632,20 @@ typedef struct {
     float           *y;
     const tt_tensor *t;
     const float     *x;
+    /* so o caminho em lote usa os tres abaixo */
+    int64_t          ldy, ldx, batch;
 } mm_job;
 
 static void mm_job_run(void *arg, int64_t row0, int64_t row1)
 {
     const mm_job *j = (const mm_job *)arg;
     mm_rows_dispatch(j->y, j->t, j->x, row0, row1);
+}
+
+static void mm_job_run_b(void *arg, int64_t row0, int64_t row1)
+{
+    const mm_job *j = (const mm_job *)arg;
+    mm_rows_dispatch_b(j->y, j->ldy, j->t, j->x, j->ldx, j->batch, row0, row1);
 }
 
 /* Abaixo disto a barreira custa mais que o trabalho.  O roteador (64x2048 =
@@ -436,8 +732,40 @@ int tt_matmul(float *y, const tt_tensor *t, const float *x)
     const int64_t cap = t->rows / (threads * 4);
     if (cap >= 1 && grain > cap) grain = cap;
 
-    mm_job job = { y, t, x };
+    mm_job job = { y, t, x, 0, 0, 1 };
     tt_pool_run(g_pool, mm_job_run, &job, t->rows, grain);
+    return 0;
+}
+
+int tt_matmul_b(float *y, int64_t ldy, const tt_tensor *t,
+                const float *x, int64_t ldx, int64_t batch)
+{
+    if (t->ndim < 2)
+        return tt_fail("matmul: %.*s tem %d dimensao(oes)",
+                       (int)t->name_len, t->name, t->ndim);
+    if (t->kind >= TT_KIND_COUNT)
+        return tt_fail("matmul: kind %d nao implementado", (int)t->kind);
+    if (batch <= 0) return 0;
+
+    /* A particao continua sendo POR LINHA de saida, nunca por elemento do
+     * lote: e o que mantem a reducao inteira dentro de uma thread e o
+     * resultado independente de --threads (docs/15).  Particionar pelo lote
+     * seria mais simples e jogaria fora o reuso do peso, que e o motivo de
+     * isto existir. */
+    const int threads = tt_pool_threads(g_pool);
+    if (!g_pool || threads <= 1
+        || t->rows * t->cols * batch < TT_PARALLEL_MIN_MACS) {
+        mm_rows_dispatch_b(y, ldy, t, x, ldx, batch, 0, t->rows);
+        return 0;
+    }
+
+    int64_t grain = 65536 / (t->cols * batch);
+    if (grain < 1) grain = 1;
+    const int64_t cap = t->rows / (threads * 4);
+    if (cap >= 1 && grain > cap) grain = cap;
+
+    mm_job job = { y, t, x, ldy, ldx, batch };
+    tt_pool_run(g_pool, mm_job_run_b, &job, t->rows, grain);
     return 0;
 }
 
@@ -973,6 +1301,87 @@ int tt_kernels_selftest(void)
                       "%s SIMD: y[%lld] = %.9g, escalar da %.9g (delta %.3g > %.3g)",
                       cases[ci].name, (long long)o, (double)y[o], (double)want,
                       (double)fabsf(y[o] - want), (double)tol);
+            }
+        }
+    }
+
+    /* 11. Lote contra o laco de chamadas simples, BIT A BIT, nos dois kernels.
+     *
+     *     Aqui nao ha tolerancia e nao pode haver: o lote existe para o
+     *     prefill e para o treino, e um desvio de 1 ulp por termo vira um
+     *     token diferente 47 camadas adiante.  O laco de chamadas simples e a
+     *     definicao do resultado -- o kernel em lote responde a ele, nunca o
+     *     contrario. */
+    {
+        /* 11 nao e multiplo do ladrilho de 8, de proposito: o resto do
+         * ladrilho e onde um erro de indice se esconde. */
+        enum { NB = 11 };
+        static float xb[NB * FX_I], yb[NB * FX_O], ys[NB * FX_O];
+
+        for (int b = 0; b < NB; b++)
+            for (int64_t i = 0; i < FX_I; i++)
+                xb[b * FX_I + i] = fx_x[i] * (1.0f + 0.125f * (float)b)
+                                 - 0.03125f * (float)((b * 7) % 5);
+
+        struct { const char *name; tt_kind kind; const void *data;
+                 const float *scales; } cases[] = {
+            { "int4", TT_KIND_INT4, fx_w_int4, fx_scales_int4 },
+            { "int8", TT_KIND_INT8, fx_w_int8, fx_scales_int8 },
+            { "f32",  TT_KIND_F32,  fx_w_f32,  NULL           },
+            { "bf16", TT_KIND_BF16, fx_w_bf16, NULL           },
+        };
+        const tt_impl impls[2] = { TT_IMPL_SCALAR, TT_IMPL_AUTO };
+
+        for (int ii = 0; ii < 2; ii++) {
+            tt_kernels_set_impl(impls[ii]);
+            const char *iname = tt_kernels_impl_name();
+
+            for (size_t ci = 0; ci < sizeof(cases) / sizeof(cases[0]); ci++) {
+                tt_tensor t = {0};
+                t.name = cases[ci].name; t.name_len = strlen(cases[ci].name);
+                t.kind = cases[ci].kind; t.ndim = 2;
+                t.shape[0] = FX_O; t.shape[1] = FX_I;
+                t.rows = FX_O; t.cols = FX_I;
+                t.group = cases[ci].scales ? FX_GROUP : 0;
+                t.data = cases[ci].data; t.scales = cases[ci].scales;
+
+                for (int64_t b = 0; b < NB; b++)
+                    if (tt_matmul_rows(ys + b * FX_O, &t, xb + b * FX_I,
+                                       0, FX_O) != 0) {
+                        tt_kernels_set_impl(saved); return -1;
+                    }
+
+                /* lote inteiro de uma vez */
+                if (tt_matmul_rows_b(yb, FX_O, &t, xb, FX_I, NB, 0, FX_O) != 0) {
+                    tt_kernels_set_impl(saved); return -1;
+                }
+                CHECK(bits_equal(yb, ys, NB * FX_O, &bad),
+                      "%s/%s em lote: y[%lld][%lld] = %.9g, a chamada simples da "
+                      "%.9g -- a ordem de acumulacao mudou com o lote",
+                      cases[ci].name, iname, (long long)(bad / FX_O),
+                      (long long)(bad % FX_O), (double)yb[bad], (double)ys[bad]);
+
+                /* e particionar o lote tambem nao pode mudar nada: o prefill
+                 * vai chamar isto em pedacos conforme o KV enche */
+                for (int64_t i = 0; i < NB * FX_O; i++) yb[i] = 12345.0f;
+                if (tt_matmul_rows_b(yb, FX_O, &t, xb, FX_I, 3, 0, FX_O) != 0
+                 || tt_matmul_rows_b(yb + 3 * FX_O, FX_O, &t, xb + 3 * FX_I,
+                                     FX_I, NB - 3, 0, FX_O) != 0) {
+                    tt_kernels_set_impl(saved); return -1;
+                }
+                CHECK(bits_equal(yb, ys, NB * FX_O, &bad),
+                      "%s/%s: quebrar o lote em 3+%d mudou y[%lld]",
+                      cases[ci].name, iname, NB - 3, (long long)bad);
+
+                /* faixa de linhas, agora com lote */
+                for (int64_t i = 0; i < NB * FX_O; i++) yb[i] = 12345.0f;
+                if (tt_matmul_rows_b(yb, FX_O, &t, xb, FX_I, NB, 0, 3) != 0
+                 || tt_matmul_rows_b(yb, FX_O, &t, xb, FX_I, NB, 3, FX_O) != 0) {
+                    tt_kernels_set_impl(saved); return -1;
+                }
+                CHECK(bits_equal(yb, ys, NB * FX_O, &bad),
+                      "%s/%s: faixas de linha com lote mudaram y[%lld]",
+                      cases[ci].name, iname, (long long)bad);
             }
         }
     }

@@ -15,6 +15,7 @@ import json
 import re
 import os
 import sys
+import unicodedata
 
 # roda de qualquer lugar: os caminhos sao relativos a raiz do repo
 os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -136,6 +137,11 @@ def build_terms(g, lang):
     m, maxw = {}, 1
     for t in g['terms']:
         e = t[lang]
+        # `nolink` fica no glossario, no painel e na busca, mas nao e grifado no
+        # corpo -- "IR" tambem e o verbo ir, e grifar todo "ir" seria pior que
+        # nao ter o verbete
+        if e.get('nolink'):
+            continue
         names = [e['term']] + list(e.get('aliases') or [])
         for nm in names:
             k = nm.lower()
@@ -285,12 +291,19 @@ def gcards(g, lang):
         parts.append('<div class="gcards">')
         for t in ts:
             e = t[lang]
+            # a expansao da sigla vem logo abaixo do termo: e o primeiro lugar
+            # onde o leigo olha, e era o que faltava -- o cartao de LoRA
+            # explicava posto baixo e nunca dizia Low-Rank Adaptation
+            a = ('<p class="abbr">%s</p>' % e['abbr']) if e.get('abbr') else ''
             u = ('<p class="usual"><span>%s:</span> %s</p>'
                  % (USUAL[lang], e['usual'])) if e.get('usual') else ''
+            al = other_names(e)
+            s = ('<p class="abbr alias">%s: %s</p>'
+                 % (ALSO[lang], ', '.join(al))) if al else ''
             parts.append('<article class="gcard" id="g-%s"><h4>%s</h4>'
-                         '<span class="chip %s">%s</span>%s<p>%s</p></article>'
+                         '<span class="chip %s">%s</span>%s%s%s<p>%s</p></article>'
                          % (t['id'], e['term'], chip_of(t['category']),
-                            g['categories'][t['category']][lang], u,
+                            g['categories'][t['category']][lang], a, s, u,
                             e['definition']))
         parts.append('</div>')
     parts.append('</div>')
@@ -298,6 +311,31 @@ def gcards(g, lang):
 
 
 USUAL = {'pt': 'costuma significar', 'en': 'usually means'}
+ALSO = {'pt': 'também', 'en': 'also'}
+
+
+def fold(s):
+    s = unicodedata.normalize('NFD', s.lower())
+    return ''.join(c for c in s if not unicodedata.combining(c))
+
+
+def other_names(e):
+    """Apelidos que merecem aparecer: os que o leitor procuraria e nao acharia.
+
+    Um apelido que e flexao do proprio termo (`model`/`models`) nao informa
+    nada; `matrix multiplication`/`matmul` informa tudo -- e era o caso que
+    fazia o leitor concluir que o verbete nao existia.
+    """
+    t, out = fold(e['term']), []
+    for a in (e.get('aliases') or []):
+        k = fold(a)
+        pre = len(os.path.commonprefix([t, k]))
+        # seis caracteres iguais na frente ja e flexao, nao sinonimo:
+        # `multiplicacao`/`multiplicacoes` nao informa, `matmul` informa
+        if pre >= 6 or pre >= 0.8 * min(len(t), len(k)):
+            continue
+        out.append(a)
+    return out
 
 
 def gdata(g, lang):
@@ -305,7 +343,8 @@ def gdata(g, lang):
     for t in g['terms']:
         e = t[lang]
         arr.append({'id': t['id'], 'term': e['term'], 'def': e['definition'],
-                    'usual': e.get('usual', ''),
+                    'usual': e.get('usual', ''), 'abbr': e.get('abbr', ''),
+                    'al': list(e.get('aliases') or []),
                     'cat': g['categories'][t['category']][lang],
                     'catid': t['category'], 'k': chip_of(t['category'])})
     return json.dumps(arr, ensure_ascii=False)
@@ -337,7 +376,8 @@ SHELL_EN = [
     ('data-f="projeto">Do projeto<', 'data-f="projeto">Project<'),
     ('data-f="cc">Vocabulário<', 'data-f="cc">Vocabulary<'),
 ]
-LDATA_EN = ('{"usual": "usually means", "openg": "open in glossary", '
+LDATA_EN = ('{"usual": "usually means", "also": "also", '
+            '"openg": "open in glossary", '
             '"copy": "copy", "copied": "copied", "nores": "nothing found", '
             '"gterms": "Glossary", "gsecs": "Sections", "gtext": "In the text", '
             '"knav": "navigate", "kopen": "open", "kclose": "close", '
@@ -420,11 +460,22 @@ def md_table(g, cat, lang):
         if t['category'] != cat:
             continue
         e = t[lang]
+        # a tabela tem 2 ou 3 colunas e nao cabe uma quarta; a expansao da
+        # sigla entra em italico na frente da definicao, para que o .md diga o
+        # mesmo que o cartao do HTML
+        d = to_md(e['definition'])
+        if e.get('abbr'):
+            d = '*%s.* %s' % (to_md(e['abbr']).rstrip('.'), d)
+        # o apelido entra na coluna do termo porque no .md a busca e o Ctrl+F do
+        # leitor: quem procura `matmul` tem de cair na linha certa
+        term = e['term']
+        al = other_names(e)
+        if al:
+            term = '%s (%s)' % (term, ', '.join(to_md(a) for a in al))
         if cat == 'armadilha':
-            out.append('| %s | %s | %s |' % (e['term'], to_md(e.get('usual', '')),
-                                             to_md(e['definition'])))
+            out.append('| %s | %s | %s |' % (term, to_md(e.get('usual', '')), d))
         else:
-            out.append('| %s | %s |' % (e['term'], to_md(e['definition'])))
+            out.append('| %s | %s |' % (term, d))
     return '\n'.join(out)
 
 

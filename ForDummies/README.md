@@ -52,17 +52,31 @@ Keyboard shortcuts in the HTML: `/` focuses search, `g` opens the glossary,
 
 ## Glossário / Glossary
 
-[`glossary.json`](glossary.json) é a **fonte única** dos termos: 225 entradas,
+[`glossary.json`](glossary.json) é a **fonte única** dos termos: 277 entradas,
 cada uma com termo, definição e apelidos em PT e EN, e — no grupo *outro
 sentido* — o que a palavra costuma significar fora daqui. As páginas HTML
 embutem esses dados,
 então os balões funcionam abrindo o arquivo direto, sem servidor.
 
-[`glossary.json`](glossary.json) is the **single source** for the terms: 225
+[`glossary.json`](glossary.json) is the **single source** for the terms: 277
 entries, each with term, definition and aliases in PT and EN, and — in the
 *other meaning* group — what the word usually means elsewhere. The HTML pages
 embed that data,
 so the hints work when opening the file directly, with no server.
+
+**Apelido é nome, não decoração.** O verbete de `matrix multiplication` sempre
+teve `matmul` como apelido, e quem procurava `matmul` não achava nada: a busca
+olhava só o termo. Hoje o apelido entra no índice da busca, no filtro do painel,
+na linha *também:* do cartão e na coluna do termo nas tabelas do `.md` — as
+flexões do próprio termo (`peso`/`pesos`) ficam de fora, porque não informam
+nada. Termo com dois nomes tem de ser achado pelos dois.
+
+**An alias is a name, not decoration.** The `matrix multiplication` entry always
+had `matmul` as an alias, and anyone searching for `matmul` found nothing: search
+only looked at the term. Now aliases go into the search index, the panel filter,
+the card's *also:* line and the term column of the `.md` tables — inflections of
+the term itself (`weight`/`weights`) stay out, since they say nothing. A term
+with two names has to be findable by both.
 
 | categoria / category | o que reúne / what it holds |
 |---|---|
@@ -126,9 +140,9 @@ change content is the `.md`, and to change a term, the `.json`.
 ## Gerar / Generate
 
 ```powershell
-python ForDummiesuild.py            # os dois guias
-python ForDummiesuild.py --docs     # o espelho docs-html/
-python ForDummiesuild.py --check    # confere sem escrever nada
+python ForDummies\\build.py            # os dois guias
+python ForDummies\\build.py --docs     # o espelho docs-html/
+python ForDummies\\build.py --check    # confere sem escrever nada
 python ForDummies\check.py            # ancoras, termos orfaos, tabelas
 ```
 

@@ -86,13 +86,18 @@ in attention and thread barriers, not in the matmuls.
 
 ### Quality
 
-| property | result |
-|---|---|
-| perplexity, 384 positions of prose, BF16 weights | engine **8.63** against `transformers`' **8.89** |
-| perplexity int4 against BF16, paired, 10 windows of 384 tokens | nll **+0.0513 ± 0.0076** → **×1.0526** |
-| teacher-forced oracle, independent implementation | **32/32** identical tokens |
-| determinism | **byte-identical** logits from 1 to 20 threads |
-| tokenizer against HuggingFace `tokenizers` | **36/36** cases, exact round-trip |
+| property | result | measured on |
+|---|---|---|
+| teacher-forced oracle, independent implementation | **32/32** identical tokens, 1e-4% relative error | **this container** |
+| perplexity, 384 positions of prose, BF16 weights | engine **8.63** against `transformers`' **8.89** | earlier container |
+| perplexity int4 against BF16, paired, 10 windows of 384 tokens | nll **+0.0513 ± 0.0076** → **×1.0526** | earlier container |
+| determinism | **byte-identical** logits from 1 to 20 threads | earlier container |
+| tokenizer against HuggingFace `tokenizers` | **36/36** cases, exact round-trip | independent of container |
+
+**Read the third column.** Only the oracle has been run on the exact file
+published here. The perplexity numbers come from a container with a coarser
+scale, so if anything they are **pessimistic** for this one — but "probably a
+little better" is not a measurement, and this page does not pretend otherwise.
 
 The paired comparison is the one that counts: comparing two configurations by the
 global mean swallows the effect in the variance between windows, and that mistake

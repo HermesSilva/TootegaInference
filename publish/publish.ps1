@@ -9,12 +9,18 @@
 #
 # Requer o CLI `hf` (do pacote huggingface_hub) so no passo de envio. A montagem
 # nao depende de nada.
+#
+# O `hf` 1.13 vinha quebrado nesta maquina -- `typer` 0.16 nao tem o
+# `suggest_commands` que ele passa --, e a falha so apareceria no envio, depois
+# de montar 19 GB. Por isso o script confere a ferramenta ANTES de montar.
 
 param(
     [Parameter(Mandatory = $true)] [string]$Container,
     [string]$Base   = 'models\glm47flash-bf16',
     [string]$Stage  = 'publish\stage',
-    [string]$Repo   = 'HermesSilva/GLM-4.7-Flash-tootega-int4',
+    # Namespace do HuggingFace, que NAO e o do GitHub: la e HermesSilva, aqui
+    # HermesX21. Confira com `hf auth whoami` antes de duvidar do nome.
+    [string]$Repo   = 'HermesX21/GLM-4.7-Flash-tootega-int4',
     [switch]$Upload
 )
 
@@ -39,6 +45,26 @@ $licenseFile   = Need (Join-Path $Root 'LICENSE') 'LICENSE'
 
 $fromBase = @('tokenizer.json', 'chat_template.jinja', 'config.json')
 foreach ($f in $fromBase) { Need (Join-Path $Base $f) $f | Out-Null }
+
+# --- a ferramenta de envio funciona? -----------------------------------------
+#
+# Conferida ANTES de montar, e nao no fim: montar 19 GB para descobrir que o
+# `hf` esta quebrado e desperdicio, e a quebra que aconteceu aqui -- `typer`
+# velho demais para o `huggingface_hub` -- so aparece ao rodar.
+
+if ($Upload) {
+    $hf = Get-Command hf -ErrorAction SilentlyContinue
+    if (-not $hf) { throw 'CLI `hf` nao encontrado: python -m pip install -U huggingface_hub' }
+
+    & hf version *> $null
+    if ($LASTEXITCODE -ne 0) {
+        throw 'o CLI `hf` existe mas nao roda. Tente: python -m pip install -U huggingface_hub typer'
+    }
+
+    $who = & hf auth whoami 2>$null
+    if ($LASTEXITCODE -ne 0) { throw 'sem sessao no HuggingFace: rode `hf auth login`' }
+    Write-Host "`nautenticado: $who" -ForegroundColor Cyan
+}
 
 # --- o container tem de abrir ------------------------------------------------
 #
@@ -65,6 +91,13 @@ if (-not $hasClip) {
 }
 
 # --- montagem ----------------------------------------------------------------
+#
+# O CONTAINER NAO ENTRA NO STAGE. A primeira versao deste script punha um link
+# duro de 19,8 GB aqui dentro, e a limpeza da execucao seguinte batia em
+# "Access to the path is denied" -- `Remove-Item` nao apaga link duro nesta
+# maquina. Nao ha motivo para o arquivo passar por aqui: `hf upload` aceita um
+# arquivo solto com o nome que ele tera no repo, entao ele vai direto do lugar
+# onde o conversor o escreveu.
 
 if (Test-Path $Stage) { Remove-Item $Stage -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $Stage | Out-Null
@@ -73,24 +106,15 @@ Copy-Item $cardFile.FullName (Join-Path $Stage 'README.md')
 Copy-Item $licenseFile.FullName (Join-Path $Stage 'LICENSE')
 foreach ($f in $fromBase) { Copy-Item (Join-Path $Base $f) (Join-Path $Stage $f) }
 
-# O container e o unico arquivo grande. Copiar 19,8 GB so para depois enviar e
-# desperdicio: link duro quando o volume permite, copia quando nao.
-$dest = Join-Path $Stage 'model.tootega'
-try {
-    New-Item -ItemType HardLink -Path $dest -Target $containerFile.FullName -ErrorAction Stop | Out-Null
-    $how = 'link duro'
-} catch {
-    Copy-Item $containerFile.FullName $dest
-    $how = 'copia'
-}
-
-Write-Host "--- montado em $Stage ($how para o container) ---`n" -ForegroundColor Cyan
+Write-Host "--- montado em $Stage ---`n" -ForegroundColor Cyan
 Get-ChildItem $Stage | ForEach-Object {
     '{0,-24} {1,12:N1} MB' -f $_.Name, ($_.Length / 1MB)
 }
+'{0,-24} {1,12:N1} MB  (enviado direto, fora do stage)' -f
+    'model.tootega', ($containerFile.Length / 1MB)
 
-$total = (Get-ChildItem $Stage | Measure-Object -Property Length -Sum).Sum
-Write-Host ('{0,-24} {1,12:N1} MB' -f 'TOTAL', ($total / 1MB))
+$small = (Get-ChildItem $Stage | Measure-Object -Property Length -Sum).Sum
+Write-Host ('{0,-24} {1,12:N1} MB' -f 'TOTAL', (($small + $containerFile.Length) / 1MB))
 
 # --- envio -------------------------------------------------------------------
 
@@ -104,8 +128,16 @@ if (-not $Upload) {
 
 if (-not $Repo) { throw '-Upload exige -Repo <usuario>/<nome>' }
 
-Write-Host "`n--- enviando para huggingface.co/$Repo ---" -ForegroundColor Cyan
-& hf upload $Repo $Stage --repo-type model --commit-message 'GLM-4.7-Flash int4 g64, container .tootega'
-if ($LASTEXITCODE -ne 0) { throw "upload falhou ($LASTEXITCODE)" }
+# Os arquivos pequenos primeiro: se o card ou a licenca estiverem errados, o
+# erro aparece em segundos e nao depois de subir 19 GB.
+Write-Host "`n--- enviando card, licenca e tokenizer para huggingface.co/$Repo ---" -ForegroundColor Cyan
+& hf upload $Repo $Stage --repo-type model `
+    --commit-message 'Model card, licence and tokenizer'
+if ($LASTEXITCODE -ne 0) { throw "upload dos arquivos pequenos falhou ($LASTEXITCODE)" }
+
+Write-Host "`n--- enviando o container ($('{0:N1}' -f ($containerFile.Length / 1GB)) GB) ---" -ForegroundColor Cyan
+& hf upload $Repo $containerFile.FullName model.tootega --repo-type model `
+    --commit-message 'GLM-4.7-Flash int4 g64, container .tootega'
+if ($LASTEXITCODE -ne 0) { throw "upload do container falhou ($LASTEXITCODE)" }
 
 Write-Host "`n  https://huggingface.co/$Repo" -ForegroundColor Green

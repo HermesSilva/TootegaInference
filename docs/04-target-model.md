@@ -314,7 +314,9 @@ That is why the converter's default is `--attn int4` and why container v4 has it
 
 ### The container as it is written today
 
-Container **v4**, `--attn int4 --clip-grid 13`:
+Container **v4**, `--attn int4 --clip-grid 13`. It is published, so this table
+describes a file anyone can fetch:
+[`HermesX21/GLM-4.7-Flash-tootega-int4`](https://huggingface.co/HermesX21/GLM-4.7-Flash-tootega-int4).
 
 | precision | tensors | bytes |
 |---|---|---|

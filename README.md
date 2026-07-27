@@ -22,6 +22,10 @@ with the number that backs it right next to it.
 serve.cmd            # starts the server; the UI is at http://127.0.0.1:8080/
 ```
 
+The model it runs is published ready to use:
+**[HermesX21/GLM-4.7-Flash-tootega-int4](https://huggingface.co/HermesX21/GLM-4.7-Flash-tootega-int4)**
+— GLM-4.7-Flash in int4 g64, 19.3 GB, in the container format this engine reads.
+
 ---
 
 ## What it does
@@ -115,13 +119,30 @@ The full arithmetic is in
 Windows is MSVC, found through `vswhere` — never a fixed path. Linux is the
 `Makefile`, with gcc or clang.
 
-### 2. Get and convert the model
+### 2. Get the model
+
+**The short way** — the converted container is published, so there is no reason
+to download 62.4 GB and quantise it again:
+
+```powershell
+hf download HermesX21/GLM-4.7-Flash-tootega-int4 --local-dir models\glm47flash-int4
+```
+
+19.3 GB, plus `tokenizer.json`. Card, numbers and provenance at
+[**huggingface.co/HermesX21/GLM-4.7-Flash-tootega-int4**](https://huggingface.co/HermesX21/GLM-4.7-Flash-tootega-int4).
+
+**The long way**, if you want to convert it yourself — or with a different
+precision policy, group size or clip grid:
 
 ```powershell
 python download_model.py                           # 62.4 GB in BF16, resumable
 .\tools\convert.exe models\glm47flash-bf16 `
-    --out models\glm47flash-int4\model.tootega     # ~19.3 GB in int4
+    --out models\glm47flash-int4\model.tootega `
+    --clip-grid 13                                 # ~19.3 GB in int4, 171 s
+.\tools\convert.exe --verify models\glm47flash-int4\model.tootega
 ```
+
+`--dry-run` prints the plan and the estimated size without writing anything.
 
 ### 3. Use it
 

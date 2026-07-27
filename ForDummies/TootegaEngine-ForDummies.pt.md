@@ -1685,6 +1685,23 @@ colocação. → [`docs/01`](../docs/01-goals.md)
 
 ## 16 — Mãos à obra
 
+### 16.0 Obter o modelo
+
+O modelo convertido está publicado, então ninguém precisa baixar 62,4 GB de pesos
+originais e quantizar de novo:
+
+```powershell
+hf download HermesX21/GLM-4.7-Flash-tootega-int4 --local-dir models\glm47flash-int4
+```
+
+19,3 GB, mais o tokenizer. O card explica o formato, a política de precisão e
+cada número medido:
+[huggingface.co/HermesX21/GLM-4.7-Flash-tootega-int4](https://huggingface.co/HermesX21/GLM-4.7-Flash-tootega-int4).
+
+Vale dizer em voz alta o que aquele arquivo **não** é: ele não carrega no
+`transformers`, no vLLM nem no llama.cpp. `.tootega` é o formato deste engine, e
+só este engine lê.
+
 ### 16.1 Compilar
 
 ```powershell

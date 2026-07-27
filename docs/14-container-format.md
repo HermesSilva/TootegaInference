@@ -6,6 +6,11 @@ a tacit convention between two programs, it is where alignment bugs are born —
 which is why the reader validates everything the spec promises instead of
 trusting it.
 
+A real file in this format, to read alongside the spec:
+[`HermesX21/GLM-4.7-Flash-tootega-int4`](https://huggingface.co/HermesX21/GLM-4.7-Flash-tootega-int4)
+— 9,703 tensors, 19.32 GB. `tootega inspect` opens it and prints the header, the
+index and the budget.
+
 Everything little-endian. It settles **D3** of [13](13-open-decisions.md).
 
 ## General layout

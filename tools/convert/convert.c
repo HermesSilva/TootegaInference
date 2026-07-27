@@ -847,7 +847,9 @@ int main(int argc, char **argv)
     printf("    grupo=%d \xc2\xb7 clip-grid=%d\n", group, clip_grid);
     printf("    O erro da saida NAO cai com o tamanho da soma: em y=Wx o ruido e\n");
     printf("    o sinal crescem ambos com sqrt(cols), entao a razao fica\n");
-    printf("    ~sigma_e/sigma_w. Sanidade: int4/int8 deve dar ~127/7 = 18x.\n");
+    printf("    ~sigma_e/sigma_w. Sanidade: int4/int8 entre 15x e 18x -- 18 e a\n");
+    printf("    razao de passo (127/7), e a busca de clipping baixa para ~15\n");
+    printf("    porque so o int4 melhora com ela.\n");
     printf("    Alavancas, da mais fraca para a mais forte:\n");
     printf("      --group 32       ~11%% menos erro, +11%% de arquivo. Trade ruim.\n");
     printf("      --clip-grid 13   ~12%% menos erro, de graca (ja e o default).\n");

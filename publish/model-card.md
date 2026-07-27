@@ -18,7 +18,7 @@ tags:
 
 GLM-4.7-Flash quantised to **int4 with f32 scales per group of 64**, in the
 container format the [TootegaEngine](https://github.com/HermesSilva/TootegaInference)
-reads. **19.8 GB**, resident in RAM, decoding on **CPU only**.
+reads. **19.3 GB**, resident in RAM, decoding on **CPU only**.
 
 > **This file does not load in `transformers`, vLLM, llama.cpp or anything else.**
 > `.tootega` is not GGUF, not safetensors and not a variant of either — it is the
@@ -32,7 +32,7 @@ reads. **19.8 GB**, resident in RAM, decoding on **CPU only**.
 
 | file | size | what it is |
 |---|---|---|
-| `model.tootega` | 19.8 GB | the container: weights, scales, index and the full `config.json` inside |
+| `model.tootega` | 19.3 GB | the container: weights, scales, index and the full `config.json` inside |
 | `tokenizer.json` | 20 MB | HuggingFace tokenizer, copied unchanged from the base model |
 | `chat_template.jinja` | 3 KB | reference only — the engine reproduces this template in C, without Jinja |
 | `config.json` | 1 KB | the architecture, also embedded in the container |
@@ -105,8 +105,8 @@ taste:
 
 | group | precision | why |
 |---|---|---|
-| experts, attention | int4 g64 | 8,973 tensors, 15.9 GB — this is where the model's size is |
-| `lm_head`, MTP layer | int8 g64 | int4 on the MTP head drops draft acceptance to 0–4% |
+| experts, attention | int4 g64 | 9,165 tensors, 16.5 GB — this is where the model's size is |
+| `lm_head`, MTP layer | int8 g64 | 198 tensors, 1.3 GB; int4 on the MTP head drops draft acceptance to 0–4% |
 | norms, router, `e_score_correction_bias` | f32 | the router decides *which* experts run: an error swaps the expert, not the last bit |
 | `kv_a_proj_with_mqa` | f32 | feeds the compressed KV of every position |
 | `embed_tokens` | bf16 | read one row per token; never resident |
@@ -126,9 +126,29 @@ AVX2 into two contiguous vectors with no activation shuffle.
 The scale is **not** `absmax/qmax`. That choice optimises the group's worst
 weight instead of the group; shrinking it clips the extremes and tightens the
 step for all the others. The converter searches 13 fractions of `absmax` between
-0.70 and 1.00 and keeps the one with the lowest squared error — measured, that
-takes int4 g64 output error from **10.87% to 9.67%**, with no change to the
-format and no change to the kernel.
+0.70 and 1.00 and keeps the one with the lowest squared error.
+
+Measured over **every** quantised tensor of this container, relative error of a
+matmul's output — the metric that predicts quality; per-weight error in isolation
+does not:
+
+| scale | int4 g64 | worst int4 | int8 g64 | n (int4) |
+|---|---|---|---|---|
+| pure `absmax/qmax` | 10.81% | 14.13% | 0.62% | 9,161 |
+| **13-point clip grid** | **9.52%** | **12.25%** | 0.62% | 9,165 |
+
+**−11.9%**, with no change to the format — still one f32 scale per group — and no
+change to the kernel, which cannot tell the difference. int8 does not move: with
+255 levels `absmax` is already optimal, and the search stays there only to avoid
+opening a special case.
+
+Side effect that pays for itself: with a scale below `absmax/7` the code `-8`
+becomes reachable. With the exact scale, round-to-nearest never emits it and int4
+uses **15 of the 16 levels** the dequantiser already knows how to read.
+
+Sanity check on the numbers: 9.52/0.62 = 15.4, against a step ratio of
+`127/7 = 18.1`. It sits below 18 precisely because only int4 gains from the
+search. A ratio far outside 15–18 would be a bug, not quantisation.
 
 ## Provenance and licence
 
@@ -145,6 +165,10 @@ python download_model.py                          # 62.4 GB in BF16, resumable
 .\tools\convert.exe models\glm47flash-bf16 --out model.tootega --clip-grid 13
 .\tools\convert.exe --verify model.tootega
 ```
+
+The conversion takes **171 s** on 8 threads and streams one tensor at a time —
+the 62.4 GB source and the 19.3 GB output are never both in memory. `--dry-run`
+prints the plan and the estimated size without writing anything.
 
 ## What is not here
 

@@ -185,18 +185,32 @@ kernel cannot tell the difference. In int8 the gain is zero — with 255 levels
 `absmax` is already essentially optimal, and the search stays there only to avoid
 opening a special case.
 
-Confirmed a second time by the native converter, which measures the probe with a
-generator of its own: over the first 51 int4 tensors, output error **10.87% with
-`--clip-grid 1` against 9.67% with the default 13** — −11.0%, against the −11.6%
-the table above predicted on a different sample.
+### Measured on the whole model — no longer an extrapolation
 
-> **The container on disk does not have this yet.** It was written before the
-> change, with a pure `absmax/qmax` scale, and its error is the one in the first
-> table: **10.81%**. Its `meta` does not even have the `clip_grid` key. The
-> **~9.6%** on the whole model is still an **extrapolation**, and it only holds
-> after reconverting. The search does run 13 quantisation passes per block, but
-> `tools/convert` now spreads them over the P-cores, partitioned by output row —
-> so the conversion does not cost 13× the 11.3 min that the 1-point grid took.
+The table above came from 24 tensors of one shard. The full conversion has now
+run, and the probe covers **every** quantised tensor:
+
+| container | scale | int4 g64 output | int8 g64 output | n (int4) |
+|---|---|---|---|---|
+| v3 | pure `absmax/qmax` | **10.81%** | 0.62% | 9,161 |
+| **v4** | **13-point clip grid** | **9.52%** | **0.62%** | 9,165 |
+
+**−11.9% on the whole model**, against the −11.6% predicted from 24 tensors. The
+extrapolation held. int8 did not move by a thousandth, exactly as the table
+above says it would not — with 255 levels `absmax` is already optimal.
+
+Worst tensor: **12.25%** (v4) against 14.13% (v3). Per-weight error 9.92%.
+
+**The sanity ratio changes with the grid, and that is expected.** With pure
+`absmax` the int4/int8 ratio was 10.81/0.62 = 17.4, next to the step ratio of
+`127/7 = 18.1`. With the grid it is 9.52/0.62 = **15.4**, because only the int4
+side improved. A ratio far below that is a bug; 15–18 is the healthy band.
+
+**Cost: 171 s** for 9,703 tensors, 8 threads — against the **11.3 min** the
+single-threaded 1-point conversion took. The search does 13 quantisation passes
+per block, but they run on the pool, partitioned by output row, so the container
+does not depend on `--threads` and the conversion got **4× faster** while doing
+13× the arithmetic.
 
 Side effect: with a scale smaller than `absmax/7`, code `-8` becomes reachable.
 Before, `rint` never produced it and int4 used **15 of the 16 levels** that the

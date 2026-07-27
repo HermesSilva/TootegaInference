@@ -5,7 +5,7 @@
 # apagado --, entao o envio exige `-Upload` explicito.
 #
 #   .\publish\publish.ps1 -Container models\glm47flash-v4\model.tootega
-#   .\publish\publish.ps1 -Container ... -Repo Hermes/GLM-4.7-Flash-tootega-int4 -Upload
+#   .\publish\publish.ps1 -Container models\glm47flash-v4\model.tootega -Upload
 #
 # Requer o CLI `hf` (do pacote huggingface_hub) so no passo de envio. A montagem
 # nao depende de nada.
@@ -14,7 +14,7 @@ param(
     [Parameter(Mandatory = $true)] [string]$Container,
     [string]$Base   = 'models\glm47flash-bf16',
     [string]$Stage  = 'publish\stage',
-    [string]$Repo   = '',
+    [string]$Repo   = 'HermesSilva/GLM-4.7-Flash-tootega-int4',
     [switch]$Upload
 )
 
@@ -95,9 +95,10 @@ Write-Host ('{0,-24} {1,12:N1} MB' -f 'TOTAL', ($total / 1MB))
 # --- envio -------------------------------------------------------------------
 
 if (-not $Upload) {
-    Write-Host "`nNada enviado. Para publicar:" -ForegroundColor Green
+    Write-Host "`nNada enviado. Destino seria huggingface.co/$Repo" -ForegroundColor Green
+    Write-Host "Para publicar:"
     Write-Host "  hf auth login"
-    Write-Host "  .\publish\publish.ps1 -Container $Container -Repo <usuario>/<nome> -Upload"
+    Write-Host "  .\publish\publish.ps1 -Container $Container -Upload"
     exit 0
 }
 

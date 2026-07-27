@@ -6,6 +6,44 @@ does not say whether anything improved.
 
 Build `ddf196a58ce9` · reference machine from the [README](../README.md).
 
+## Container v4 — what changed and what is still v3's number
+
+The performance and quality numbers below were measured on **container v3**. A
+**v4** now exists, and it carries two changes at once, which is worth stating
+before anyone attributes an effect to the wrong one:
+
+| | v3 | v4 |
+|---|---|---|
+| scale | pure `absmax/qmax` | 13-point clip grid |
+| attention | int8 (`--attn int8`) | int4 — the documented default |
+| int4 tensors | 8,973 · 15.91 GB | 9,165 · 16.46 GB |
+| int8 tensors | 390 · 2.38 GB | 198 · 1.33 GB |
+| file | 19.81 GB | **19.32 GB** |
+| resident weights | 18.54 GB | **18.05 GB** |
+| int4 output error | 10.81% | **9.52%** |
+
+Attention in int8 was kept in v3 out of an ablation that has since been redone:
+paired, the only group above the noise is the experts (−0.0225 ± 0.0076 nll);
+attention gives −0.0007 ± 0.0019. It cost 0.49 GB for nothing measurable.
+
+**Measured on v4, and only this:**
+
+| property | result |
+|---|---|
+| engine against `Tests/oracle` | **32/32**, relative error **0.0001%**, largest difference 5.0e-4 |
+| conversion | **171 s**, 8 threads, 9,703 tensors |
+| teacher-forced pass, 32 positions, cold | 3.25 s · 9.84 tok/s · 9.24 GB RSS |
+
+**Not measured on v4 yet:** warm decode, ttft, perplexity, `gentest`. Until they
+are, the numbers in the sections below are v3's and must be read as such.
+
+Against the v3 oracle, **27 of 32** argmaxes are unchanged. The five that moved
+(positions 8, 12, 18, 30, 31) all have a v4 margin between **0.093 and 0.372**,
+against a median margin of 1.113 — they are the ties, and a container change
+tipping a tie is the expected outcome, not a signal. Which side of the tie is
+better is what `gentest`'s `match@ref` against BF16 answers; the oracle does not
+and cannot.
+
 ## Performance — CPU, container v3, 20 threads
 
 ```

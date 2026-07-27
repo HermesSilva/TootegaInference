@@ -70,34 +70,62 @@ separate branch, and rejected: the granularity was wrong, and no GPU code lands
 on master until it shows a gain in the complete decode.
 
 ```
-memory bandwidth     68.7 GB/s     measured at runtime, not from the spec sheet
-traffic per token    2.87 GB       tensors a decode actually touches
-roofline ceiling     24.0 tok/s    bandwidth / traffic
+memory bandwidth     69.4 GB/s     measured at runtime, not from the spec sheet
+traffic per token    2.38 GB       tensors a decode actually touches
+roofline ceiling     29.1 tok/s    bandwidth / traffic
 
-warm decode          71 ms/token   = 13.1 tok/s   (55% of the ceiling)
-mean ttft            2.25 s
-prefill              ~11 tok/s
-warm-up              18.54 GB in 5.3 s
-RSS                  16.8 GB peak
+warm decode          ~50 ms/token  = ~19.8 tok/s
+mean decode          17.12 tok/s   includes the cold first prompt (59% of ceiling)
+cold decode          84 ms/token   = 1.7x worse than warm
+mean ttft            2.51 s
+prefill              10.4 tok/s
+RSS                  16.69 GB peak
+KV                   108.3 KB per position; 221.8 MB for 2048
 ```
 
 Matmul in isolation reaches 62 GB/s — 90% of bandwidth. The gap to the ceiling is
 in attention and thread barriers, not in the matmuls.
 
+The 2.38 GB of traffic per token is what makes the number: only 4 of 64 experts
+run per layer, and the whole of attention is int4 here.
+
 ### Quality
+
+Generation against the original BF16 weights — twelve prompts, up to 96 tokens,
+greedy, this container and the previous one measured **in the same run** against
+a BF16 reference generated in that same run:
+
+| container | `match@ref` | `rep4` | tok/s |
+|---|---|---|---|
+| BF16 (reference) | 96.0 | 7.3% | 3.34 |
+| previous (plain scale, int8 attention) | 32.4 | 5.3% | 8.43 |
+| **this one** | **42.7** | 6.8% | **10.98** |
+
+`match@ref` counts the initial tokens identical to the BF16 generation before
+diverging; `rep4` is the fraction of repeated 4-grams, where above ~15% means
+degeneration. **The scale search bought a third more matching tokens**, and this
+comparison is paired by construction — same prompts, same reference, one run.
 
 | property | result | measured on |
 |---|---|---|
 | teacher-forced oracle, independent implementation | **32/32** identical tokens, 1e-4% relative error | **this container** |
+| generation `match@ref` against BF16 | **42.7** against the previous container's 32.4 | **this container** |
+| perplexity against BF16, paired, 10 windows of 384 tokens | **+2.86%**, interval `[-2.8%, +8.8%]` — **inconclusive** | **this container** |
 | perplexity, 384 positions of prose, BF16 weights | engine **8.63** against `transformers`' **8.89** | earlier container |
-| perplexity int4 against BF16, paired, 10 windows of 384 tokens | nll **+0.0513 ± 0.0076** → **×1.0526** | earlier container |
 | determinism | **byte-identical** logits from 1 to 20 threads | earlier container |
 | tokenizer against HuggingFace `tokenizers` | **36/36** cases, exact round-trip | independent of container |
 
-**Read the third column.** Only the oracle has been run on the exact file
-published here. The perplexity numbers come from a container with a coarser
-scale, so if anything they are **pessimistic** for this one — but "probably a
-little better" is not a measurement, and this page does not pretend otherwise.
+**The perplexity row says inconclusive and means it.** The interval crosses zero
+because one window of the corpus has a perplexity near 4,600 — a table-heavy
+stretch where nothing is predictable — and it alone is four times any other
+window's difference. Dropping it would give `+5.4%` with an interval clear of
+zero, and that number is deliberately **not** the one published: choosing which
+window to discard after seeing the result is how a measurement becomes an
+opinion. The corpus is the thing to fix, not the arithmetic.
+
+So: generation says this container is closer to the original weights than the
+previous one, and perplexity on this corpus cannot tell them apart. Both are
+stated because both were measured.
 
 The paired comparison is the one that counts: comparing two configurations by the
 global mean swallows the effect in the variance between windows, and that mistake

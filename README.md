@@ -42,27 +42,33 @@ All of it in **13 `.c` files**, ~420 KB of executable, zero runtime DLLs.
 **M1 and M4 complete, on CPU.** Measured on this machine, not estimated:
 
 ```
-memory bandwidth    68.7 GB/s         measured at runtime, not specified
-traffic per token    2.87 GB          what a decode actually touches
-roofline ceiling    24.0 tok/s        bandwidth / traffic
+memory bandwidth    69.4 GB/s         measured at runtime, not specified
+traffic per token    2.38 GB          what a decode actually touches
+roofline ceiling    29.1 tok/s        bandwidth / traffic
 
-warm decode         71 ms/token       = 13.1 tok/s
-mean ttft           2.25 s
-prefill             ~11 tok/s
-warm-up             18.54 GB in 5.3 s
-RSS                 16.8 GB peak      35.9 GB free
+warm decode         ~50 ms/token      = ~19.8 tok/s
+mean decode         17.12 tok/s       includes the cold first prompt
+mean ttft           2.51 s
+prefill             10.4 tok/s
+RSS                 16.69 GB peak     36.2 GB free
 idle server         0.2% of one core, 0.04 GB
 ```
 
-Measured on container **v3**. The current container is **v4** — 19.32 GB on disk,
-18.05 GB resident, and a lower quantisation error — and it has **not** been
-benchmarked yet. Everything in the block above will move a little, and by how
-much is not something to guess at: see
-[`docs/19`](docs/19-reference-state.md).
-
-Said with the same rigour as the rest: decode sits at **55% of the ceiling**. The
-~28 ms missing per token are in attention and the barriers — not in the matmuls,
+Said with the same rigour as the rest: decode sits at **59% of the ceiling**. The
+missing milliseconds are in attention and the barriers — not in the matmuls,
 which already run at 90% of bandwidth.
+
+Container **v4**. Generation quality against the original BF16 weights, twelve
+prompts, greedy, all in one run:
+
+| container | `match@ref` | `rep4` |
+|---|---|---|
+| BF16 (reference) | 96.0 | 7.3% |
+| v3 | 32.4 | 5.3% |
+| **v4** | **42.7** | 6.8% |
+
+`match@ref` is how many initial tokens match the BF16 generation before
+diverging. The scale search bought a third more of them.
 
 ### What is proven
 

@@ -6,6 +6,9 @@ language:
   - en
   - zh
 pipeline_tag: text-generation
+# Sem widget: nenhuma biblioteca do Hub le este formato, entao a caixa de
+# Inference API so renderiza um erro para quem chegar aqui.
+inference: false
 tags:
   - tootega
   - int4

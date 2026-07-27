@@ -99,6 +99,40 @@ much of each is a question for a controlled run.
 optimise in the matmuls. The missing milliseconds are in **attention and the
 remaining barriers**.
 
+### 20 threads on 8 P-cores beats 8 — the hypothesis that said otherwise was wrong
+
+`tt_cpu_pcore_list` returns **8** CPUs on this machine — the first logical of
+each P-core — and `pool.c` assigns `cpus[(i + 1) % ncpu]`, so `--threads 20`
+wraps twenty threads back onto those same eight. That looked like 2.5×
+oversubscription paying nothing, and worth checking. It was checked:
+
+| | `--threads 8` | `--threads 20` |
+|---|---|---|
+| mean decode | 15.55 tok/s | **17.12 tok/s** |
+| warm decode, last prompts | 15.6–16.0 | **19.2–19.8** |
+| warm prefill | 15.7–16.2 | **~19.5–20.0** |
+| effective bandwidth | 37.1 GB/s | **40.8 GB/s** |
+
+**Oversubscription wins**, and the reason is the ordinary one: it hides memory
+latency. While one thread stalls on a miss, another runs, and this workload is
+memory-bound by construction. The reference configuration stays at 20 threads.
+
+Two cautions the comparison itself produced:
+
+- **The mean ttft and mean prefill say the opposite** (1.93 s against 2.51 s;
+  14.3 against 10.4 tok/s) and they are misleading: the 8-thread run had no
+  `--repeat`, and the cold first prompt was far worse at 20 threads (2.5 against
+  9.0 tok/s), dragging the mean. Compare warm against warm or do not compare.
+- **The bandwidth probe moved 8% between the two runs** — 69.4 GB/s and then
+  75.0 GB/s, minutes apart on an idle machine. It is the denominator of the
+  ceiling and of "% of bandwidth", so **those two lines are not comparable across
+  runs**. `GB/s effective` is, because it does not divide by the probe.
+
+What has **not** been tested: whether the SMT sibling of each P-core is worth
+using. `pcore_list` deliberately takes one logical per core, so the second
+hardware thread of every P-core sits idle while software threads queue on the
+first. That is a change to `enum_cores`, not a flag.
+
 ## Quality — validated against an external reference
 
 | measurement | engine | transformers |

@@ -21,12 +21,25 @@ param(
     # Namespace do HuggingFace, que NAO e o do GitHub: la e HermesSilva, aqui
     # HermesX21. Confira com `hf auth whoami` antes de duvidar do nome.
     [string]$Repo   = 'HermesX21/GLM-4.7-Flash-tootega-int4',
-    [switch]$Upload
+    [switch]$Upload,
+    # Cria o repo PRIVADO antes de enviar. Publicar nao se desfaz de verdade --
+    # arquivo enviado fica em cache e em indice mesmo depois de apagado --, entao
+    # da para ver o card renderizado e o repo montado antes de abrir. A troca
+    # para publico e um clique em Settings, e ai sim e definitiva.
+    [switch]$Private
 )
 
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path $PSScriptRoot -Parent
 Set-Location $Root
+
+# O `hf` e Python, e imprime marca de visto (U+2713) e barra de progresso. Com a
+# saida redirecionada, o Python assume a codificacao da localidade -- cp1252
+# nesta maquina --, o `charmap` nao codifica o caractere e o processo MORRE com
+# UnicodeEncodeError. Nao e aviso: e falha, e aconteceria no meio do upload.
+$env:PYTHONIOENCODING = 'utf-8'
+$env:PYTHONUTF8 = '1'
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 function Need($path, $what) {
     if (-not (Test-Path $path)) { throw "$what nao encontrado: $path" }
@@ -127,6 +140,12 @@ if (-not $Upload) {
 }
 
 if (-not $Repo) { throw '-Upload exige -Repo <usuario>/<nome>' }
+
+if ($Private) {
+    Write-Host "`n--- criando $Repo como PRIVADO ---" -ForegroundColor Cyan
+    & hf repo create $Repo --repo-type model --private --exist-ok
+    if ($LASTEXITCODE -ne 0) { throw "nao consegui criar o repo ($LASTEXITCODE)" }
+}
 
 # Os arquivos pequenos primeiro: se o card ou a licenca estiverem errados, o
 # erro aparece em segundos e nao depois de subir 19 GB.

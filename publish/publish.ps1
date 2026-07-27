@@ -77,6 +77,25 @@ if ($Upload) {
     $who = & hf auth whoami 2>$null
     if ($LASTEXITCODE -ne 0) { throw 'sem sessao no HuggingFace: rode `hf auth login`' }
     Write-Host "`nautenticado: $who" -ForegroundColor Cyan
+
+    # O repo e criado AQUI, antes de montar coisa alguma.
+    #
+    # Ter sessao nao e ter permissao: `whoami` responde com token de leitura, e o
+    # 403 so aparece na primeira escrita. Nem o `hf auth whoami --json` conta o
+    # papel do token, entao nao adianta perguntar -- vale FAZER a escrita mais
+    # barata que existe. Criar o repo e ela, custa segundos, e e a mesma
+    # permissao que o upload vai exigir.
+    Write-Host "--- criando/conferindo $Repo$(if ($Private) { ' (PRIVADO)' }) ---" -ForegroundColor Cyan
+    if ($Private) {
+        & hf repos create $Repo --repo-type model --private --exist-ok
+    } else {
+        & hf repos create $Repo --repo-type model --exist-ok
+    }
+    if ($LASTEXITCODE -ne 0) {
+        throw ("nao consegui criar '$Repo'. Se a mensagem acima diz 403, o token " +
+               "e de LEITURA: gere um com escrita em huggingface.co/settings/tokens " +
+               "e rode `hf auth login`. Nada foi montado.")
+    }
 }
 
 # --- o container tem de abrir ------------------------------------------------
@@ -140,12 +159,6 @@ if (-not $Upload) {
 }
 
 if (-not $Repo) { throw '-Upload exige -Repo <usuario>/<nome>' }
-
-if ($Private) {
-    Write-Host "`n--- criando $Repo como PRIVADO ---" -ForegroundColor Cyan
-    & hf repo create $Repo --repo-type model --private --exist-ok
-    if ($LASTEXITCODE -ne 0) { throw "nao consegui criar o repo ($LASTEXITCODE)" }
-}
 
 # Os arquivos pequenos primeiro: se o card ou a licenca estiverem errados, o
 # erro aparece em segundos e nao depois de subir 19 GB.

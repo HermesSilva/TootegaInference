@@ -249,7 +249,7 @@ Esta é a seção que o resto da documentação assume que você já leu.
 | quantização | discretizar qualquer sinal | Guardar cada peso em 4 ou 8 bits em vez de 16. Só os pesos: as contas continuam em 32 bits, e o kernel *desempacota* antes de multiplicar. Isso tem nome aqui — **W4A32**, pesos em 4 bits e ativações em 32. Custa perplexidade: medido, +5,26% com tudo em int4 e **−0,19%** (indistinguível de zero) deixando a atenção em int8. |
 | LoRA | técnica de ajuste fino de modelos | *Low-Rank Adaptation — as letras vêm da técnica de ajuste fino; aqui o nome pegou carona e designa só a projeção.* Aqui (`q_lora_rank`, `kv_lora_rank`) é só projeção de posto baixo, parte da arquitetura original. Não tem relação com a técnica de ajuste fino de mesmo nome. |
 | token | um símbolo, ou uma credencial de acesso | Um pedaço de texto, ~4 caracteres em média. O modelo só enxerga o número inteiro que representa esse pedaço. |
-| contexto | o assunto de que se está falando | O número máximo de tokens que cabem na janela da conversa — tudo o que o modelo consegue "ter em vista" de uma vez. Não é memória de longo prazo: o que sai da janela deixa de existir para ele. E custa RAM, linearmente: **105,8 KB por posição** no padrão f32, *por conversa*. No teto deste modelo, 202.752 posições, são 21,96 GB — mais do que os 18,54 GB dos pesos. |
+| contexto | o assunto de que se está falando | O número máximo de tokens que cabem na janela da conversa — tudo o que o modelo consegue "ter em vista" de uma vez. Não é memória de longo prazo: o que sai da janela deixa de existir para ele. E custa RAM, linearmente: **105,8 KB por posição** no padrão f32, *por conversa*. No teto deste modelo, 202.752 posições, são 21,96 GB — mais do que os 18,05 GB dos pesos. |
 | grupo | agrupamento genérico | Dois homônimos independentes: `group=64` (quantos pesos compartilham uma escala) e `n_group` (limite de roteamento entre experts). |
 | página | página de um documento ou da web | Bloco de 4 KB (ou 2 MB) com que o sistema operacional gerencia memória. Nada de páginas de documento. |
 | plano | uma intenção ou um cronograma | A decisão de onde cada peso vai morar (RAM ou VRAM), calculada na inicialização a partir das bandas medidas. |
@@ -457,7 +457,7 @@ Referência rápida. Nada aqui é específico do projeto.
 | CPU | *Central Processing Unit — unidade central de processamento.* O processador principal. Aqui, um i9-14900K com 8 núcleos rápidos, 16 econômicos e 32 threads no total. |
 | GPU | *Graphics Processing Unit — unidade de processamento gráfico.* A placa de vídeo, usada como acelerador de contas. Aqui é uma RTX 2060 SUPER de 8 GB — rápida por dentro, mal conectada por fora. |
 | RAM | *Random Access Memory — memória de acesso aleatório.* A memória principal do computador. Aqui, 64 GB entregando ~60 GB/s. É onde o modelo inteiro precisa caber. |
-| VRAM | *Video RAM — a RAM da placa de vídeo.* A memória da placa de vídeo. Rápida (448 GB/s aqui) e pequena (8 GB), e só alcançável pelo PCIe — que nesta máquina entrega ~12 GB/s, menos que o disco. É a combinação dos três números que decide tudo: com o modelo em 18,54 GB, nada cabe permanentemente, e o que não cabe tem de atravessar o elo mais lento a cada camada. |
+| VRAM | *Video RAM — a RAM da placa de vídeo.* A memória da placa de vídeo. Rápida (448 GB/s aqui) e pequena (8 GB), e só alcançável pelo PCIe — que nesta máquina entrega ~12 GB/s, menos que o disco. É a combinação dos três números que decide tudo: com o modelo em 18,05 GB, nada cabe permanentemente, e o que não cabe tem de atravessar o elo mais lento a cada camada. |
 | PCIe | *Peripheral Component Interconnect Express.* O barramento que liga a GPU ao resto do computador. Aqui é gen 3: ~12 GB/s, o elo mais lento da máquina. |
 | NVMe (RAID0) | *Non-Volatile Memory Express.* O padrão dos SSDs rápidos ligados direto ao barramento. Aqui, dois em RAID0 entregando 18,4 GB/s sequenciais. |
 | tier | Um nível da hierarquia de memória: VRAM, RAM, disco. Cada tier tem sua banda, sua capacidade e seu link de acesso. |
@@ -489,7 +489,7 @@ Referência rápida. Nada aqui é específico do projeto.
 | RTX | *Ray Tracing — a NVIDIA não expande o X.* A linha de placas de vídeo da NVIDIA para consumidor. A desta máquina é uma RTX 2060 SUPER com 8 GB. Os 8 GB são o número que decide: o modelo ocupa 18,5 GB, então ele **não cabe**, e qualquer uso de GPU vira partição — o que foi medido e não compensou. |
 | SO (sistema operacional) | *OS, Operating System — sistema operacional.* Sistema operacional — Windows, Linux, macOS. É quem entrega memória, arquivos e threads ao programa. O engine toca o SO em **um único arquivo**, `compat.c`: é a fronteira onde as diferenças entre Windows e Linux moram, para que o resto do código não precise saber onde está rodando. |
 | SSD | *Solid-State Drive — unidade de estado sólido.* Disco sem partes móveis. Os desta máquina são *NVMe* em RAID0, 18,4 GB/s — mais rápidos que o PCIe que liga a placa de vídeo. |
-| prefetch (madvise, pré-busca) | Pedir a página antes de precisar dela. Na carga o engine chama `madvise(MADV_WILLNEED)` ou `PrefetchVirtualMemory` e traz 18,54 GB em 5,3 s, de uma vez — em vez de tomar falta de página no meio do decode. |
+| prefetch (madvise, pré-busca) | Pedir a página antes de precisar dela. Na carga o engine chama `madvise(MADV_WILLNEED)` ou `PrefetchVirtualMemory` e traz 18,05 GB em 5,3 s, de uma vez — em vez de tomar falta de página no meio do decode. |
 | linha de cache (cache line, linhas de cache) | Os **64 bytes** que a CPU move de uma vez entre a RAM e o cache. É a unidade real de leitura: pedir 4 bytes custa uma linha. Todo blob do contêiner começa em múltiplo de 64 por causa dela. |
 | alinhamento | O endereço começar em múltiplo de 64. Sem isso não existe zero-copy: o kernel teria de copiar o tensor para um buffer alinhado antes de multiplicar. O conversor alinha todo blob na escrita e o `--verify` confere; o enchimento desaparece no arredondamento dos 19,3 GB. |
 | pool de threads | As threads criadas uma vez na carga e reaproveitadas em cada camada, em vez de nascer e morrer por matmul. É o pool próprio do engine — decisão D6, e o motivo de não haver OpenMP no binário. O trabalho é dividido por linhas de saída da matriz, e o preço de ter várias threads é a barreira. |
@@ -1032,11 +1032,19 @@ O erro de quantização foi medido de duas formas.
 
 | formato | erro na saída |
 |---|---|
-| int4 g64 | 10,81% |
+| int4 g64, escala simples | 10,81% |
+| **int4 g64, com a busca de escala** | **9,52%** |
 | int8 g64 | 0,62% |
 
-A razão entre os dois (17,4) bate com a razão de passo teórica (`127/7 = 18,1`).
-Isso é o **piso do arredondamento**, não um bug.
+A razão entre a escala simples e o int8 (17,4) bate com a razão de passo teórica
+(`127/7 = 18,1`). Isso é o **piso do arredondamento**, não um bug.
+
+A busca de escala tira 12% desse piso de graça: em vez de dimensionar a escala de
+cada grupo pelo maior peso dele — o que otimiza o pior peso e castiga todos os
+outros —, o conversor experimenta 13 escalas ligeiramente menores e fica com a
+que reconstrói melhor o grupo. O arquivo não cresce um byte e o kernel não vê
+diferença. Depois dela a razão cai para 15,4, porque só o int4 ganha: com 255
+níveis o int8 já estava no melhor que dá.
 
 **Segunda: perplexidade.** Quanto o modelo piora de verdade num texto real:
 
@@ -1326,7 +1334,7 @@ esse token chega até um programa que serve para alguma coisa.
 
 ### 13.1 Por que existe um servidor
 
-Carregar o modelo custa **5,3 segundos e 18,54 GB**. Se cada pergunta subisse um
+Carregar o modelo custa **5,3 segundos e 18,05 GB**. Se cada pergunta subisse um
 processo novo, cada pergunta pagaria isso de novo — e a máquina não tem RAM para
 dois ao mesmo tempo.
 
@@ -1627,7 +1635,7 @@ perguntas maiores e paciência maior.
 Vale como exemplo final de método, porque o resultado contraria a intuição de
 todo mundo.
 
-A GPU desta máquina tem 8 GB; o modelo tem 18,54 GB. Ele **não cabe**. Restaria
+A GPU desta máquina tem 8 GB; o modelo tem 18,05 GB. Ele **não cabe**. Restaria
 partir o trabalho entre GPU e CPU. Escreveu-se o backend CUDA, otimizaram-se os
 kernels até ficarem **31× mais rápidos** que a primeira versão e **2,6×** mais
 rápidos que a CPU nos mesmos dados (179–190 GB/s contra 68,7).

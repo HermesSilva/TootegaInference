@@ -17,7 +17,10 @@ Without this there is nothing to run.
   memory)
 - **Tensors aligned to 64 bytes on write** — without it there is no zero-copy
   read with SIMD ([11](11-memory.md))
-- `transformers` oracle: 32 teacher-forced positions, ids saved in `ref.json`
+- An oracle independent of the engine: 32 teacher-forced positions, ids saved in
+  `ref32.json`. It was `transformers` on day one and is `Tests/oracle` today —
+  what the milestone requires is that it not share code with the forward, not
+  which language it is in ([17](17-diagnosis.md) on the limits of that)
 - Per-tensor precision ablation (the table in [04](04-target-model.md) is a
   hypothesis)
 

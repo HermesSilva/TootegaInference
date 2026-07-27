@@ -13,13 +13,18 @@ it.
 
 Per position, and at the model's ceiling (202,752):
 
-| | per position | total KV | with the 18.54 GB of weights |
+| | per position | total KV | with the 18.05 GB of weights |
 |---|---|---|---|
-| f32 (default) | 105.8 KB | 21.96 GB | 40.5 GB |
-| bf16 | 52.9 KB | 10.98 GB | 29.5 GB |
-| **int8 g64** | **28.1 KB** | **5.83 GB** | **24.4 GB** |
+| f32 (default) | 105.8 KB | 21.96 GB | 40.0 GB |
+| bf16 | 52.9 KB | 10.98 GB | 29.0 GB |
+| **int8 g64** | **28.1 KB** | **5.83 GB** | **23.9 GB** |
 
 int8 carries one f32 scale per group of 64 — the extra 0.5 KB per position.
+
+The weights column is container **v4**; the measurements further down were taken
+on **v3**, whose 18.54 GB add 0.49 GB to each total. It changes no conclusion
+here — the decision is driven by the KV column, which does not depend on the
+container.
 
 ## Criterion, fixed before measuring
 

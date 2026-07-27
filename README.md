@@ -54,6 +54,12 @@ RSS                 16.8 GB peak      35.9 GB free
 idle server         0.2% of one core, 0.04 GB
 ```
 
+Measured on container **v3**. The current container is **v4** — 19.32 GB on disk,
+18.05 GB resident, and a lower quantisation error — and it has **not** been
+benchmarked yet. Everything in the block above will move a little, and by how
+much is not something to guess at: see
+[`docs/19`](docs/19-reference-state.md).
+
 Said with the same rigour as the rest: decode sits at **55% of the ceiling**. The
 ~28 ms missing per token are in attention and the barriers — not in the matmuls,
 which already run at 90% of bandwidth.

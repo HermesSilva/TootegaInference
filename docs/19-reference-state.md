@@ -149,13 +149,22 @@ option. Details in [21](21-int8-kv.md).
 
 ## Outstanding measurements
 
-1. Reconvert the container with `--attn int4` (v3 is int8 with no benefit).
-2. A full `gentest` with the correct forward and sampler — the earlier results
+1. **`ablate` and `gentest` on v4.** Two changes landed at once — the clip search
+   and attention back to int4 — and neither has been measured in perplexity or in
+   generation. `gentest` accepts both containers at once and `--bf16`, which is
+   the comparison that answers whether v4 is actually better rather than merely
+   cheaper.
+2. **`bench` on v4**, to replace the performance block above, which is v3's.
+3. A full `gentest` with the correct forward and sampler — the earlier results
    measured two bugs.
-3. Rewrite the precision tables in [04](04-target-model.md).
 4. A **prose** corpus of ~32k tokens. `corpus_prosa.txt` has 1,995 and does not
    even fill one window of 4096; `corpus.txt` is documentation with tables, and
    one window of it ruins the mean ([21](21-int8-kv.md)).
+
+Done since the last revision of this page: the container was reconverted with
+`--attn int4` (v4), and the precision tables in [04](04-target-model.md) were
+rewritten — the ablation that pointed at attention is now marked retracted, with
+the two defects that produced it.
 
 ## Bugs found, and what each one taught
 

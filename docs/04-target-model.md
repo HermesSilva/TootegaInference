@@ -268,71 +268,69 @@ confirms the caveat above that per-tensor error does not predict quality.
 >
 > Comparing two global means would have produced a publishable, wrong number.
 
-### Ablation — and the precision table was wrong
+### Ablation — the current table
 
-`tools/ablate.exe` (C, reusing `src/`), the same 10 windows. Each group is
-restored to the original BF16 **one at a time**, on top of the int4 baseline:
+`Tests/ablate` (C, reusing `src/`), the same 10 windows. Each group is restored
+to the original BF16 **one at a time**, on top of the int4 baseline, and the
+delta is **paired window by window** — which is the whole point:
 
-| restored group | tensors | nll delta | of the degradation |
-|---|---|---|---|
-| **attention** (`self_attn.*`) | 193 | **−0.0661** | **100.3%** |
-| shared experts | 141 | −0.0132 | 20.0% |
-| dense layer 0 | 3 | −0.0019 | 2.8% |
-| `lm_head` | 1 | +0.0002 | −0.3% |
-| routed experts | 9,024 | +0.0221 | −33.6% |
+| group restored to BF16 | nll delta | verdict |
+|---|---|---|
+| **experts** | **−0.0225 ± 0.0076** | **settled** |
+| attention | −0.0007 ± 0.0019 | noise |
+| shared experts | +0.0216 ± 0.0325 | noise |
+| `lm_head` | −0.0008 ± 0.0007 | noise |
+| dense layer 0 | +0.0168 ± 0.0097 | noise |
 
-**All the degradation comes from attention.** Restoring 193 tensors — 2% of the
-count, ~520 MB — recovers 100.3% of what quantisation cost: nll 5.8309 against
-5.8311 for full BF16. The 9,024 expert tensors, which are 16.45 GB and 93% of the
-container, are **not a source of loss**.
+**Only the experts have an effect above the noise**, and that is the structural
+answer: they are 9,024 tensors and 93% of the container. **Attention in int4
+costs nothing measurable** — `--attn int8` remains available and buys 0.49 GB of
+file for a delta whose interval sits astride zero.
 
-That inverts the hypothesis this section assumed. The reason is structural, not
-accidental: each token activates 4 experts of 64, so one expert's error enters
-diluted and uncorrelated; attention runs **in full, across all 47 layers, for
-every token**, and its error compounds with depth.
+That is why the converter's default is `--attn int4` and why container v4 has it.
 
-**Consequence for the converter: attention in int8 g64, experts stay int4.**
-Estimated cost: the ~520 MB of attention become ~1.04 GB, the container goes from
-19.33 to ~19.85 GB — **+2.7% in size for ~100% of the quality back**.
-
-Two honest caveats, because the numbers ask for them:
-
-- The 95% interval on the total cost is `[+0.0366, +0.0952]` — wide, and the
-  experts' `+0.0221` falls inside it. **The tool does not yet report the paired
-  interval per group**, so "experts in int4 improve the model" is not
-  demonstrated; what is demonstrated is that they **do not degrade** it.
-- Per-window degradation ranges from `−0.000` to `+0.152`. The effect is real
-  (9 of 10 windows positive) but heterogeneous, and a larger corpus would tighten
-  the interval.
-
-### The prediction was tested — and held
-
-Container reconverted with `tools/convert.exe` (attention in int8, everything
-else unchanged), same 10 windows, same tool:
-
-| container | attention | nll delta vs BF16 | perplexity | size |
-|---|---|---|---|---|
-| v1 | int4 g64 | **+0.0659 ± 0.0149** | +6.81% | 19.33 GB |
-| **v2** | **int8 g64** | **−0.0019 ± 0.0078** | **−0.19%** | 19.65 GB |
-
-The v2 95% interval is `[−0.0171, +0.0134]` — it **crosses zero**. It is not that
-quantisation got good: it is that **it can no longer be distinguished from BF16
-with this measurement**. For 1.7% in size.
-
-Final v2 counts: int4 8,973 (15.91 GB), int8 438 (2.44 GB), f32 290 (25.7 MB),
-bf16 2 (1.27 GB). Resident 18.38 GB.
-
-> **What I nearly changed after measuring.** v2 also moved
-> `kv_a_proj_with_mqa` from f32 to int8 — 47 tensors the ablation never
-> evaluated, because there they were already exact. I went as far as fixing that
-> in the converter.
+> ### Retracted: the first ablation, and why it was wrong
 >
-> But the container **that was measured** is the one with that tensor in int8,
-> and it measured a loss indistinguishable from zero. Reverting would produce an
-> *untested* configuration, 167 MB larger, to buy a guarantee the measurement
-> already gives.
+> A previous version of this section concluded the exact opposite — *"all the
+> degradation comes from attention"*, attention `−0.0661` recovering 100.3% —
+> and the converter carried `--attn int8` as its default because of it. Both
+> the table and the conclusion are **withdrawn**. Two defects, and each is a
+> lesson worth more than the number:
 >
-> The rule stands: **publish what was measured**, not what looks safer.
+> - **The forward underneath was wrong.** The measurement ran with RoPE in the
+>   `rotate_half` variant instead of `interleave` ([17](17-diagnosis.md)). An
+>   ablation on top of a broken forward measures the break, distributed over
+>   whatever group happens to touch it most — and attention is what touches
+>   position.
+> - **It compared global means, not paired windows.** The same defect that had
+>   already produced a perplexity measurement **with the sign inverted**, three
+>   sections above. Knowing about a trap does not protect you from it; only the
+>   tool refusing the unpaired path does.
+>
+> The retracted numbers are kept here on purpose. A document that quietly
+> replaces a wrong table teaches nothing, and the next person to run an ablation
+> on this project needs to know that this one has already been wrong once, in a
+> way that looked entirely convincing.
+
+### The container as it is written today
+
+Container **v4**, `--attn int4 --clip-grid 13`:
+
+| precision | tensors | bytes |
+|---|---|---|
+| int4 g64 | 9,165 | 16.46 GB |
+| int8 g64 | 198 | 1.33 GB |
+| f32 | 338 | 252.2 MB |
+| bf16 | 2 | 1.27 GB |
+| **total** | **9,703** | **19.32 GB** |
+
+Resident 18.05 GB — `embed_tokens` stays file-backed, read one row per token.
+
+> **What was nearly changed after measuring, and was not.** An earlier container
+> moved `kv_a_proj_with_mqa` from f32 to int8 — 47 tensors the ablation never
+> evaluated, because there they were already exact. The rule that settled it:
+> **publish what was measured**, not what looks safer. It is f32 today, which is
+> both what the converter writes and what the numbers on this page describe.
 
 ## Agentic use
 

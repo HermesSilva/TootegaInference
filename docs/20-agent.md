@@ -122,8 +122,10 @@ speak HTTP to the engine: it speaks **NDJSON over the stdin/stdout** of a proces
 it launches itself.
 
 The specification is **not our reading of the protocol**: it is that
-extension's parser, frozen against real fixtures in `shared/events.ts` and
-`src/cli/CliProcessManager.ts`. Writing against an external reference is the
+extension's parser, frozen against real fixtures. The two files that define it,
+`shared/events.ts` and `src/cli/CliProcessManager.ts`, live **in Cockpit's
+repository, not in this one** — nothing here is built from them, and no path
+below refers to a file in this tree. Writing against an external reference is the
 lesson of [17](17-diagnosis.md) — three green tests born of the same reading were
 blind to the same error.
 

@@ -250,7 +250,7 @@ This is the section the rest of the documentation assumes you have read.
 | quantization | discretizing any signal | Storing each weight in 4 or 8 bits instead of 16. Weights only: the arithmetic stays in 32 bits, and the kernel *unpacks* before multiplying. That has a name here — **W4A32**, 4-bit weights and 32-bit activations. It costs perplexity: measured, +5.26% with everything in int4 and **−0.19%** (indistinguishable from zero) leaving attention in int8. |
 | LoRA | a model fine-tuning technique | *Low-Rank Adaptation — the letters come from the fine-tuning technique; here the name hitched a ride and means only the projection.* Here (`q_lora_rank`, `kv_lora_rank`) it is just low-rank projection, part of the original architecture. No relation to the fine-tuning technique of the same name. |
 | token | a symbol, or an access credential | A piece of text, ~4 characters on average. The model only ever sees the integer that stands for that piece. |
-| context | the topic being discussed | The maximum number of tokens that fit in the conversation window — everything the model can "have in view" at once. It is not long-term memory: what leaves the window stops existing for it. And it costs RAM, linearly: **105.8 KB per position** in the f32 default, *per conversation*. At this model's ceiling, 202,752 positions, that is 21.96 GB — more than the 18.54 GB of weights. |
+| context | the topic being discussed | The maximum number of tokens that fit in the conversation window — everything the model can "have in view" at once. It is not long-term memory: what leaves the window stops existing for it. And it costs RAM, linearly: **105.8 KB per position** in the f32 default, *per conversation*. At this model's ceiling, 202,752 positions, that is 21.96 GB — more than the 18.05 GB of weights. |
 | group | generic grouping | Two unrelated homonyms: `group=64` (how many weights share one scale) and `n_group` (a routing restriction across experts). |
 | page | a document or web page | A 4 KB (or 2 MB) block the operating system manages memory with. Nothing to do with document pages. |
 | plan | an intention or a schedule | The decision of where each weight will live (RAM or VRAM), computed at startup from the measured bandwidths. |
@@ -459,7 +459,7 @@ Quick reference. Nothing here is project-specific.
 | CPU | *Central Processing Unit.* The main processor. Here, an i9-14900K with 8 fast cores, 16 efficient ones and 32 threads in total. |
 | GPU | *Graphics Processing Unit.* The graphics card, used as an arithmetic accelerator. Here it is an 8 GB RTX 2060 SUPER - fast inside, poorly connected outside. |
 | RAM | *Random Access Memory.* The computer's main memory. Here, 64 GB delivering ~60 GB/s. It is where the whole model needs to fit. |
-| VRAM | *Video RAM — the graphics card’s RAM.* The graphics card's memory. Fast (448 GB/s here) and small (8 GB), and reachable only over PCIe — which on this machine delivers ~12 GB/s, less than the disk. It is the combination of the three numbers that decides everything: with the model at 18.54 GB nothing fits permanently, and what does not fit must cross the slowest link on every layer. |
+| VRAM | *Video RAM — the graphics card’s RAM.* The graphics card's memory. Fast (448 GB/s here) and small (8 GB), and reachable only over PCIe — which on this machine delivers ~12 GB/s, less than the disk. It is the combination of the three numbers that decides everything: with the model at 18.05 GB nothing fits permanently, and what does not fit must cross the slowest link on every layer. |
 | PCIe | *Peripheral Component Interconnect Express.* The bus connecting the GPU to the rest of the computer. Here it is gen 3: ~12 GB/s, the machine's slowest link. |
 | NVMe (RAID0) | *Non-Volatile Memory Express.* The standard for fast SSDs wired straight to the bus. Here, two in RAID0 delivering 18.4 GB/s sequential. |
 | tier | One level of the memory hierarchy: VRAM, RAM, disk. Each tier has its bandwidth, its capacity and its access link. |
@@ -491,7 +491,7 @@ Quick reference. Nothing here is project-specific.
 | RTX | *Ray Tracing — NVIDIA does not expand the X.* NVIDIA's consumer graphics card line. This machine has an RTX 2060 SUPER with 8 GB. Those 8 GB are the deciding number: the model takes 18.5 GB, so it **does not fit**, and any GPU use becomes a partition — which was measured and did not pay off. |
 | OS (operating system) | *OS = Operating System.* Operating system — Windows, Linux, macOS. It hands memory, files and threads to the program. The engine touches the OS in **a single file**, `compat.c`: that is the boundary where the Windows/Linux differences live, so the rest of the code need not know where it runs. |
 | SSD | *Solid-State Drive.* A drive with no moving parts. This machine's are *NVMe* in RAID0, 18.4 GB/s — faster than the PCIe link to the graphics card. |
-| prefetch (madvise) | Asking for the page before needing it. At load time the engine calls `madvise(MADV_WILLNEED)` or `PrefetchVirtualMemory` and brings 18.54 GB in 5.3 s in one go — instead of taking page faults in the middle of decode. |
+| prefetch (madvise) | Asking for the page before needing it. At load time the engine calls `madvise(MADV_WILLNEED)` or `PrefetchVirtualMemory` and brings 18.05 GB in 5.3 s in one go — instead of taking page faults in the middle of decode. |
 | cache line | The **64 bytes** the CPU moves at once between RAM and cache. It is the real unit of reading: asking for 4 bytes costs a whole line. Every blob in the container starts at a multiple of 64 because of it. |
 | alignment (aligned) | The address starting at a multiple of 64. Without it there is no zero-copy: the kernel would have to copy the tensor into an aligned buffer before multiplying. The converter aligns every blob on write and `--verify` checks it; the padding disappears in the rounding of the 19.3 GB. |
 | thread pool (pool) | The threads created once at load and reused on every layer, instead of being born and dying per matmul. It is the engine's own pool — decision D6, and the reason there is no OpenMP in the binary. Work is split by matrix output rows, and the price of having several threads is the barrier. |
@@ -1039,11 +1039,19 @@ Quantization error was measured two ways.
 
 | format | output error |
 |---|---|
-| int4 g64 | 10.81% |
+| int4 g64, plain scale | 10.81% |
+| **int4 g64, with the scale search** | **9.52%** |
 | int8 g64 | 0.62% |
 
-The ratio between them (17.4) matches the theoretical step ratio (`127/7 = 18.1`).
-That is the **floor of round-to-nearest**, not a bug.
+The ratio between the plain scale and int8 (17.4) matches the theoretical step
+ratio (`127/7 = 18.1`). That is the **floor of round-to-nearest**, not a bug.
+
+The scale search takes 12% off that floor for free: instead of sizing each
+group's scale by its largest weight — which optimises the worst weight and
+punishes all the others — the converter tries 13 slightly smaller scales and
+keeps whichever reconstructs the group best. The file does not grow by a byte and
+the kernel cannot tell the difference. After it, the ratio drops to 15.4, because
+only int4 gains: with 255 levels int8 was already as good as it gets.
 
 **Second: perplexity.** How much the model actually degrades on real text:
 
@@ -1338,7 +1346,7 @@ explains how that token reaches a program that is good for something.
 
 ### 13.1 Why there is a server
 
-Loading the model costs **5.3 seconds and 18.54 GB**. If every question spawned
+Loading the model costs **5.3 seconds and 18.05 GB**. If every question spawned
 a new process, every question would pay that again — and the machine does not
 have the RAM for two at once.
 
@@ -1639,7 +1647,7 @@ questions and more patience.
 It is worth keeping as a final example of method, because the result contradicts
 everyone's intuition.
 
-This machine's GPU has 8 GB; the model has 18.54 GB. It **does not fit**. What
+This machine's GPU has 8 GB; the model has 18.05 GB. It **does not fit**. What
 remains is splitting the work between GPU and CPU. The CUDA backend was written,
 and the kernels were optimised until they were **31× faster** than the first
 version and **2.6×** faster than the CPU on the same data (179–190 GB/s against

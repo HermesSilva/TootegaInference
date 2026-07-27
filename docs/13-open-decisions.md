@@ -405,8 +405,13 @@ never had any way to measure correctness.
 
 `ref32.json` was regenerated. The perplexity measurements and the ablation in
 [04](04-target-model.md) — v1 +6.8%, v2 ≈ 0, "attention explains 100%" — were all
-done with the wrong RoPE and **need redoing**. The speed numbers remain valid:
+done with the wrong RoPE and needed redoing. The speed numbers remained valid:
 the bug did not change the amount of work.
+
+**Done.** The ablation was redone, paired: the only group above the noise is the
+experts (−0.0225 ± 0.0076); attention is −0.0007 ± 0.0019. The section in
+[04](04-target-model.md) now carries the retraction next to the current table,
+and the converter's default went back to `--attn int4`.
 
 ---
 

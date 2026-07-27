@@ -207,13 +207,13 @@
       "category": "armadilha",
       "pt": {
         "term": "contexto",
-        "definition": "O número máximo de tokens que cabem na janela da conversa — tudo o que o modelo consegue \"ter em vista\" de uma vez. Não é memória de longo prazo: o que sai da janela deixa de existir para ele. E custa RAM, linearmente: <strong>105,8 KB por posição</strong> no padrão f32, <em>por conversa</em>. No teto deste modelo, 202.752 posições, são 21,96 GB — mais do que os 18,54 GB dos pesos.",
+        "definition": "O número máximo de tokens que cabem na janela da conversa — tudo o que o modelo consegue \"ter em vista\" de uma vez. Não é memória de longo prazo: o que sai da janela deixa de existir para ele. E custa RAM, linearmente: <strong>105,8 KB por posição</strong> no padrão f32, <em>por conversa</em>. No teto deste modelo, 202.752 posições, são 21,96 GB — mais do que os 18,05 GB dos pesos.",
         "usual": "o assunto de que se está falando",
         "aliases": []
       },
       "en": {
         "term": "context",
-        "definition": "The maximum number of tokens that fit in the conversation window — everything the model can \"have in view\" at once. It is not long-term memory: what leaves the window stops existing for it. And it costs RAM, linearly: <strong>105.8 KB per position</strong> in the f32 default, <em>per conversation</em>. At this model's ceiling, 202,752 positions, that is 21.96 GB — more than the 18.54 GB of weights.",
+        "definition": "The maximum number of tokens that fit in the conversation window — everything the model can \"have in view\" at once. It is not long-term memory: what leaves the window stops existing for it. And it costs RAM, linearly: <strong>105.8 KB per position</strong> in the f32 default, <em>per conversation</em>. At this model's ceiling, 202,752 positions, that is 21.96 GB — more than the 18.05 GB of weights.",
         "usual": "the topic being discussed",
         "aliases": []
       }
@@ -1959,14 +1959,14 @@
       "pt": {
         "term": "VRAM",
         "abbr": "Video RAM — a RAM da placa de vídeo",
-        "definition": "A memória da placa de vídeo. Rápida (448 GB/s aqui) e pequena (8 GB), e só alcançável pelo PCIe — que nesta máquina entrega ~12 GB/s, menos que o disco. É a combinação dos três números que decide tudo: com o modelo em 18,54 GB, nada cabe permanentemente, e o que não cabe tem de atravessar o elo mais lento a cada camada.",
+        "definition": "A memória da placa de vídeo. Rápida (448 GB/s aqui) e pequena (8 GB), e só alcançável pelo PCIe — que nesta máquina entrega ~12 GB/s, menos que o disco. É a combinação dos três números que decide tudo: com o modelo em 18,05 GB, nada cabe permanentemente, e o que não cabe tem de atravessar o elo mais lento a cada camada.",
         "usual": null,
         "aliases": []
       },
       "en": {
         "term": "VRAM",
         "abbr": "Video RAM — the graphics card’s RAM",
-        "definition": "The graphics card's memory. Fast (448 GB/s here) and small (8 GB), and reachable only over PCIe — which on this machine delivers ~12 GB/s, less than the disk. It is the combination of the three numbers that decides everything: with the model at 18.54 GB nothing fits permanently, and what does not fit must cross the slowest link on every layer.",
+        "definition": "The graphics card's memory. Fast (448 GB/s here) and small (8 GB), and reachable only over PCIe — which on this machine delivers ~12 GB/s, less than the disk. It is the combination of the three numbers that decides everything: with the model at 18.05 GB nothing fits permanently, and what does not fit must cross the slowest link on every layer.",
         "usual": null,
         "aliases": []
       }
@@ -4901,7 +4901,7 @@
       "category": "maquina",
       "pt": {
         "term": "prefetch",
-        "definition": "Pedir a página antes de precisar dela. Na carga o engine chama <code>madvise(MADV_WILLNEED)</code> ou <code>PrefetchVirtualMemory</code> e traz 18,54 GB em 5,3 s, de uma vez — em vez de tomar falta de página no meio do decode.",
+        "definition": "Pedir a página antes de precisar dela. Na carga o engine chama <code>madvise(MADV_WILLNEED)</code> ou <code>PrefetchVirtualMemory</code> e traz 18,05 GB em 5,3 s, de uma vez — em vez de tomar falta de página no meio do decode.",
         "usual": null,
         "aliases": [
           "PrefetchVirtualMemory",
@@ -4911,7 +4911,7 @@
       },
       "en": {
         "term": "prefetch",
-        "definition": "Asking for the page before needing it. At load time the engine calls <code>madvise(MADV_WILLNEED)</code> or <code>PrefetchVirtualMemory</code> and brings 18.54 GB in 5.3 s in one go — instead of taking page faults in the middle of decode.",
+        "definition": "Asking for the page before needing it. At load time the engine calls <code>madvise(MADV_WILLNEED)</code> or <code>PrefetchVirtualMemory</code> and brings 18.05 GB in 5.3 s in one go — instead of taking page faults in the middle of decode.",
         "usual": null,
         "aliases": [
           "PrefetchVirtualMemory",

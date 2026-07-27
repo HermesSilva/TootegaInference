@@ -185,7 +185,7 @@ The fix is the one already on the outstanding list: **a prose corpus**.
 | property | state | how it is reproduced |
 |---|---|---|
 | teacher-forcing oracle | **32/32** identical tokens | `Tests\oracle.exe <model> --ids-file ids32.txt --compare <logits>` |
-| determinism | **byte-identical** logits from 1 to 20 threads | `tootega forward --threads N --dump-logits` |
+| determinism | **byte-identical** logits from 1 to 20 threads, on v4 | `tootega forward --threads 1\|20 --dump-logits`, compare the files |
 | tokenizer against HF `tokenizers` | **36/36** cases, exact round-trip | `tootega tokenize <tokenizer.json> --check tokfixture.json` |
 | kernels against the reference quantisation | **bit for bit** | `tootega selftest`; the fixture from `tools\fixture.exe --check` |
 | Unicode tables against the database | **byte for byte** | `tools\ucd.exe UnicodeData.txt --version 13.0.0 --check src\unicode_tables.h` |
@@ -265,17 +265,20 @@ option. Details in [21](21-int8-kv.md).
 2. **`ablate` on v3, on today's corpus.** Without it there is no valid
    perplexity comparison between the two containers — the recorded `+0.0513` was
    measured on a different revision of the text.
-3. **Determinism on v4.** The claim of byte-identical logits from 1 to 20 threads
-   was verified on an earlier container and not on this one:
-   `tootega forward --threads 1|20 --dump-logits` and compare the files.
-4. **A controlled speed comparison** if the v3-to-v4 difference is to be
+3. **A controlled speed comparison** if the v3-to-v4 difference is to be
    attributed rather than merely reported: same build, same machine state.
+4. **Whether the SMT sibling of each P-core is worth using** — a change to
+   `enum_cores`, not a flag. See the thread comparison above.
 
 Done since the last revision of this page: the container was reconverted with
-`--attn int4` and the clip search (v4); `gentest`, `ablate` and `bench` were run
-on it; and the precision tables in [04](04-target-model.md) were rewritten — the
-ablation that pointed at attention is marked retracted, with the two defects that
-produced it.
+`--attn int4` and the clip search (v4); `gentest`, `ablate`, `bench` and the
+determinism check were run on it; the thread count was measured instead of
+assumed; and the precision tables in [04](04-target-model.md) were rewritten —
+the ablation that pointed at attention is marked retracted, with the two defects
+that produced it.
+
+**Everything the model card claims has now been measured on the container that
+will carry it**, except the two perplexity rows, which say so on the card itself.
 
 ## Bugs found, and what each one taught
 

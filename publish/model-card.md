@@ -111,9 +111,14 @@ comparison is paired by construction — same prompts, same reference, one run.
 | teacher-forced oracle, independent implementation | **32/32** identical tokens, 1e-4% relative error | **this container** |
 | generation `match@ref` against BF16 | **42.7** against the previous container's 32.4 | **this container** |
 | perplexity against BF16, paired, 10 windows of 384 tokens | **+2.86%**, interval `[-2.8%, +8.8%]` — **inconclusive** | **this container** |
+| determinism | **byte-identical** logits from 1 to 20 threads | **this container** |
 | perplexity, 384 positions of prose, BF16 weights | engine **8.63** against `transformers`' **8.89** | earlier container |
-| determinism | **byte-identical** logits from 1 to 20 threads | earlier container |
 | tokenizer against HuggingFace `tokenizers` | **36/36** cases, exact round-trip | independent of container |
+
+Determinism is not a nice property here, it is the one that makes every other
+number reproducible: the reduction order is fixed and independent of how the work
+is split, so `--threads` changes the time and nothing else. Verified by dumping
+19.8 MB of f32 logits at 1 thread and at 20 and comparing the files.
 
 **The perplexity row says inconclusive and means it.** The interval crosses zero
 because one window of the corpus has a perplexity near 4,600 — a table-heavy

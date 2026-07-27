@@ -7,6 +7,16 @@ An OpenAI-compatible HTTP server, an embedded web chat, an agentic client with
 local tools, and 20 documents that explain **why** each decision is what it is —
 with the number that backs it right next to it.
 
+> **New here? Start with ForDummies.** The whole project explained from zero, no
+> vocabulary assumed, in **English** —
+> [TootegaEngine-ForDummies.en.html](ForDummies/TootegaEngine-ForDummies.en.html)
+> — and **Português** —
+> [TootegaEngine-ForDummies.pt.html](ForDummies/TootegaEngine-ForDummies.pt.html).
+> 20 chapters, 277 terms with a hint on every one, 15 figures, and the 20
+> numbered documents mirrored as HTML in
+> [`ForDummies/docs-html/`](ForDummies/docs-html/index.html).
+> Details in [ForDummies](#if-the-vocabulary-is-new-fordummies).
+
 ```powershell
 .\build-all.ps1      # engine + tools, MSVC via vswhere
 serve.cmd            # starts the server; the UI is at http://127.0.0.1:8080/
@@ -52,10 +62,10 @@ which already run at 90% of bandwidth.
 
 | property | result |
 |---|---|
-| forward against the `transformers` oracle | **32/32 identical tokens** |
+| forward against the independent oracle (`Tests/oracle`) | **32/32 identical tokens** |
 | determinism | **byte-identical** logits from 1 to 24 threads |
 | tokenizer against HuggingFace `tokenizers` | **36/36 cases**, exact round-trip |
-| kernels against numpy's quantisation | **bit for bit** |
+| kernels against the reference quantisation | **bit for bit** |
 | perplexity against an external reference | 8.63 against `transformers`' 8.89 |
 
 ### What does not exist
@@ -96,7 +106,7 @@ Windows is MSVC, found through `vswhere` — never a fixed path. Linux is the
 ### 2. Get and convert the model
 
 ```powershell
-python ptools\download_model.py                    # 62.4 GB in BF16, resumable
+python download_model.py                           # 62.4 GB in BF16, resumable
 .\tools\convert.exe models\glm47flash-bf16 `
     --out models\glm47flash-int4\model.tootega     # ~19.3 GB in int4
 ```
@@ -181,9 +191,48 @@ inverts the usual intuition, and almost every other decision derives from it.
 | 20 | [Agent and protocols](docs/20-agent.md) | tools, the CLI contract, the cost of reasoning |
 | 21 | [int8 KV](docs/21-int8-kv.md) | measured, inconclusive, not adopted |
 
-**For non-specialists:** [ForDummies](ForDummies/) explains the whole project
-from zero, in English and Portuguese, with a glossary of 225 terms — each one
-saying what the word means **here** and what it usually means elsewhere.
+### If the vocabulary is new: ForDummies
+
+[`ForDummies/`](ForDummies/) is the front door. It explains the whole project from
+zero — no prior vocabulary assumed — in English and Portuguese, **same content in
+both**. Read it before the numbered documents if terms like *expert*, *residency*
+or *roofline* are not already yours.
+
+| what | 🇬🇧 English | 🇧🇷 Português |
+|---|---|---|
+| **The guide, for reading** (recommended) | [`.en.html`](ForDummies/TootegaEngine-ForDummies.en.html) | [`.pt.html`](ForDummies/TootegaEngine-ForDummies.pt.html) |
+| The guide, source | [`.en.md`](ForDummies/TootegaEngine-ForDummies.en.md) | [`.pt.md`](ForDummies/TootegaEngine-ForDummies.pt.md) |
+
+The HTML version is the one to open: sidebar outline, accent-insensitive search,
+light/dark theme, zoomable figures, and **a hint on every technical term** — hover
+or Tab over any underlined word and it says what it means *here*. `/` focuses
+search, `g` opens the glossary, `Esc` closes.
+
+It runs 20 chapters, from *the project in one page* and *five ideas that explain
+almost everything* through the full journey of a token, the physics of decode,
+this machine's hardware and the inversion, residency, how the model is stored,
+how we know it is correct, the server and the agent, to a repository map and the
+common misunderstandings.
+
+Around it:
+
+- [`ForDummies/glossary.json`](ForDummies/glossary.json) — the **single source**
+  for 277 terms, each with definition and aliases in PT and EN, and, for the ones
+  that collide with ordinary usage, what the word means **elsewhere**. The `.md`
+  glossary tables and the HTML cards are both generated from it. Aliases are
+  searchable and shown on the card: looking for `matmul` lands on *matrix
+  multiplication*.
+- [`ForDummies/docs-html/`](ForDummies/docs-html/index.html) — the 20 documents of
+  `docs/` as HTML, same look, same hints, same search. It exists because a browser
+  does not render `.md`. **The Markdown in `docs/` stays normative**; where they
+  disagree, the Markdown wins.
+- [`ForDummies/img/`](ForDummies/img) — 15 hand-written SVG figures, one version
+  per language, that switch palette with `prefers-color-scheme`.
+
+The `.html` files are **generated artefacts** — [`ForDummies/build.py`](ForDummies/build.py)
+builds them from the `.md` plus `glossary.json`. Change content in the `.md`,
+change a term in the `.json`. See [`ForDummies/README.md`](ForDummies/README.md)
+for the maintenance rules.
 
 ## How the project works
 
@@ -219,12 +268,17 @@ OS     Windows 10 Pro 19045
 
 ```
 src/         the engine -- ISO C11, zero dependencies, only compat.c has OS ifdefs
-tools/       production tools: convert, agent
-Tests/       measurement tools: ablate, gentest, bench
-ptools/      Python that depends on transformers/numpy as an external reference
+tools/       production tools: convert, agent, finetune, ucd, fixture
+Tests/       measurement tools: ablate, gentest, bench, oracle
 docs/        the specification, with the why and the number behind each decision
 ForDummies/  the project explained for non-specialists, EN and PT
+publish/     the model card and the HuggingFace packaging script
 ```
+
+Two Python files are left, both outside the engine's path: `ForDummies/build.py`,
+which builds documents, and `download_model.py`, which needs HTTPS to fetch the
+checkpoint. Everything else — the converter, the oracle, the perplexity meter,
+the Unicode tables, the kernel fixture — is a native tool.
 
 The working language of the project is **English**. The one deliberate exception
 is `ForDummies/*.pt.*`, kept in Portuguese on purpose.

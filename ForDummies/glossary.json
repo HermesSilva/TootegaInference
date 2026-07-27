@@ -169,12 +169,14 @@
       "category": "armadilha",
       "pt": {
         "term": "LoRA",
+        "abbr": "Low-Rank Adaptation — as letras vêm da técnica de ajuste fino; aqui o nome pegou carona e designa só a projeção",
         "definition": "Aqui (<code>q_lora_rank</code>, <code>kv_lora_rank</code>) é só projeção de posto baixo, parte da arquitetura original. Não tem relação com a técnica de ajuste fino de mesmo nome.",
         "usual": "técnica de ajuste fino de modelos",
         "aliases": []
       },
       "en": {
         "term": "LoRA",
+        "abbr": "Low-Rank Adaptation — the letters come from the fine-tuning technique; here the name hitched a ride and means only the projection",
         "definition": "Here (<code>q_lora_rank</code>, <code>kv_lora_rank</code>) it is just low-rank projection, part of the original architecture. No relation to the fine-tuning technique of the same name.",
         "usual": "a model fine-tuning technique",
         "aliases": []
@@ -281,13 +283,13 @@
       "category": "armadilha",
       "pt": {
         "term": "oráculo",
-        "definition": "A implementação de referência em Python contra a qual o engine é comparado token a token. Ela é lenta e não importa: existe para ser <em>externa</em> — escrita por outra gente, a partir de outra leitura do modelo. Foi uma referência externa que pegou um RoPE na variante errada depois de três testes internos verdes, todos cegos ao mesmo engano.",
+        "definition": "A implementação de referência contra a qual o engine é comparado token a token — hoje <code>Tests/oracle</code>, em C, com leitor de container, desquantizador, matmul e atenção próprios. Ela é lenta e não importa: existe para <em>não compartilhar código</em> com o engine. Vale lembrar do limite: duas implementações da mesma leitura do modelo concordam também quando a leitura está errada, e foi uma referência <em>externa</em> que pegou um RoPE na variante errada depois de três testes internos verdes.",
         "usual": "um adivinho, ou um banco de dados",
         "aliases": []
       },
       "en": {
         "term": "oracle",
-        "definition": "The Python reference implementation the engine is compared against, token by token. It is slow and that does not matter: it exists to be <em>external</em> — written by other people, from another reading of the model. It was an external reference that caught a RoPE in the wrong variant after three green internal tests, all blind to the same mistake.",
+        "definition": "The reference implementation the engine is compared against, token by token — today <code>Tests/oracle</code>, in C, with its own container reader, dequantiser, matmul and attention. It is slow and that does not matter: it exists in order to <em>share no code</em> with the engine. Mind the limit: two implementations of the same reading of the model also agree when the reading is wrong, and it was an <em>external</em> reference that caught a RoPE in the wrong variant after three green internal tests.",
         "usual": "a fortune teller, or a database vendor",
         "aliases": []
       }
@@ -565,13 +567,19 @@
         "term": "32/32",
         "definition": "O critério de aceitação: 32 posições de teste, todas com o mesmo token da referência. Binário, e bloqueia merge.",
         "usual": null,
-        "aliases": []
+        "aliases": [
+          "ref32",
+          "ref32.json"
+        ]
       },
       "en": {
         "term": "32/32",
         "definition": "The acceptance criterion: 32 test positions, all matching the reference token. Binary, and it blocks merges.",
         "usual": null,
-        "aliases": []
+        "aliases": [
+          "ref32",
+          "ref32.json"
+        ]
       }
     },
     {
@@ -856,13 +864,15 @@
       "category": "modelo",
       "pt": {
         "term": "LLM",
-        "definition": "Large Language Model, modelo de linguagem grande: um programa que prevê o próximo token de um texto. Toda a aparência de conversa vem daí — prever a próxima peça, milhares de vezes, cada vez com o resultado anterior na entrada. Não há plano, não há intenção guardada entre uma previsão e a seguinte.",
+        "abbr": "Large Language Model — modelo de linguagem grande",
+        "definition": "Um programa que prevê o próximo token de um texto. Toda a aparência de conversa vem daí — prever a próxima peça, milhares de vezes, cada vez com o resultado anterior na entrada. Não há plano, não há intenção guardada entre uma previsão e a seguinte.",
         "usual": null,
         "aliases": []
       },
       "en": {
         "term": "LLM",
-        "definition": "Large Language Model: a program that predicts the next token of a text. The whole appearance of conversation comes from that — predicting the next piece, thousands of times, each time with the previous result in the input. There is no plan, and no intention kept between one prediction and the next.",
+        "abbr": "Large Language Model",
+        "definition": "A program that predicts the next token of a text. The whole appearance of conversation comes from that — predicting the next piece, thousands of times, each time with the previous result in the input. There is no plan, and no intention kept between one prediction and the next.",
         "usual": null,
         "aliases": []
       }
@@ -1069,6 +1079,7 @@
       "category": "modelo",
       "pt": {
         "term": "RMSNorm",
+        "abbr": "Root Mean Square Normalization — normalização pela raiz do valor quadrático médio",
         "definition": "Normalização que reescala o vetor para uma magnitude previsível antes de cada bloco. Sem ela, 47 camadas empilhadas explodem ou somem.",
         "usual": null,
         "aliases": [
@@ -1077,6 +1088,7 @@
       },
       "en": {
         "term": "RMSNorm",
+        "abbr": "Root Mean Square Normalization",
         "definition": "Normalization that rescales the vector to a predictable magnitude before each block. Without it, 47 stacked layers blow up or vanish.",
         "usual": null,
         "aliases": [
@@ -1170,12 +1182,14 @@
       "category": "modelo",
       "pt": {
         "term": "RoPE",
+        "abbr": "Rotary Position Embedding — codificação de posição por rotação",
         "definition": "Codificação de posição por rotação do vetor. Aqui é parcial: só 64 das 256 dimensões de cada cabeça giram.",
         "usual": null,
         "aliases": []
       },
       "en": {
         "term": "RoPE",
+        "abbr": "Rotary Position Embedding",
         "definition": "Positional encoding by rotating the vector. Here it is partial: only 64 of each head's 256 dimensions rotate.",
         "usual": null,
         "aliases": []
@@ -1186,18 +1200,24 @@
       "category": "modelo",
       "pt": {
         "term": "MLP",
+        "abbr": "Multi-Layer Perceptron — perceptron de várias camadas; também FFN, Feed-Forward Network",
         "definition": "O bloco de duas multiplicações que vem depois da atenção. Também chamado de FFN, feed-forward network.",
         "usual": null,
         "aliases": [
-          "FFN"
+          "FFN",
+          "feed-forward",
+          "feed forward"
         ]
       },
       "en": {
         "term": "MLP",
+        "abbr": "Multi-Layer Perceptron; also FFN, Feed-Forward Network",
         "definition": "The two-multiplication block that follows attention. Also called FFN, feed-forward network.",
         "usual": null,
         "aliases": [
-          "FFN"
+          "FFN",
+          "feed-forward",
+          "feed forward"
         ]
       }
     },
@@ -1206,13 +1226,15 @@
       "category": "modelo",
       "pt": {
         "term": "MoE",
-        "definition": "Mixture-of-Experts: em vez de um MLP por camada, muitos — e só alguns rodam por token. É o que torna 31,2 B de pesos custarem 3,57 B por token.",
+        "abbr": "Mixture-of-Experts — mistura de especialistas",
+        "definition": "Em vez de um MLP por camada, muitos — e só alguns rodam por token. É o que torna 31,2 B de pesos custarem 3,57 B por token.",
         "usual": null,
         "aliases": []
       },
       "en": {
         "term": "MoE",
-        "definition": "Mixture-of-Experts: instead of one MLP per layer, many - and only a few run per token. It is what makes 31.2 B of weights cost 3.57 B per token.",
+        "abbr": "Mixture-of-Experts",
+        "definition": "Instead of one MLP per layer, many - and only a few run per token. It is what makes 31.2 B of weights cost 3.57 B per token.",
         "usual": null,
         "aliases": []
       }
@@ -1225,7 +1247,8 @@
         "definition": "A pequena matriz que dá uma nota a cada expert e decide quais rodam. No código e na configuração aparece como <code>gate</code>.",
         "usual": null,
         "aliases": [
-          "gate"
+          "gate",
+          "roteamento"
         ]
       },
       "en": {
@@ -1233,7 +1256,8 @@
         "definition": "The small matrix that scores every expert and decides which ones run. In code and config it appears as <code>gate</code>.",
         "usual": null,
         "aliases": [
-          "gate"
+          "gate",
+          "routing"
         ]
       }
     },
@@ -1274,13 +1298,15 @@
       "category": "modelo",
       "pt": {
         "term": "MLA",
-        "definition": "Multi-head Latent Attention: atenção que guarda o cache comprimido, 576 números por token por camada em vez de 10.240.",
+        "abbr": "Multi-head Latent Attention — atenção latente multi-cabeça",
+        "definition": "Atenção que guarda o cache comprimido, 576 números por token por camada em vez de 10.240.",
         "usual": null,
         "aliases": []
       },
       "en": {
         "term": "MLA",
-        "definition": "Multi-head Latent Attention: attention that keeps the cache compressed, 576 numbers per token per layer instead of 10,240.",
+        "abbr": "Multi-head Latent Attention",
+        "definition": "Attention that keeps the cache compressed, 576 numbers per token per layer instead of 10,240.",
         "usual": null,
         "aliases": []
       }
@@ -1290,15 +1316,21 @@
       "category": "modelo",
       "pt": {
         "term": "GQA / MHA",
+        "abbr": "GQA = Grouped-Query Attention, atenção de consulta agrupada · MHA = Multi-Head Attention, atenção multi-cabeça",
         "definition": "As variantes mais comuns de atenção. Funcionam, mas o cache delas é muito maior — por isso o modelo alvo usa MLA.",
         "usual": null,
-        "aliases": []
+        "aliases": [
+          "GQA"
+        ]
       },
       "en": {
         "term": "GQA / MHA",
+        "abbr": "GQA = Grouped-Query Attention · MHA = Multi-Head Attention",
         "definition": "The more common attention variants. They work, but their cache is much larger - hence the target model uses MLA.",
         "usual": null,
-        "aliases": []
+        "aliases": [
+          "GQA"
+        ]
       }
     },
     {
@@ -1306,13 +1338,15 @@
       "category": "modelo",
       "pt": {
         "term": "MTP",
-        "definition": "Multi-Token Prediction: uma cabeça extra que chuta o token seguinte quase de graça, para acelerar por especulação.",
+        "abbr": "Multi-Token Prediction — predição de vários tokens",
+        "definition": "Uma cabeça extra que chuta o token seguinte quase de graça, para acelerar por especulação.",
         "usual": null,
         "aliases": []
       },
       "en": {
         "term": "MTP",
-        "definition": "Multi-Token Prediction: an extra head that guesses the following token almost for free, to speed things up by speculation.",
+        "abbr": "Multi-Token Prediction",
+        "definition": "An extra head that guesses the following token almost for free, to speed things up by speculation.",
         "usual": null,
         "aliases": []
       }
@@ -1546,13 +1580,15 @@
       "category": "execucao",
       "pt": {
         "term": "TTFT",
-        "definition": "Time to first token: quanto tempo até a primeira palavra aparecer na tela. Não é meta deste projeto até o marco M3.",
+        "abbr": "Time To First Token — tempo até o primeiro token",
+        "definition": "Quanto tempo até a primeira palavra aparecer na tela. Não é meta deste projeto até o marco M3.",
         "usual": null,
         "aliases": []
       },
       "en": {
         "term": "TTFT",
-        "definition": "Time to first token: how long until the first word shows up. Not a goal in this project until milestone M3.",
+        "abbr": "Time To First Token",
+        "definition": "How long until the first word shows up. Not a goal in this project until milestone M3.",
         "usual": null,
         "aliases": []
       }
@@ -1578,6 +1614,7 @@
       "category": "execucao",
       "pt": {
         "term": "cache KV",
+        "abbr": "KV = Key/Value — chave e valor",
         "definition": "O estado de atenção já calculado para os tokens anteriores. Guardá-lo evita refazer o prompt inteiro a cada palavra.",
         "usual": null,
         "aliases": [
@@ -1587,6 +1624,7 @@
       },
       "en": {
         "term": "KV cache",
+        "abbr": "KV = Key/Value",
         "definition": "The attention state already computed for previous tokens. Keeping it avoids redoing the whole prompt for every word.",
         "usual": null,
         "aliases": [
@@ -1649,13 +1687,19 @@
         "term": "top-p",
         "definition": "Sortear entre os tokens de maior nota que, somados, atingem a probabilidade p. Também chamado de nucleus sampling.",
         "usual": null,
-        "aliases": []
+        "aliases": [
+          "nucleus",
+          "amostragem por núcleo"
+        ]
       },
       "en": {
         "term": "top-p",
         "definition": "Drawing among the highest-scoring tokens whose probabilities together reach p. Also called nucleus sampling.",
         "usual": null,
-        "aliases": []
+        "aliases": [
+          "nucleus",
+          "nucleus sampling"
+        ]
       }
     },
     {
@@ -1686,7 +1730,8 @@
         "definition": "Atender várias conversas ao mesmo tempo, aproveitando a mesma leitura de peso para todas. É onde mora a segunda meta do projeto.",
         "usual": null,
         "aliases": [
-          "batch"
+          "batch",
+          "batching"
         ]
       },
       "en": {
@@ -1694,7 +1739,8 @@
         "definition": "Serving several conversations at once, amortizing the same weight read across all of them. It is where the project's second goal lives.",
         "usual": null,
         "aliases": [
-          "batch"
+          "batch",
+          "batching"
         ]
       }
     },
@@ -1757,13 +1803,19 @@
         "term": "chat template",
         "definition": "As regras de como montar o texto de uma conversa a partir dos turnos, com os marcadores de quem fala. Vem junto com o modelo.",
         "usual": null,
-        "aliases": []
+        "aliases": [
+          "chat_template",
+          "chat_template.jinja"
+        ]
       },
       "en": {
         "term": "chat template",
         "definition": "The rules for assembling a conversation's text out of turns, with the speaker markers. It ships with the model.",
         "usual": null,
-        "aliases": []
+        "aliases": [
+          "chat_template",
+          "chat_template.jinja"
+        ]
       }
     },
     {
@@ -1814,13 +1866,15 @@
       "category": "execucao",
       "pt": {
         "term": "BPE",
-        "definition": "Byte Pair Encoding: junta repetidamente os dois pedaços vizinhos mais baratos, segundo uma tabela de 321.649 regras.",
+        "abbr": "Byte Pair Encoding — codificação por pares de bytes",
+        "definition": "Junta repetidamente os dois pedaços vizinhos mais baratos, segundo uma tabela de 321.649 regras.",
         "usual": null,
         "aliases": []
       },
       "en": {
         "term": "BPE",
-        "definition": "Byte Pair Encoding: repeatedly merges the two cheapest adjacent pieces, according to a table of 321,649 rules.",
+        "abbr": "Byte Pair Encoding",
+        "definition": "Repeatedly merges the two cheapest adjacent pieces, according to a table of 321,649 rules.",
         "usual": null,
         "aliases": []
       }
@@ -1850,12 +1904,14 @@
       "category": "maquina",
       "pt": {
         "term": "CPU",
+        "abbr": "Central Processing Unit — unidade central de processamento",
         "definition": "O processador principal. Aqui, um i9-14900K com 8 núcleos rápidos, 16 econômicos e 32 threads no total.",
         "usual": null,
         "aliases": []
       },
       "en": {
         "term": "CPU",
+        "abbr": "Central Processing Unit",
         "definition": "The main processor. Here, an i9-14900K with 8 fast cores, 16 efficient ones and 32 threads in total.",
         "usual": null,
         "aliases": []
@@ -1866,12 +1922,14 @@
       "category": "maquina",
       "pt": {
         "term": "GPU",
+        "abbr": "Graphics Processing Unit — unidade de processamento gráfico",
         "definition": "A placa de vídeo, usada como acelerador de contas. Aqui é uma RTX 2060 SUPER de 8 GB — rápida por dentro, mal conectada por fora.",
         "usual": null,
         "aliases": []
       },
       "en": {
         "term": "GPU",
+        "abbr": "Graphics Processing Unit",
         "definition": "The graphics card, used as an arithmetic accelerator. Here it is an 8 GB RTX 2060 SUPER - fast inside, poorly connected outside.",
         "usual": null,
         "aliases": []
@@ -1882,12 +1940,14 @@
       "category": "maquina",
       "pt": {
         "term": "RAM",
+        "abbr": "Random Access Memory — memória de acesso aleatório",
         "definition": "A memória principal do computador. Aqui, 64 GB entregando ~60 GB/s. É onde o modelo inteiro precisa caber.",
         "usual": null,
         "aliases": []
       },
       "en": {
         "term": "RAM",
+        "abbr": "Random Access Memory",
         "definition": "The computer's main memory. Here, 64 GB delivering ~60 GB/s. It is where the whole model needs to fit.",
         "usual": null,
         "aliases": []
@@ -1898,12 +1958,14 @@
       "category": "maquina",
       "pt": {
         "term": "VRAM",
+        "abbr": "Video RAM — a RAM da placa de vídeo",
         "definition": "A memória da placa de vídeo. Rápida (448 GB/s aqui) e pequena (8 GB), e só alcançável pelo PCIe — que nesta máquina entrega ~12 GB/s, menos que o disco. É a combinação dos três números que decide tudo: com o modelo em 18,54 GB, nada cabe permanentemente, e o que não cabe tem de atravessar o elo mais lento a cada camada.",
         "usual": null,
         "aliases": []
       },
       "en": {
         "term": "VRAM",
+        "abbr": "Video RAM — the graphics card’s RAM",
         "definition": "The graphics card's memory. Fast (448 GB/s here) and small (8 GB), and reachable only over PCIe — which on this machine delivers ~12 GB/s, less than the disk. It is the combination of the three numbers that decides everything: with the model at 18.54 GB nothing fits permanently, and what does not fit must cross the slowest link on every layer.",
         "usual": null,
         "aliases": []
@@ -1914,12 +1976,14 @@
       "category": "maquina",
       "pt": {
         "term": "PCIe",
+        "abbr": "Peripheral Component Interconnect Express",
         "definition": "O barramento que liga a GPU ao resto do computador. Aqui é gen 3: ~12 GB/s, o elo mais lento da máquina.",
         "usual": null,
         "aliases": []
       },
       "en": {
         "term": "PCIe",
+        "abbr": "Peripheral Component Interconnect Express",
         "definition": "The bus connecting the GPU to the rest of the computer. Here it is gen 3: ~12 GB/s, the machine's slowest link.",
         "usual": null,
         "aliases": []
@@ -1930,19 +1994,19 @@
       "category": "maquina",
       "pt": {
         "term": "NVMe",
+        "abbr": "Non-Volatile Memory Express",
         "definition": "O padrão dos SSDs rápidos ligados direto ao barramento. Aqui, dois em RAID0 entregando 18,4 GB/s sequenciais.",
         "usual": null,
         "aliases": [
-          "SSD",
           "RAID0"
         ]
       },
       "en": {
         "term": "NVMe",
+        "abbr": "Non-Volatile Memory Express",
         "definition": "The standard for fast SSDs wired straight to the bus. Here, two in RAID0 delivering 18.4 GB/s sequential.",
         "usual": null,
         "aliases": [
-          "SSD",
           "RAID0"
         ]
       }
@@ -2007,11 +2071,7 @@
         "definition": "Uma unidade de execução independente dentro da CPU. Este processador é híbrido: 8 P-cores rápidos e 16 E-cores econômicos.",
         "usual": null,
         "aliases": [
-          "núcleos",
-          "P-core",
-          "E-core",
-          "P-cores",
-          "E-cores"
+          "núcleos"
         ]
       },
       "en": {
@@ -2019,11 +2079,7 @@
         "definition": "An independent execution unit inside the CPU. This processor is hybrid: 8 fast P-cores and 16 efficient E-cores.",
         "usual": null,
         "aliases": [
-          "cores",
-          "P-core",
-          "E-core",
-          "P-cores",
-          "E-cores"
+          "cores"
         ]
       }
     },
@@ -2068,12 +2124,14 @@
       "category": "maquina",
       "pt": {
         "term": "SIMD",
+        "abbr": "Single Instruction, Multiple Data — uma instrução, vários dados",
         "definition": "Uma instrução que opera sobre vários números de uma vez. É como o kernel processa 8 ou 16 pesos por ciclo em vez de um.",
         "usual": null,
         "aliases": []
       },
       "en": {
         "term": "SIMD",
+        "abbr": "Single Instruction, Multiple Data",
         "definition": "One instruction operating on several numbers at once. It is how the kernel processes 8 or 16 weights per cycle instead of one.",
         "usual": null,
         "aliases": []
@@ -2084,20 +2142,30 @@
       "category": "maquina",
       "pt": {
         "term": "AVX2 / AVX-VNNI",
+        "abbr": "AVX = Advanced Vector eXtensions, extensões vetoriais avançadas · VNNI = Vector Neural Network Instructions, instruções vetoriais para redes neurais",
         "definition": "Os conjuntos de instruções SIMD desta CPU. O engine escolhe qual usar em tempo de execução, para o binário rodar em outras máquinas.",
         "usual": null,
         "aliases": [
           "AVX2",
-          "AVX-VNNI"
+          "AVX-VNNI",
+          "AVX",
+          "VNNI",
+          "vpdpbusd",
+          "x86-64-v3"
         ]
       },
       "en": {
         "term": "AVX2 / AVX-VNNI",
+        "abbr": "AVX = Advanced Vector eXtensions · VNNI = Vector Neural Network Instructions",
         "definition": "This CPU's SIMD instruction sets. The engine picks which to use at runtime, so the binary still runs on other machines.",
         "usual": null,
         "aliases": [
           "AVX2",
-          "AVX-VNNI"
+          "AVX-VNNI",
+          "AVX",
+          "VNNI",
+          "vpdpbusd",
+          "x86-64-v3"
         ]
       }
     },
@@ -2106,15 +2174,21 @@
       "category": "maquina",
       "pt": {
         "term": "FMA",
+        "abbr": "Fused Multiply-Add — multiplicação e soma fundidas numa instrução",
         "definition": "Multiplicar e somar numa instrução só. Rápido, mas arredonda diferente — por isso o build proíbe fundir automaticamente.",
         "usual": null,
-        "aliases": []
+        "aliases": [
+          "vfmadd"
+        ]
       },
       "en": {
         "term": "FMA",
+        "abbr": "Fused Multiply-Add",
         "definition": "Multiply and add in a single instruction. Fast, but it rounds differently - which is why the build forbids automatic fusion.",
         "usual": null,
-        "aliases": []
+        "aliases": [
+          "vfmadd"
+        ]
       }
     },
     {
@@ -2220,12 +2294,14 @@
       "category": "maquina",
       "pt": {
         "term": "TLB",
+        "abbr": "Translation Lookaside Buffer — buffer de tradução de endereços",
         "definition": "A tabelinha do processador que traduz endereços. Tem ~2048 entradas: com páginas de 4 KB cobre 8 MB, com 2 MB cobre 4 GB.",
         "usual": null,
         "aliases": []
       },
       "en": {
         "term": "TLB",
+        "abbr": "Translation Lookaside Buffer",
         "definition": "The small processor table that translates addresses. It has ~2048 entries: with 4 KB pages it covers 8 MB, with 2 MB pages it covers 4 GB.",
         "usual": null,
         "aliases": []
@@ -2236,13 +2312,15 @@
       "category": "maquina",
       "pt": {
         "term": "RSS",
-        "definition": "Resident Set Size: quanta memória física o processo realmente ocupa. É o número que o watchdog compara com o orçamento.",
+        "abbr": "Resident Set Size — tamanho do conjunto residente",
+        "definition": "Quanta memória física o processo realmente ocupa. É o número que o watchdog compara com o orçamento.",
         "usual": null,
         "aliases": []
       },
       "en": {
         "term": "RSS",
-        "definition": "Resident Set Size: how much physical memory the process actually occupies. It is the number the watchdog compares against the budget.",
+        "abbr": "Resident Set Size",
+        "definition": "How much physical memory the process actually occupies. It is the number the watchdog compares against the budget.",
         "usual": null,
         "aliases": []
       }
@@ -2268,13 +2346,15 @@
       "category": "maquina",
       "pt": {
         "term": "OOM",
-        "definition": "Out of memory: quando o sistema mata o processo por falta de RAM. É o que a regra de recusar em vez de degradar previne.",
+        "abbr": "Out Of Memory — sem memória",
+        "definition": "Quando o sistema mata o processo por falta de RAM. É o que a regra de recusar em vez de degradar previne.",
         "usual": null,
         "aliases": []
       },
       "en": {
         "term": "OOM",
-        "definition": "Out of memory: when the system kills the process for lack of RAM. It is what the refuse-instead-of-degrade rule prevents.",
+        "abbr": "Out Of Memory",
+        "definition": "When the system kills the process for lack of RAM. It is what the refuse-instead-of-degrade rule prevents.",
         "usual": null,
         "aliases": []
       }
@@ -2392,7 +2472,8 @@
       "category": "numerica",
       "pt": {
         "term": "GB",
-        "definition": "Gigabyte, mil milhões de bytes. O modelo tem 19,65 GB; lê-se 2,01 GB por token.",
+        "abbr": "Gigabyte — mil milhões de bytes",
+        "definition": "O modelo tem 19,65 GB; lê-se 2,01 GB por token.",
         "usual": null,
         "aliases": [
           "KB",
@@ -2401,7 +2482,8 @@
       },
       "en": {
         "term": "GB",
-        "definition": "Gigabyte, a thousand million bytes. The model is 19.65 GB; 2.01 GB is read per token.",
+        "abbr": "Gigabyte",
+        "definition": "The model is 19.65 GB; 2.01 GB is read per token.",
         "usual": null,
         "aliases": [
           "KB",
@@ -2458,13 +2540,17 @@
         "term": "bf16",
         "definition": "Ponto flutuante de 16 bits com o expoente do fp32 e só 7 bits de mantissa. É como o modelo é publicado.",
         "usual": null,
-        "aliases": []
+        "aliases": [
+          "bfloat16"
+        ]
       },
       "en": {
         "term": "bf16",
         "definition": "16-bit floating point with fp32's exponent and only 7 mantissa bits. It is how the model is published.",
         "usual": null,
-        "aliases": []
+        "aliases": [
+          "bfloat16"
+        ]
       }
     },
     {
@@ -2730,17 +2816,13 @@
         "term": "intervalo de 95%",
         "definition": "A faixa dentro da qual o valor real provavelmente está. Se ela cruza zero, não há efeito demonstrado — só ruído.",
         "usual": null,
-        "aliases": [
-          "intervalo de confiança"
-        ]
+        "aliases": []
       },
       "en": {
         "term": "95% interval",
         "definition": "The range the true value probably lies in. If it crosses zero, no effect is demonstrated - just noise.",
         "usual": null,
-        "aliases": [
-          "confidence interval"
-        ]
+        "aliases": []
       }
     },
     {
@@ -3032,13 +3114,15 @@
       "category": "software",
       "pt": {
         "term": "CLI",
+        "abbr": "Command-Line Interface — interface de linha de comando",
         "definition": "Interface de linha de comando: o programa que se usa digitando comandos no terminal.",
         "usual": null,
         "aliases": []
       },
       "en": {
         "term": "CLI",
-        "definition": "Command-line interface: the program you use by typing commands in a terminal.",
+        "abbr": "Command-Line Interface",
+        "definition": "The program you use by typing commands in a terminal.",
         "usual": null,
         "aliases": []
       }
@@ -3106,12 +3190,14 @@
       "category": "software",
       "pt": {
         "term": "JSON",
+        "abbr": "JavaScript Object Notation",
         "definition": "Um formato de texto para dados estruturados. O índice do container e a configuração do modelo são JSON, lidos por um parser próprio.",
         "usual": null,
         "aliases": []
       },
       "en": {
         "term": "JSON",
+        "abbr": "JavaScript Object Notation",
         "definition": "A text format for structured data. The container index and the model config are JSON, read by the project's own parser.",
         "usual": null,
         "aliases": []
@@ -3122,12 +3208,14 @@
       "category": "software",
       "pt": {
         "term": "UTF-8",
+        "abbr": "Unicode Transformation Format, 8 bits",
         "definition": "A codificação padrão de texto, em que um caractere ocupa de 1 a 4 bytes. O tokenizer trabalha nos bytes, não nos caracteres.",
         "usual": null,
         "aliases": []
       },
       "en": {
         "term": "UTF-8",
+        "abbr": "Unicode Transformation Format, 8 bits",
         "definition": "The standard text encoding, where a character takes 1 to 4 bytes. The tokenizer works on bytes, not characters.",
         "usual": null,
         "aliases": []
@@ -3178,12 +3266,14 @@
       "category": "software",
       "pt": {
         "term": "HTTP",
+        "abbr": "HyperText Transfer Protocol",
         "definition": "O protocolo da web. O subcomando <code>serve</code> abre um servidor local em <code>127.0.0.1:8080</code> com uma interface de chat.",
         "usual": null,
         "aliases": []
       },
       "en": {
         "term": "HTTP",
+        "abbr": "HyperText Transfer Protocol",
         "definition": "The web protocol. The <code>serve</code> subcommand opens a local server at <code>127.0.0.1:8080</code> with a chat interface.",
         "usual": null,
         "aliases": []
@@ -3209,16 +3299,24 @@
       "id": "atomico",
       "category": "software",
       "pt": {
-        "term": "escrita atômica",
-        "definition": "Escrever num arquivo temporário e renomear no fim. Uma queda de energia no meio não deixa um arquivo pela metade com cara de válido.",
+        "term": "atômico",
+        "definition": "Operação que acontece inteira ou não acontece. Gravar estado no disco é atômico por arquivo temporário mais <code>rename</code>: uma queda de energia no meio não deixa um arquivo pela metade com cara de válido. No pool de threads são quatro funções atômicas atrás de um atalho em <code>compat.h</code> (<code>_Interlocked*</code> no Windows, <code>__atomic_*</code> no gcc e no clang), porque o MSVC só habilita <code>&lt;stdatomic.h&gt;</code> com <code>/experimental:c11atomics</code>.",
         "usual": null,
-        "aliases": []
+        "aliases": [
+          "escrita atômica",
+          "atômica",
+          "atomic",
+          "atomics"
+        ]
       },
       "en": {
-        "term": "atomic write",
-        "definition": "Writing to a temporary file and renaming at the end. A power cut halfway through cannot leave a truncated file looking valid.",
+        "term": "atomic",
+        "definition": "An operation that either happens whole or does not happen. Writing state to disk is atomic through a temporary file plus <code>rename</code>: a power cut halfway cannot leave a truncated file looking valid. In the thread pool it is four atomic functions behind a shim in <code>compat.h</code> (<code>_Interlocked*</code> on Windows, <code>__atomic_*</code> on gcc and clang), because MSVC only enables <code>&lt;stdatomic.h&gt;</code> under <code>/experimental:c11atomics</code>.",
         "usual": null,
-        "aliases": []
+        "aliases": [
+          "atomic write",
+          "atomics"
+        ]
       }
     },
     {
@@ -3285,7 +3383,9 @@
         "definition": "A operação central: cada linha da saída é a soma dos produtos de uma linha de pesos pela entrada. É onde vai quase todo o tempo.",
         "usual": null,
         "aliases": [
-          "matmul"
+          "matmul",
+          "matmuls",
+          "multiplicações de matriz"
         ]
       },
       "en": {
@@ -3293,7 +3393,10 @@
         "definition": "The central operation: each output row is the sum of products of one weight row against the input. Almost all the time goes here.",
         "usual": null,
         "aliases": [
-          "matmul"
+          "matmul",
+          "matmuls",
+          "matrix multiplications",
+          "GEMM"
         ]
       }
     },
@@ -3356,6 +3459,7 @@
       "category": "matematica",
       "pt": {
         "term": "FLOP",
+        "abbr": "FLoating-point OPeration — operação de ponto flutuante",
         "definition": "Uma operação de ponto flutuante. Gerar um token custa ~7,1 GFLOP — pouco, perto dos 2,01 GB de leitura.",
         "usual": null,
         "aliases": [
@@ -3365,6 +3469,7 @@
       },
       "en": {
         "term": "FLOP",
+        "abbr": "FLoating-point OPeration",
         "definition": "One floating-point operation. Generating a token costs ~7.1 GFLOP - little, next to the 2.01 GB of reads.",
         "usual": null,
         "aliases": [
@@ -3434,12 +3539,14 @@
       "category": "maquina",
       "pt": {
         "term": "CUDA",
+        "abbr": "Compute Unified Device Architecture",
         "definition": "A plataforma da NVIDIA para rodar cálculo em placa de vídeo. Um programa CUDA tem duas metades: a que roda na CPU e a que roda na GPU, escritas em arquivos diferentes e compiladas por compiladores diferentes. Aqui ela foi escrita, medida e <strong>não adotada</strong> — vive na branch <code>GPU</code>.",
         "usual": "sinônimo de \"usar a placa de vídeo\"",
         "aliases": []
       },
       "en": {
         "term": "CUDA",
+        "abbr": "Compute Unified Device Architecture",
         "definition": "NVIDIA's platform for running computation on a graphics card. A CUDA program has two halves: one runs on the CPU, one on the GPU, written in different files and built by different compilers. Here it was written, measured and <strong>not adopted</strong> — it lives on the <code>GPU</code> branch.",
         "usual": "a synonym for \"use the graphics card\"",
         "aliases": []
@@ -3450,12 +3557,14 @@
       "category": "software",
       "pt": {
         "term": "MSVC",
+        "abbr": "Microsoft Visual C++",
         "definition": "O compilador C e C++ da Microsoft, que vem com o Visual Studio. É o que transforma os arquivos <code>.c</code> em <code>tootega.exe</code> no Windows. O projeto o localiza com a ferramenta <code>vswhere</code> em vez de cravar o caminho: caminho fixo quebra quando a versão muda.",
         "usual": "confundido com o Visual Studio, que é o editor",
         "aliases": []
       },
       "en": {
         "term": "MSVC",
+        "abbr": "Microsoft Visual C++",
         "definition": "Microsoft's C and C++ compiler, shipped with Visual Studio. It turns the <code>.c</code> files into <code>tootega.exe</code> on Windows. The project locates it with <code>vswhere</code> instead of hard-coding a path: hard-coded paths break when the version changes.",
         "usual": "confused with Visual Studio, which is the editor",
         "aliases": []
@@ -3466,7 +3575,8 @@
       "category": "maquina",
       "pt": {
         "term": "SMT",
-        "definition": "<em>Simultaneous Multithreading</em> — a Intel chama de Hyper-Threading. Um núcleo físico se apresenta como dois lógicos, que dividem as mesmas unidades de execução. Para trabalho limitado por memória, como o nosso, os dois irmãos brigam pelo mesmo recurso e não ajudam: por isso o pool usa <strong>um lógico por núcleo físico</strong>.",
+        "abbr": "Simultaneous Multithreading",
+        "definition": "A Intel chama de Hyper-Threading. Um núcleo físico se apresenta como dois lógicos, que dividem as mesmas unidades de execução. Para trabalho limitado por memória, como o nosso, os dois irmãos brigam pelo mesmo recurso e não ajudam: por isso o pool usa <strong>um lógico por núcleo físico</strong>.",
         "usual": "\"o dobro de núcleos\", que é o que o gerenciador de tarefas sugere",
         "aliases": [
           "hyper-threading"
@@ -3474,7 +3584,8 @@
       },
       "en": {
         "term": "SMT",
-        "definition": "<em>Simultaneous Multithreading</em> — Intel calls it Hyper-Threading. One physical core appears as two logical ones sharing the same execution units. For memory-bound work like ours the two siblings fight over the same resource and do not help: that is why the pool uses <strong>one logical core per physical core</strong>.",
+        "abbr": "Simultaneous Multithreading",
+        "definition": "Intel calls it Hyper-Threading. One physical core appears as two logical ones sharing the same execution units. For memory-bound work like ours the two siblings fight over the same resource and do not help: that is why the pool uses <strong>one logical core per physical core</strong>.",
         "usual": "\"twice the cores\", which is what the task manager suggests",
         "aliases": [
           "hyper-threading"
@@ -3509,15 +3620,21 @@
       "category": "maquina",
       "pt": {
         "term": "DDR5-4800",
+        "abbr": "Double Data Rate, 5ª geração — 4800 MT/s, milhões de transferências por segundo",
         "definition": "A geração e a velocidade da memória RAM. O número é a taxa nominal em milhões de transferências por segundo. Nominal não é real: os <strong>68,7 GB/s</strong> que este projeto usa em todas as contas foram <em>medidos em execução</em>, não lidos da caixa.",
         "usual": "que o número maior significa proporcionalmente mais velocidade",
-        "aliases": []
+        "aliases": [
+          "DDR5"
+        ]
       },
       "en": {
         "term": "DDR5-4800",
+        "abbr": "Double Data Rate, 5th generation — 4800 MT/s, million transfers per second",
         "definition": "The generation and speed of the RAM. The number is the nominal rate in millions of transfers per second. Nominal is not real: the <strong>68.7 GB/s</strong> this project uses in every calculation was <em>measured at runtime</em>, not read off the box.",
         "usual": "that a bigger number means proportionally more speed",
-        "aliases": []
+        "aliases": [
+          "DDR5"
+        ]
       }
     },
     {
@@ -3525,12 +3642,14 @@
       "category": "maquina",
       "pt": {
         "term": "RTX",
+        "abbr": "Ray Tracing — a NVIDIA não expande o X",
         "definition": "A linha de placas de vídeo da NVIDIA para consumidor. A desta máquina é uma RTX 2060 SUPER com 8 GB. Os 8 GB são o número que decide: o modelo ocupa 18,5 GB, então ele <strong>não cabe</strong>, e qualquer uso de GPU vira partição — o que foi medido e não compensou.",
         "usual": "que placa de vídeo melhor sempre acelera modelo de linguagem",
         "aliases": []
       },
       "en": {
         "term": "RTX",
+        "abbr": "Ray Tracing — NVIDIA does not expand the X",
         "definition": "NVIDIA's consumer graphics card line. This machine has an RTX 2060 SUPER with 8 GB. Those 8 GB are the deciding number: the model takes 18.5 GB, so it <strong>does not fit</strong>, and any GPU use becomes a partition — which was measured and did not pay off.",
         "usual": "that a better graphics card always speeds up a language model",
         "aliases": []
@@ -3541,6 +3660,7 @@
       "category": "maquina",
       "pt": {
         "term": "SO",
+        "abbr": "OS, Operating System — sistema operacional",
         "definition": "Sistema operacional — Windows, Linux, macOS. É quem entrega memória, arquivos e threads ao programa. O engine toca o SO em <strong>um único arquivo</strong>, <code>compat.c</code>: é a fronteira onde as diferenças entre Windows e Linux moram, para que o resto do código não precise saber onde está rodando.",
         "usual": "a interface gráfica, que é só a parte visível",
         "aliases": [
@@ -3549,6 +3669,7 @@
       },
       "en": {
         "term": "OS",
+        "abbr": "OS = Operating System",
         "definition": "Operating system — Windows, Linux, macOS. It hands memory, files and threads to the program. The engine touches the OS in <strong>a single file</strong>, <code>compat.c</code>: that is the boundary where the Windows/Linux differences live, so the rest of the code need not know where it runs.",
         "usual": "the graphical interface, which is only the visible part",
         "aliases": [
@@ -3561,12 +3682,14 @@
       "category": "software",
       "pt": {
         "term": "ISO",
+        "abbr": "Não é sigla: vem do grego <em>isos</em>, \"igual\"",
         "definition": "Organização que publica normas internacionais. \"C11 ISO\" quer dizer que o código segue a norma da linguagem C de 2011 <em>como escrita</em>, sem extensões de um compilador específico. É o que faz o mesmo arquivo compilar no MSVC e no gcc sem alteração.",
         "usual": "a imagem de disco <code>.iso</code>, que é outro uso da mesma sigla",
         "aliases": []
       },
       "en": {
         "term": "ISO",
+        "abbr": "Not an acronym: from the Greek <em>isos</em>, \"equal\"",
         "definition": "The body that publishes international standards. \"ISO C11\" means the code follows the 2011 C standard <em>as written</em>, without any one compiler's extensions. That is what lets the same file build under MSVC and gcc unchanged.",
         "usual": "the <code>.iso</code> disk image, a different use of the same acronym",
         "aliases": []
@@ -3577,7 +3700,8 @@
       "category": "software",
       "pt": {
         "term": "SSE",
-        "definition": "<em>Server-Sent Events</em> — o jeito padrão de um servidor HTTP mandar texto em pedaços, conforme produz, sem que o cliente fique perguntando. É como a resposta aparece palavra por palavra na tela em vez de surgir pronta depois de meio minuto.",
+        "abbr": "Server-Sent Events — eventos enviados pelo servidor",
+        "definition": "O jeito padrão de um servidor HTTP mandar texto em pedaços, conforme produz, sem que o cliente fique perguntando. É como a resposta aparece palavra por palavra na tela em vez de surgir pronta depois de meio minuto.",
         "usual": "confundido com WebSocket, que é bidirecional; SSE só vai do servidor para o cliente",
         "aliases": [
           "server-sent events"
@@ -3585,7 +3709,8 @@
       },
       "en": {
         "term": "SSE",
-        "definition": "<em>Server-Sent Events</em> — the standard way for an HTTP server to push text in pieces as it is produced, without the client polling. It is why the answer appears word by word instead of showing up complete half a minute later.",
+        "abbr": "Server-Sent Events",
+        "definition": "The standard way for an HTTP server to push text in pieces as it is produced, without the client polling. It is why the answer appears word by word instead of showing up complete half a minute later.",
         "usual": "confused with WebSocket, which is bidirectional; SSE only goes from server to client",
         "aliases": [
           "server-sent events"
@@ -3597,13 +3722,15 @@
       "category": "software",
       "pt": {
         "term": "CORS",
-        "definition": "<em>Cross-Origin Resource Sharing</em> — a regra do navegador que impede uma página de um endereço de chamar um servidor de outro, salvo se o servidor autorizar. Sem essa autorização, um cliente que roda <em>dentro</em> do navegador nem chega a fazer o pedido.",
+        "abbr": "Cross-Origin Resource Sharing — compartilhamento de recursos entre origens",
+        "definition": "A regra do navegador que impede uma página de um endereço de chamar um servidor de outro, salvo se o servidor autorizar. Sem essa autorização, um cliente que roda <em>dentro</em> do navegador nem chega a fazer o pedido.",
         "usual": "\"um erro chato do navegador\" — é uma proteção, e o servidor é quem decide liberar",
         "aliases": []
       },
       "en": {
         "term": "CORS",
-        "definition": "<em>Cross-Origin Resource Sharing</em> — the browser rule that stops a page from one address calling a server at another, unless the server allows it. Without that permission a client running <em>inside</em> the browser never even sends the request.",
+        "abbr": "Cross-Origin Resource Sharing",
+        "definition": "The browser rule that stops a page from one address calling a server at another, unless the server allows it. Without that permission a client running <em>inside</em> the browser never even sends the request.",
         "usual": "\"an annoying browser error\" — it is a protection, and the server is the one that grants it",
         "aliases": []
       }
@@ -3613,13 +3740,15 @@
       "category": "software",
       "pt": {
         "term": "NDJSON",
-        "definition": "<em>Newline-Delimited JSON</em>: um objeto JSON por linha, um evento por linha. É como o agente conversa com a interface — cada linha é completa em si, então quem lê pode processar a primeira sem esperar a última.",
+        "abbr": "Newline-Delimited JSON — um JSON por linha",
+        "definition": "Um objeto JSON por linha, um evento por linha. É como o agente conversa com a interface — cada linha é completa em si, então quem lê pode processar a primeira sem esperar a última.",
         "usual": "confundido com um arquivo JSON normal, que é um objeto só",
         "aliases": []
       },
       "en": {
         "term": "NDJSON",
-        "definition": "<em>Newline-Delimited JSON</em>: one JSON object per line, one event per line. It is how the agent talks to the interface — each line is complete on its own, so the reader can process the first without waiting for the last.",
+        "abbr": "Newline-Delimited JSON — one JSON per line",
+        "definition": "One JSON object per line, one event per line. It is how the agent talks to the interface — each line is complete on its own, so the reader can process the first without waiting for the last.",
         "usual": "confused with a regular JSON file, which is a single object",
         "aliases": []
       }
@@ -3651,13 +3780,15 @@
       "category": "software",
       "pt": {
         "term": "EOF",
-        "definition": "<em>End Of File</em>, fim do arquivo. O sinal de que não vem mais nada. Quando a interface fecha o canal do agente, ele recebe um EOF e sai na hora — é o mecanismo de desligamento limpo, mais confiável que qualquer temporizador.",
+        "abbr": "End Of File — fim do arquivo",
+        "definition": "O sinal de que não vem mais nada. Quando a interface fecha o canal do agente, ele recebe um EOF e sai na hora — é o mecanismo de desligamento limpo, mais confiável que qualquer temporizador.",
         "usual": "um erro; é o funcionamento normal, e a ausência dele é que seria problema",
         "aliases": []
       },
       "en": {
         "term": "EOF",
-        "definition": "<em>End Of File</em>. The signal that nothing more is coming. When the interface closes the agent's channel it gets an EOF and exits right away — the clean shutdown mechanism, more reliable than any timer.",
+        "abbr": "End Of File",
+        "definition": "The signal that nothing more is coming. When the interface closes the agent's channel it gets an EOF and exits right away — the clean shutdown mechanism, more reliable than any timer.",
         "usual": "an error; it is normal operation, and its absence would be the problem",
         "aliases": []
       }
@@ -3709,15 +3840,21 @@
       "category": "software",
       "pt": {
         "term": "JSON Schema",
+        "abbr": "JSON = JavaScript Object Notation",
         "definition": "Uma descrição, em JSON, de como outro JSON deve ser: quais campos, de que tipo, quais obrigatórios. O cliente manda o schema das ferramentas, e é por ele que o servidor sabe que <code>3</code> deve virar o <strong>número</strong> 3 e não o texto <code>\"3\"</code> — sem isso, toda ferramenta com argumento numérico chega errada.",
         "usual": "confundido com o JSON em si",
-        "aliases": []
+        "aliases": [
+          "schema"
+        ]
       },
       "en": {
         "term": "JSON Schema",
+        "abbr": "JSON = JavaScript Object Notation",
         "definition": "A description, in JSON, of what another JSON must look like: which fields, of what type, which are required. The client sends the tools' schema, and that is how the server knows <code>3</code> must become the <strong>number</strong> 3 and not the text <code>\"3\"</code> — without it, every tool with a numeric argument arrives wrong.",
         "usual": "confused with JSON itself",
-        "aliases": []
+        "aliases": [
+          "schema"
+        ]
       }
     },
     {
@@ -3725,13 +3862,15 @@
       "category": "software",
       "pt": {
         "term": "MCP",
-        "definition": "<em>Model Context Protocol</em> — um padrão para um agente descobrir e usar ferramentas oferecidas por outros programas, em vez de só as que ele mesmo tem. É hoje o \"protocolo comum de ferramentas\". O TootegaEngine <strong>não o implementa</strong>; está registrado como não feito.",
+        "abbr": "Model Context Protocol",
+        "definition": "Um padrão para um agente descobrir e usar ferramentas oferecidas por outros programas, em vez de só as que ele mesmo tem. É hoje o \"protocolo comum de ferramentas\". O TootegaEngine <strong>não o implementa</strong>; está registrado como não feito.",
         "usual": "confundido com o formato de chamada de ferramenta, que é outra camada",
         "aliases": []
       },
       "en": {
         "term": "MCP",
-        "definition": "<em>Model Context Protocol</em> — a standard for an agent to discover and use tools offered by other programs, rather than only its own. It is today's \"common tool protocol\". TootegaEngine <strong>does not implement it</strong>; it is on record as not done.",
+        "abbr": "Model Context Protocol",
+        "definition": "A standard for an agent to discover and use tools offered by other programs, rather than only its own. It is today's \"common tool protocol\". TootegaEngine <strong>does not implement it</strong>; it is on record as not done.",
         "usual": "confused with the tool-call format, which is a different layer",
         "aliases": []
       }
@@ -3881,8 +4020,7 @@
         "definition": "A faixa em que o valor verdadeiro provavelmente está, dado o quanto as medidas variaram. Se a faixa <strong>cruza o zero</strong>, a medição não distingue \"melhorou\" de \"piorou\" — e a resposta honesta é <em>inconclusivo</em>, não \"deu quase igual\".",
         "usual": "que o número do meio é o resultado; a largura da faixa é que decide se há resultado",
         "aliases": [
-          "IC95",
-          "intervalo 95%"
+          "IC95"
         ]
       },
       "en": {
@@ -3890,8 +4028,7 @@
         "definition": "The range the true value probably lies in, given how much the measurements varied. If the range <strong>crosses zero</strong>, the measurement cannot tell \"better\" from \"worse\" — and the honest answer is <em>inconclusive</em>, not \"about the same\".",
         "usual": "that the middle number is the result; the width of the range is what decides whether there is a result",
         "aliases": [
-          "CI95",
-          "95% interval"
+          "CI95"
         ]
       }
     },
@@ -3900,13 +4037,15 @@
       "category": "modelo",
       "pt": {
         "term": "MHA",
-        "definition": "<em>Multi-Head Attention</em>: a atenção clássica, em que cada cabeça guarda a própria chave e o próprio valor. É a mais simples e a mais cara em memória — o oposto do MLA deste modelo, que comprime os dois num espaço menor e economiza 18× de tráfego.",
+        "abbr": "Multi-Head Attention — atenção multi-cabeça",
+        "definition": "A atenção clássica, em que cada cabeça guarda a própria chave e o próprio valor. É a mais simples e a mais cara em memória — o oposto do MLA deste modelo, que comprime os dois num espaço menor e economiza 18× de tráfego.",
         "usual": "que \"mais cabeças\" significa \"mais inteligente\"",
         "aliases": []
       },
       "en": {
         "term": "MHA",
-        "definition": "<em>Multi-Head Attention</em>: classic attention, where each head keeps its own key and value. Simplest, and most expensive in memory — the opposite of this model's MLA, which compresses both into a smaller space and saves 18× the traffic.",
+        "abbr": "Multi-Head Attention",
+        "definition": "Classic attention, where each head keeps its own key and value. Simplest, and most expensive in memory — the opposite of this model's MLA, which compresses both into a smaller space and saves 18× the traffic.",
         "usual": "that \"more heads\" means \"smarter\"",
         "aliases": []
       }
@@ -3916,6 +4055,7 @@
       "category": "modelo",
       "pt": {
         "term": "GLM",
+        "abbr": "General Language Model",
         "definition": "A família de modelos abertos em que este projeto roda. O alvo é o <strong>GLM-4.7-Flash</strong>: 31 bilhões de parâmetros no total, mas só ~3 bilhões ativos por token, porque é um MoE. É essa razão que o faz caber e ser rápido ao mesmo tempo.",
         "usual": "que o número de parâmetros totais indica o custo de rodar",
         "aliases": [
@@ -3925,6 +4065,7 @@
       },
       "en": {
         "term": "GLM",
+        "abbr": "General Language Model",
         "definition": "The family of open models this project runs. The target is <strong>GLM-4.7-Flash</strong>: 31 billion parameters in total, but only ~3 billion active per token, because it is an MoE. That ratio is what makes it both fit and run fast.",
         "usual": "that the total parameter count indicates the cost of running it",
         "aliases": [
@@ -4034,15 +4175,21 @@
       "category": "projeto",
       "pt": {
         "term": "licença MIT",
+        "abbr": "Massachusetts Institute of Technology, onde a licença nasceu",
         "definition": "Uma licença de software livre curta e permissiva: qualquer um pode usar, copiar, alterar e vender, desde que mantenha o aviso de copyright, e sem garantia nenhuma. É a licença deste engine. <strong>Não cobre o modelo</strong> — pesos e tokenizer têm licença própria, de quem os treinou.",
         "usual": "que a licença do código cobre também os dados que ele lê",
-        "aliases": []
+        "aliases": [
+          "MIT"
+        ]
       },
       "en": {
         "term": "MIT license",
+        "abbr": "Massachusetts Institute of Technology, where the licence was written",
         "definition": "A short, permissive free-software licence: anyone may use, copy, modify and sell, provided the copyright notice stays, and with no warranty. It is this engine's licence. It <strong>does not cover the model</strong> — weights and tokenizer have their own, from whoever trained them.",
         "usual": "that the code's licence also covers the data it reads",
-        "aliases": []
+        "aliases": [
+          "MIT"
+        ]
       }
     },
     {
@@ -4114,6 +4261,7 @@
       "category": "software",
       "pt": {
         "term": "CRLF",
+        "abbr": "Carriage Return + Line Feed — retorno de carro e avanço de linha",
         "definition": "Os dois caracteres invisíveis com que o Windows termina cada linha de texto, contra um só no Linux. Invisível não quer dizer inofensivo: um trecho de código copiado com um estilo não casa com o arquivo salvo no outro, e a busca falha sem que nada apareça na tela para explicar.",
         "usual": "que \"texto é texto\"; a diferença é real e quebra comparação exata",
         "aliases": [
@@ -4123,6 +4271,7 @@
       },
       "en": {
         "term": "CRLF",
+        "abbr": "Carriage Return + Line Feed",
         "definition": "The two invisible characters Windows ends each line of text with, against one on Linux. Invisible does not mean harmless: a snippet copied in one style will not match a file saved in the other, and the search fails with nothing on screen to explain it.",
         "usual": "that \"text is text\"; the difference is real and breaks exact matching",
         "aliases": [
@@ -4136,15 +4285,1046 @@
       "category": "software",
       "pt": {
         "term": "UUID",
+        "abbr": "Universally Unique Identifier — identificador universalmente único",
         "definition": "Um identificador longo o bastante para ser único sem que ninguém coordene quem usa qual. Serve para nomear uma conversa, um bloco, uma sessão — quando duas partes precisam falar do mesmo item sem um cadastro central.",
         "usual": "que precisa ser gerado por um servidor; qualquer máquina gera o seu",
         "aliases": []
       },
       "en": {
         "term": "UUID",
+        "abbr": "Universally Unique Identifier",
         "definition": "An identifier long enough to be unique without anyone coordinating who uses which. It names a conversation, a block, a session — when two sides must refer to the same item with no central registry.",
         "usual": "that a server must issue it; any machine generates its own",
         "aliases": []
+      }
+    },
+    {
+      "id": "rag",
+      "category": "execucao",
+      "pt": {
+        "term": "RAG",
+        "abbr": "Retrieval-Augmented Generation — geração aumentada por recuperação",
+        "definition": "Em vez de o modelo <em>lembrar</em> a resposta, ele <em>lê</em>: um índice acha os trechos relevantes de um acervo e os cola no contexto antes da pergunta. Não é usado neste projeto — está aqui porque é a alternativa que sempre aparece ao lado de ajuste fino, e resolve um problema diferente.",
+        "usual": "",
+        "aliases": []
+      },
+      "en": {
+        "term": "RAG",
+        "abbr": "Retrieval-Augmented Generation",
+        "definition": "Instead of the model <em>remembering</em> the answer, it <em>reads</em> it: an index finds the relevant passages of a corpus and pastes them into the context ahead of the question. Not used in this project — it is here because it is the alternative that always shows up next to fine-tuning, and it solves a different problem.",
+        "usual": "",
+        "aliases": []
+      }
+    },
+    {
+      "id": "gpt",
+      "category": "modelo",
+      "pt": {
+        "term": "GPT",
+        "abbr": "Generative Pre-trained Transformer — transformador generativo pré-treinado",
+        "definition": "A família que popularizou o nome. Aqui aparece só como referência: o tokenizer usa a mesma tabela de pré-divisão do GPT-4.",
+        "usual": "",
+        "aliases": []
+      },
+      "en": {
+        "term": "GPT",
+        "abbr": "Generative Pre-trained Transformer",
+        "definition": "The family that made the name popular. It shows up here only as a reference: the tokenizer uses GPT-4's pre-tokenisation table.",
+        "usual": "",
+        "aliases": []
+      }
+    },
+    {
+      "id": "eos",
+      "category": "execucao",
+      "pt": {
+        "term": "EOS",
+        "abbr": "End Of Sequence — fim da sequência",
+        "definition": "O token que o modelo emite para dizer que terminou. Sem ele a geração só para no limite de tokens pedido.",
+        "usual": "",
+        "aliases": []
+      },
+      "en": {
+        "term": "EOS",
+        "abbr": "End Of Sequence",
+        "definition": "The token the model emits to say it has finished. Without it, generation only stops at the requested token limit.",
+        "usual": "",
+        "aliases": []
+      }
+    },
+    {
+      "id": "mac",
+      "category": "armadilha",
+      "pt": {
+        "term": "MAC",
+        "abbr": "Multiply-ACcumulate — multiplicar e acumular",
+        "definition": "Aqui é a operação que o kernel repete milhões de vezes por token: multiplicar dois números e somar ao acumulador. \"Vazão de MACs\" é quantas dessas cabem num ciclo de processador.",
+        "usual": "o endereço de rede de uma placa, ou o computador da Apple",
+        "aliases": []
+      },
+      "en": {
+        "term": "MAC",
+        "abbr": "Multiply-ACcumulate",
+        "definition": "Here it is the operation the kernel repeats millions of times per token: multiply two numbers and add to the accumulator. \"MAC throughput\" is how many of those fit in one processor cycle.",
+        "usual": "a network card's address, or Apple's computer",
+        "aliases": []
+      }
+    },
+    {
+      "id": "swe-bench",
+      "category": "medicao",
+      "pt": {
+        "term": "SWE-bench",
+        "abbr": "Software Engineering benchmark — teste de engenharia de software",
+        "definition": "Defeitos reais de repositórios públicos: o modelo recebe o problema e tem de produzir a correção. O alvo deste projeto marca 59,2 na variante Verified — número do fabricante, com o desconto de praxe.",
+        "usual": "",
+        "aliases": [
+          "SWE"
+        ]
+      },
+      "en": {
+        "term": "SWE-bench",
+        "abbr": "Software Engineering benchmark",
+        "definition": "Real defects from public repositories: the model gets the issue and has to produce the fix. This project's target scores 59.2 on the Verified variant — a vendor number, with the usual discount.",
+        "usual": "",
+        "aliases": [
+          "SWE"
+        ]
+      }
+    },
+    {
+      "id": "tops",
+      "category": "numerica",
+      "pt": {
+        "term": "TOPS",
+        "abbr": "Tera-Operations Per Second — trilhões de operações por segundo",
+        "definition": "Medida de vazão de cálculo inteiro, como GFLOP/s é para ponto flutuante.",
+        "usual": "",
+        "aliases": []
+      },
+      "en": {
+        "term": "TOPS",
+        "abbr": "Tera-Operations Per Second",
+        "definition": "A throughput measure for integer arithmetic, as GFLOP/s is for floating point.",
+        "usual": "",
+        "aliases": []
+      }
+    },
+    {
+      "id": "ssd",
+      "category": "maquina",
+      "pt": {
+        "term": "SSD",
+        "abbr": "Solid-State Drive — unidade de estado sólido",
+        "definition": "Disco sem partes móveis. Os desta máquina são <em>NVMe</em> em RAID0, 18,4 GB/s — mais rápidos que o PCIe que liga a placa de vídeo.",
+        "usual": "",
+        "aliases": [
+          "SSDs"
+        ]
+      },
+      "en": {
+        "term": "SSD",
+        "abbr": "Solid-State Drive",
+        "definition": "A drive with no moving parts. This machine's are <em>NVMe</em> in RAID0, 18.4 GB/s — faster than the PCIe link to the graphics card.",
+        "usual": "",
+        "aliases": [
+          "SSDs"
+        ]
+      }
+    },
+    {
+      "id": "hf",
+      "category": "software",
+      "pt": {
+        "term": "HF",
+        "abbr": "Hugging Face",
+        "definition": "O repositório de onde vêm o checkpoint e o <code>tokenizer.json</code>. \"Formato HF\" é o layout de arquivos que essa plataforma padronizou, não um formato deste projeto.",
+        "usual": "",
+        "aliases": []
+      },
+      "en": {
+        "term": "HF",
+        "abbr": "Hugging Face",
+        "definition": "The repository the checkpoint and <code>tokenizer.json</code> come from. \"HF format\" is the file layout that platform standardised, not a format of this project.",
+        "usual": "",
+        "aliases": []
+      }
+    },
+    {
+      "id": "ir",
+      "category": "software",
+      "pt": {
+        "term": "IR",
+        "abbr": "Intermediate Representation — representação intermediária",
+        "definition": "A forma em que o motor guarda a arquitetura depois de ler a configuração: ponteiros já resolvidos e conferidos, uma vez, na abertura. É o que faz um tensor trocado errar com nome e forma, em vez de virar lixo numérico 47 camadas adiante.",
+        "usual": "",
+        "aliases": [],
+        "nolink": true
+      },
+      "en": {
+        "term": "IR",
+        "abbr": "Intermediate Representation",
+        "definition": "The form the engine keeps the architecture in after reading the config: pointers resolved and checked once, at open time. It is what makes a swapped tensor fail with its name and shape, instead of becoming numerical garbage 47 layers later.",
+        "usual": "",
+        "aliases": [],
+        "nolink": true
+      }
+    },
+    {
+      "id": "api",
+      "category": "software",
+      "pt": {
+        "term": "API",
+        "abbr": "Application Programming Interface — interface de programação",
+        "definition": "O conjunto de chamadas que um programa oferece a outro. Aqui, os endereços HTTP compatíveis com o protocolo da OpenAI.",
+        "usual": "",
+        "aliases": []
+      },
+      "en": {
+        "term": "API",
+        "abbr": "Application Programming Interface",
+        "definition": "The set of calls one program offers another. Here, the HTTP endpoints compatible with the OpenAI protocol.",
+        "usual": "",
+        "aliases": []
+      }
+    },
+    {
+      "id": "abi",
+      "category": "software",
+      "pt": {
+        "term": "ABI",
+        "abbr": "Application Binary Interface — interface binária",
+        "definition": "O contrato de baixo nível entre dois binários já compilados: quem passa o quê, em qual registrador. Uma ABI em C é o que permite carregar o backend de GPU sem recompilar o motor.",
+        "usual": "",
+        "aliases": []
+      },
+      "en": {
+        "term": "ABI",
+        "abbr": "Application Binary Interface",
+        "definition": "The low-level contract between two already-compiled binaries: who passes what, in which register. A C ABI is what allows loading the GPU backend without recompiling the engine.",
+        "usual": "",
+        "aliases": []
+      }
+    },
+    {
+      "id": "dll",
+      "category": "software",
+      "pt": {
+        "term": "DLL",
+        "abbr": "Dynamic-Link Library — biblioteca de vínculo dinâmico",
+        "definition": "Um arquivo de código que o programa carrega durante a execução, em vez de embutir na compilação. É como o backend de GPU entra sem que o binário de CPU dependa de CUDA.",
+        "usual": "",
+        "aliases": []
+      },
+      "en": {
+        "term": "DLL",
+        "abbr": "Dynamic-Link Library",
+        "definition": "A code file the program loads at run time instead of building in. It is how the GPU backend gets in without the CPU binary depending on CUDA.",
+        "usual": "",
+        "aliases": []
+      }
+    },
+    {
+      "id": "tcp",
+      "category": "software",
+      "pt": {
+        "term": "TCP",
+        "abbr": "Transmission Control Protocol — protocolo de controle de transmissão",
+        "definition": "O transporte por baixo do HTTP: entrega os bytes em ordem e sem perda. Aparece aqui porque, com um pedido por vez, o segundo espera calado na fila do TCP.",
+        "usual": "",
+        "aliases": []
+      },
+      "en": {
+        "term": "TCP",
+        "abbr": "Transmission Control Protocol",
+        "definition": "The transport under HTTP: delivers bytes in order and without loss. It shows up here because, with one request at a time, the second waits silently in the TCP queue.",
+        "usual": "",
+        "aliases": []
+      }
+    },
+    {
+      "id": "lru",
+      "category": "software",
+      "pt": {
+        "term": "LRU",
+        "abbr": "Least Recently Used — o usado menos recentemente",
+        "definition": "A política de despejo mais comum: quando falta espaço, sai o que ficou mais tempo sem ser tocado.",
+        "usual": "",
+        "aliases": []
+      },
+      "en": {
+        "term": "LRU",
+        "abbr": "Least Recently Used",
+        "definition": "The commonest eviction policy: when space runs out, whatever went longest untouched is the first to go.",
+        "usual": "",
+        "aliases": []
+      }
+    },
+    {
+      "id": "url",
+      "category": "software",
+      "pt": {
+        "term": "URL",
+        "abbr": "Uniform Resource Locator — localizador uniforme de recurso",
+        "definition": "O endereço de um recurso na web. O do servidor local é <code>http://127.0.0.1:8080</code>.",
+        "usual": "",
+        "aliases": []
+      },
+      "en": {
+        "term": "URL",
+        "abbr": "Uniform Resource Locator",
+        "definition": "The address of a resource on the web. The local server's is <code>http://127.0.0.1:8080</code>.",
+        "usual": "",
+        "aliases": []
+      }
+    },
+    {
+      "id": "html",
+      "category": "software",
+      "pt": {
+        "term": "HTML",
+        "abbr": "HyperText Markup Language — linguagem de marcação de hipertexto",
+        "definition": "A linguagem das páginas web. Este guia é um único arquivo HTML, sem servidor e sem dependência: abre com dois cliques.",
+        "usual": "",
+        "aliases": []
+      },
+      "en": {
+        "term": "HTML",
+        "abbr": "HyperText Markup Language",
+        "definition": "The language of web pages. This guide is a single HTML file, no server and no dependency: it opens with a double click.",
+        "usual": "",
+        "aliases": []
+      }
+    },
+    {
+      "id": "ui",
+      "category": "software",
+      "pt": {
+        "term": "UI",
+        "abbr": "User Interface — interface de usuário",
+        "definition": "A parte com que se interage. Aqui é a página que <code>tootega serve</code> abre em <code>127.0.0.1:8080</code>.",
+        "usual": "",
+        "aliases": []
+      },
+      "en": {
+        "term": "UI",
+        "abbr": "User Interface",
+        "definition": "The part you interact with. Here it is the page <code>tootega serve</code> opens at <code>127.0.0.1:8080</code>.",
+        "usual": "",
+        "aliases": []
+      }
+    },
+    {
+      "id": "blas",
+      "category": "software",
+      "pt": {
+        "term": "BLAS",
+        "abbr": "Basic Linear Algebra Subprograms — sub-rotinas básicas de álgebra linear",
+        "definition": "A biblioteca clássica de multiplicação de matrizes. O motor não usa nenhuma — os kernels são escritos aqui —, mas uma ferramenta pode.",
+        "usual": "",
+        "aliases": []
+      },
+      "en": {
+        "term": "BLAS",
+        "abbr": "Basic Linear Algebra Subprograms",
+        "definition": "The classic matrix-multiplication library. The engine uses none — the kernels are written here — but a tool may.",
+        "usual": "",
+        "aliases": []
+      }
+    },
+    {
+      "id": "sha",
+      "category": "software",
+      "pt": {
+        "term": "SHA-256",
+        "abbr": "Secure Hash Algorithm, 256 bits — algoritmo de resumo seguro",
+        "definition": "Uma função que resume qualquer conteúdo num número de tamanho fixo. Serve para provar que duas execuções produziram exatamente a mesma resposta.",
+        "usual": "",
+        "aliases": [
+          "SHA"
+        ]
+      },
+      "en": {
+        "term": "SHA-256",
+        "abbr": "Secure Hash Algorithm, 256 bits",
+        "definition": "A function that reduces any content to a fixed-size number. It is what proves two runs produced exactly the same answer.",
+        "usual": "",
+        "aliases": [
+          "SHA"
+        ]
+      }
+    },
+    {
+      "id": "gnu",
+      "category": "software",
+      "pt": {
+        "term": "GNU",
+        "abbr": "GNU's Not Unix — sigla recursiva: ela se contém",
+        "definition": "O projeto de software livre de onde vêm o compilador <code>gcc</code> e o <code>make</code> usados na compilação em Linux.",
+        "usual": "",
+        "aliases": []
+      },
+      "en": {
+        "term": "GNU",
+        "abbr": "GNU's Not Unix — a recursive acronym: it contains itself",
+        "definition": "The free-software project the <code>gcc</code> compiler and <code>make</code> used for the Linux build come from.",
+        "usual": "",
+        "aliases": []
+      }
+    },
+    {
+      "id": "lora-rank",
+      "category": "modelo",
+      "pt": {
+        "term": "kv_lora_rank / q_lora_rank",
+        "definition": "As duas dimensões comprimidas da MLA neste modelo: a consulta desce a <strong>768</strong> e o KV a <strong>512</strong> antes de subir de volta. É de onde sai o 576 por token por camada — 512 do KV comprimido mais 64 do RoPE — em vez de 10.240.",
+        "usual": null,
+        "aliases": [
+          "kv_lora_rank",
+          "q_lora_rank"
+        ]
+      },
+      "en": {
+        "term": "kv_lora_rank / q_lora_rank",
+        "definition": "The two compressed dimensions of MLA in this model: the query goes down to <strong>768</strong> and the KV to <strong>512</strong> before being projected back up. It is where the 576 per token per layer comes from — 512 of compressed KV plus 64 of RoPE — instead of 10,240.",
+        "usual": null,
+        "aliases": [
+          "kv_lora_rank",
+          "q_lora_rank"
+        ]
+      }
+    },
+    {
+      "id": "n-group",
+      "category": "modelo",
+      "pt": {
+        "term": "n_group",
+        "definition": "Quantos grupos de experts o roteador considera antes de escolher. Neste modelo é <strong>1</strong> — nenhum limite por grupo — e é o único caminho implementado no primeiro dia. O engine anterior tinha <code>n_group == 1</code> cravado no parser, e isso reduzia o universo de modelos a uma família só; aqui é variante de configuração, não regra do código.",
+        "usual": null,
+        "aliases": [
+          "topk_group"
+        ]
+      },
+      "en": {
+        "term": "n_group",
+        "definition": "How many expert groups the router considers before picking. In this model it is <strong>1</strong> — no group limit — and it is the only path implemented on day one. The previous engine had <code>n_group == 1</code> hard-coded into the parser, which reduced the universe of models to a single family; here it is a config variant, not a rule of the code.",
+        "usual": null,
+        "aliases": [
+          "topk_group"
+        ]
+      }
+    },
+    {
+      "id": "norm-topk-prob",
+      "category": "modelo",
+      "pt": {
+        "term": "norm_topk_prob",
+        "definition": "A chave que manda renormalizar as notas dos experts escolhidos: as 4 notas que sobraram são divididas pela soma delas, para somar 1. Aqui é <code>true</code>.",
+        "usual": null,
+        "aliases": [
+          "norm_topk_prob"
+        ]
+      },
+      "en": {
+        "term": "norm_topk_prob",
+        "definition": "The key that renormalizes the chosen experts' scores: the 4 surviving scores are divided by their sum so they add up to 1. Here it is <code>true</code>.",
+        "usual": null,
+        "aliases": [
+          "norm_topk_prob"
+        ]
+      }
+    },
+    {
+      "id": "routed-scaling-factor",
+      "category": "modelo",
+      "pt": {
+        "term": "routed_scaling_factor",
+        "definition": "O fator que multiplica a saída dos experts roteados antes de ela voltar para o residual. Neste modelo é <strong>1,8</strong> — número do modelo, não escolha nossa.",
+        "usual": null,
+        "aliases": [
+          "routed_scaling_factor"
+        ]
+      },
+      "en": {
+        "term": "routed_scaling_factor",
+        "definition": "The factor multiplying the routed experts' output before it goes back into the residual. In this model it is <strong>1.8</strong> — the model's number, not our choice.",
+        "usual": null,
+        "aliases": [
+          "routed_scaling_factor"
+        ]
+      }
+    },
+    {
+      "id": "first-k-dense-replace",
+      "category": "modelo",
+      "pt": {
+        "term": "first_k_dense_replace",
+        "definition": "Quantas camadas do início são densas em vez de MoE. Aqui é <strong>1</strong>: a camada 0 tem um MLP normal, as outras 45 têm roteador e experts.",
+        "usual": null,
+        "aliases": [
+          "first_k_dense_replace"
+        ]
+      },
+      "en": {
+        "term": "first_k_dense_replace",
+        "definition": "How many layers at the start are dense instead of MoE. Here it is <strong>1</strong>: layer 0 has a plain MLP, the other 45 have a router and experts.",
+        "usual": null,
+        "aliases": [
+          "first_k_dense_replace"
+        ]
+      }
+    },
+    {
+      "id": "ignore-merges",
+      "category": "modelo",
+      "pt": {
+        "term": "ignore_merges",
+        "definition": "A chave do tokenizer que muda o algoritmo: se a palavra inteira já está no vocabulário, usa aquele id e <strong>não aplica merge nenhum</strong>. Só quando não está é que o BPE clássico roda. Está <code>true</code> neste modelo, e ignorá-la dá tokenização errada justamente nas palavras mais comuns.",
+        "usual": null,
+        "aliases": [
+          "ignore_merges"
+        ]
+      },
+      "en": {
+        "term": "ignore_merges",
+        "definition": "The tokenizer key that changes the algorithm: if the whole word is already in the vocabulary, use that id and <strong>apply no merges at all</strong>. Only when it is not does classic BPE run. It is <code>true</code> in this model, and ignoring it gets exactly the most common words wrong.",
+        "usual": null,
+        "aliases": [
+          "ignore_merges"
+        ]
+      }
+    },
+    {
+      "id": "gmask",
+      "category": "modelo",
+      "pt": {
+        "term": "[gMASK]",
+        "definition": "O token especial que abre todo prompt deste modelo: a sequência começa com <code>[gMASK]&lt;sop&gt;</code> antes de <code>&lt;|user|&gt;</code>. É reconhecido por texto exato, antes do BPE, como os outros 36 marcadores.",
+        "usual": null,
+        "aliases": [
+          "gMASK"
+        ]
+      },
+      "en": {
+        "term": "[gMASK]",
+        "definition": "The special token that opens every prompt in this model: the sequence starts with <code>[gMASK]&lt;sop&gt;</code> before <code>&lt;|user|&gt;</code>. It is matched by exact text, before BPE, like the other 36 markers.",
+        "usual": null,
+        "aliases": [
+          "gMASK"
+        ]
+      }
+    },
+    {
+      "id": "marcador-de-espaco",
+      "category": "modelo",
+      "pt": {
+        "term": "Ġ",
+        "abbr": "o marcador de espaço do BPE",
+        "definition": "O caractere que representa o espaço dentro do vocabulário. O BPE é byte-level: os bytes imprimíveis mapeiam para si mesmos e o resto para <code>0x100 + n</code>, e é por isso que <code>Ġthe</code> quer dizer \" the\", com espaço. Não é lixo de codificação.",
+        "usual": null,
+        "aliases": [
+          "marcador de espaço"
+        ]
+      },
+      "en": {
+        "term": "Ġ",
+        "abbr": "the BPE space marker",
+        "definition": "The character that stands for a space inside the vocabulary. BPE here is byte-level: printable bytes map to themselves and the rest to <code>0x100 + n</code>, which is why <code>Ġthe</code> means \" the\", with the space. It is not an encoding glitch.",
+        "usual": null,
+        "aliases": [
+          "space marker"
+        ]
+      }
+    },
+    {
+      "id": "qwen3",
+      "category": "modelo",
+      "pt": {
+        "term": "Qwen3-30B-A3B",
+        "definition": "O candidato mais próximo do modelo escolhido: 15,3 GB, cabe em RAM, e é bom. Ficou de fora porque usa GQA sem MLA — o KV por token é ordens de grandeza maior, e é justamente o que a MLA resolve.",
+        "usual": null,
+        "aliases": [
+          "Qwen3",
+          "Qwen"
+        ]
+      },
+      "en": {
+        "term": "Qwen3-30B-A3B",
+        "definition": "The closest runner-up to the chosen model: 15.3 GB, fits in RAM, and it is good. It was left out because it uses GQA without MLA — the KV per token is orders of magnitude larger, which is exactly what MLA fixes.",
+        "usual": null,
+        "aliases": [
+          "Qwen3",
+          "Qwen"
+        ]
+      }
+    },
+    {
+      "id": "a3b",
+      "category": "modelo",
+      "pt": {
+        "term": "A3B",
+        "abbr": "Active 3 Billion — 3 bilhões de parâmetros ativos",
+        "definition": "A convenção de nome que diz quanto do modelo trabalha por token: em <code>Qwen3-30B-A3B</code>, 30 B guardados e <strong>3 B ativos</strong>. É o número que manda no tempo; o outro manda na memória.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "A3B",
+        "abbr": "Active 3 Billion active parameters",
+        "definition": "The naming convention that says how much of the model works per token: in <code>Qwen3-30B-A3B</code>, 30 B stored and <strong>3 B active</strong>. The active number rules time; the other rules memory.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "deepseek",
+      "category": "modelo",
+      "pt": {
+        "term": "DeepSeek",
+        "definition": "A família onde a MLA e o roteamento por grupo aparecem. Serve de contraexemplo duas vezes: <code>DeepSeek-V4-Flash</code> tem 79,8 GB e não é residente nesta máquina, e <code>n_group=8</code> é o caso que o parser do engine anterior recusava.",
+        "usual": null,
+        "aliases": [
+          "DeepSeek-V4-Flash"
+        ]
+      },
+      "en": {
+        "term": "DeepSeek",
+        "definition": "The family where MLA and group routing show up. It is a counterexample twice over: <code>DeepSeek-V4-Flash</code> is 79.8 GB and is not resident on this machine, and <code>n_group=8</code> is the case the previous engine's parser refused.",
+        "usual": null,
+        "aliases": [
+          "DeepSeek-V4-Flash"
+        ]
+      }
+    },
+    {
+      "id": "prefetch",
+      "category": "maquina",
+      "pt": {
+        "term": "prefetch",
+        "definition": "Pedir a página antes de precisar dela. Na carga o engine chama <code>madvise(MADV_WILLNEED)</code> ou <code>PrefetchVirtualMemory</code> e traz 18,54 GB em 5,3 s, de uma vez — em vez de tomar falta de página no meio do decode.",
+        "usual": null,
+        "aliases": [
+          "PrefetchVirtualMemory",
+          "madvise",
+          "pré-busca"
+        ]
+      },
+      "en": {
+        "term": "prefetch",
+        "definition": "Asking for the page before needing it. At load time the engine calls <code>madvise(MADV_WILLNEED)</code> or <code>PrefetchVirtualMemory</code> and brings 18.54 GB in 5.3 s in one go — instead of taking page faults in the middle of decode.",
+        "usual": null,
+        "aliases": [
+          "PrefetchVirtualMemory",
+          "madvise",
+          "prefetching"
+        ]
+      }
+    },
+    {
+      "id": "linha-de-cache",
+      "category": "maquina",
+      "pt": {
+        "term": "linha de cache",
+        "definition": "Os <strong>64 bytes</strong> que a CPU move de uma vez entre a RAM e o cache. É a unidade real de leitura: pedir 4 bytes custa uma linha. Todo blob do contêiner começa em múltiplo de 64 por causa dela.",
+        "usual": null,
+        "aliases": [
+          "cache line",
+          "linhas de cache"
+        ]
+      },
+      "en": {
+        "term": "cache line",
+        "definition": "The <strong>64 bytes</strong> the CPU moves at once between RAM and cache. It is the real unit of reading: asking for 4 bytes costs a whole line. Every blob in the container starts at a multiple of 64 because of it.",
+        "usual": null,
+        "aliases": [
+          "cache lines"
+        ]
+      }
+    },
+    {
+      "id": "alinhamento",
+      "category": "maquina",
+      "pt": {
+        "term": "alinhamento",
+        "definition": "O endereço começar em múltiplo de 64. Sem isso não existe zero-copy: o kernel teria de copiar o tensor para um buffer alinhado antes de multiplicar. O conversor alinha todo blob na escrita e o <code>--verify</code> confere; o enchimento desaparece no arredondamento dos 19,3 GB.",
+        "usual": null,
+        "aliases": [
+          "alinhado",
+          "alinhada"
+        ]
+      },
+      "en": {
+        "term": "alignment",
+        "definition": "The address starting at a multiple of 64. Without it there is no zero-copy: the kernel would have to copy the tensor into an aligned buffer before multiplying. The converter aligns every blob on write and <code>--verify</code> checks it; the padding disappears in the rounding of the 19.3 GB.",
+        "usual": null,
+        "aliases": [
+          "aligned"
+        ]
+      }
+    },
+    {
+      "id": "transformers",
+      "category": "armadilha",
+      "pt": {
+        "term": "transformers",
+        "definition": "A biblioteca Python da Hugging Face que roda o modelo original em BF16. Foi a <em>referência externa</em> do projeto: lenta, e isso não importava — importava ser de outra gente. Foi ela que apontou o RoPE na variante errada depois de três testes internos verdes. O script que a chamava não existe mais, e o número que ela deu está registrado em <code>docs/17</code>; reabrir a questão exige trazê-la de volta. Nunca entrou em <code>src/</code>.",
+        "usual": "a arquitetura Transformer, de que o modelo é feito",
+        "aliases": [
+          "transformers do HF"
+        ]
+      },
+      "en": {
+        "term": "transformers",
+        "definition": "Hugging Face's Python library, which runs the original BF16 model. It was the project's <em>external reference</em>: slow, and that did not matter — being someone else's did. It is what caught the RoPE in the wrong variant after three green internal tests. The script that called it is gone, and the number it gave is recorded in <code>docs/17</code>; reopening the question means bringing it back. It never entered <code>src/</code>.",
+        "usual": "the Transformer architecture the model is made of",
+        "aliases": [
+          "HF transformers"
+        ]
+      }
+    },
+    {
+      "id": "tokenizers-lib",
+      "category": "software",
+      "pt": {
+        "term": "tokenizers",
+        "definition": "A biblioteca de tokenização da Hugging Face, usada como referência externa: <strong>36/36</strong> casos idênticos, ida e volta exata. O tokenizer do engine é escrito aqui, do zero, e é comparado com ela.",
+        "usual": null,
+        "aliases": [
+          "tokenizers do HF"
+        ]
+      },
+      "en": {
+        "term": "tokenizers",
+        "definition": "Hugging Face's tokenization library, used as an external reference: <strong>36/36</strong> identical cases, exact round-trip. The engine's tokenizer is written here, from scratch, and measured against it.",
+        "usual": null,
+        "aliases": [
+          "HF tokenizers"
+        ]
+      }
+    },
+    {
+      "id": "numpy",
+      "category": "software",
+      "pt": {
+        "term": "numpy",
+        "definition": "A biblioteca de arrays do Python. Foi a referência da quantização enquanto o oráculo era em Python; hoje a referência é <code>Tests/oracle</code>, em C, e o que o kernel produz bate <strong>bit a bit</strong> com a fixture gerada por <code>tools/fixture</code>. Nunca entrou em <code>src/</code>.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "numpy",
+        "definition": "Python's array library. It was the quantisation reference while the oracle was in Python; today the reference is <code>Tests/oracle</code>, in C, and what the kernel produces matches <strong>bit for bit</strong> the fixture generated by <code>tools/fixture</code>. It never entered <code>src/</code>.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "openmp",
+      "category": "software",
+      "pt": {
+        "term": "OpenMP",
+        "abbr": "Open Multi-Processing",
+        "definition": "O runtime de paralelismo do compilador — o <code>#pragma omp parallel for</code>. O engine anterior linkava ele estático (<code>libgomp.a</code>) e era a única dependência de runtime que carregava. Este engine <strong>não usa</strong>: tem pool de threads próprio, e é isso que deixa o binário sem dependência nenhuma.",
+        "usual": null,
+        "aliases": [
+          "libgomp"
+        ]
+      },
+      "en": {
+        "term": "OpenMP",
+        "abbr": "Open Multi-Processing",
+        "definition": "The compiler's parallelism runtime — <code>#pragma omp parallel for</code>. The previous engine linked it statically (<code>libgomp.a</code>) and it was the only runtime dependency it carried. This engine <strong>does not use it</strong>: it has its own thread pool, and that is what keeps the binary dependency-free.",
+        "usual": null,
+        "aliases": [
+          "libgomp"
+        ]
+      }
+    },
+    {
+      "id": "mlock",
+      "category": "software",
+      "pt": {
+        "term": "mlock",
+        "definition": "Pedir ao sistema para não tirar estas páginas da RAM. Trava o conjunto residente para que uma falta de página não apareça no meio do decode. É opcional e limitado pelo orçamento de memória — <code>VirtualLock</code> é o nome no Windows.",
+        "usual": null,
+        "aliases": [
+          "VirtualLock"
+        ]
+      },
+      "en": {
+        "term": "mlock",
+        "definition": "Asking the system not to take these pages out of RAM. It pins the resident set so a page fault does not show up in the middle of decode. It is optional and bounded by the memory budget — <code>VirtualLock</code> is the Windows name.",
+        "usual": null,
+        "aliases": [
+          "VirtualLock"
+        ]
+      }
+    },
+    {
+      "id": "o-direct",
+      "category": "software",
+      "pt": {
+        "term": "O_DIRECT",
+        "definition": "Ler do disco sem passar pelo cache do sistema operacional. Era afinado no engine anterior e aqui não serve para nada: só ajuda quem lê do disco, e este engine lê da RAM. Está na lista do que foi jogado fora.",
+        "usual": null,
+        "aliases": [
+          "O_DIRECT"
+        ]
+      },
+      "en": {
+        "term": "O_DIRECT",
+        "definition": "Reading from disk without going through the OS cache. It was tuned in the previous engine and is worth nothing here: it only helps whoever reads from disk, and this engine reads from RAM. It is on the list of what was thrown away.",
+        "usual": null,
+        "aliases": [
+          "O_DIRECT"
+        ]
+      }
+    },
+    {
+      "id": "dlopen",
+      "category": "software",
+      "pt": {
+        "term": "dlopen",
+        "definition": "Carregar uma biblioteca em tempo de execução, em vez de linká-la no binário. Era assim que o backend CUDA entrava, atrás de uma ABI C — e é o motivo de o binário com GPU não poder ser totalmente estático: <code>dlopen</code> em binário estático não é confiável. O master é CPU pura e não usa nenhum.",
+        "usual": null,
+        "aliases": [
+          "LoadLibrary"
+        ]
+      },
+      "en": {
+        "term": "dlopen",
+        "definition": "Loading a library at runtime instead of linking it into the binary. It is how the CUDA backend came in, behind a C ABI — and the reason the GPU binary cannot be fully static: <code>dlopen</code> from a static binary is not reliable. Master is pure CPU and uses none of it.",
+        "usual": null,
+        "aliases": [
+          "LoadLibrary"
+        ]
+      }
+    },
+    {
+      "id": "vswhere",
+      "category": "software",
+      "pt": {
+        "term": "vswhere",
+        "definition": "O utilitário da Microsoft que diz onde o Visual Studio está instalado. O build chama ele em vez de escrever o caminho do MSVC à mão: caminho fixo quebra quando a versão muda.",
+        "usual": null,
+        "aliases": []
+      },
+      "en": {
+        "term": "vswhere",
+        "definition": "Microsoft's utility that reports where Visual Studio is installed. The build calls it instead of hard-coding the MSVC path: a hard-coded path breaks when the version changes.",
+        "usual": null,
+        "aliases": []
+      }
+    },
+    {
+      "id": "fp16",
+      "category": "numerica",
+      "pt": {
+        "term": "fp16",
+        "definition": "Ponto flutuante de 16 bits com 5 bits de expoente e 10 de mantissa — mais precisão e menos alcance que o bf16. Aparece só na aritmética de teto: o engine nunca desquantiza para fp16 antes de multiplicar.",
+        "usual": null,
+        "aliases": [
+          "float16",
+          "meia precisão"
+        ]
+      },
+      "en": {
+        "term": "fp16",
+        "definition": "16-bit floating point with 5 exponent bits and 10 mantissa bits — more precision and less range than bf16. It only shows up in ceiling arithmetic: the engine never dequantises to fp16 before multiplying.",
+        "usual": null,
+        "aliases": [
+          "float16",
+          "half precision"
+        ]
+      }
+    },
+    {
+      "id": "q4-0",
+      "category": "numerica",
+      "pt": {
+        "term": "Q4_0",
+        "definition": "O formato de 4 bits do llama.cpp. A convenção dele para empacotar dois pesos em um byte é <strong>metade/metade</strong> — o nibble baixo guarda a primeira metade do grupo, o alto a segunda — e é a que o contêiner segue, registrada como decisão D1.",
+        "usual": null,
+        "aliases": [
+          "Q4_0",
+          "llama.cpp"
+        ]
+      },
+      "en": {
+        "term": "Q4_0",
+        "definition": "llama.cpp's 4-bit format. Its convention for packing two weights into one byte is <strong>half/half</strong> — the low nibble holds the first half of the group, the high nibble the second — and it is what the container follows, recorded as decision D1.",
+        "usual": null,
+        "aliases": [
+          "Q4_0",
+          "llama.cpp"
+        ]
+      }
+    },
+    {
+      "id": "interleave",
+      "category": "numerica",
+      "pt": {
+        "term": "interleave",
+        "definition": "A variante de RoPE que este modelo usa: gira <code>x[2i]</code> com <code>x[2i+1]</code>, e não <code>x[i]</code> com <code>x[i + rot/2]</code>, que é o <code>rotate_half</code>. Na posição 0 as duas coincidem (<code>cos = 1</code>, <code>sin = 0</code>) e o erro cresce com a posição — foi o engano que passou pelo 32/32 e pela perplexidade sem ser visto.",
+        "usual": null,
+        "aliases": [
+          "rope_interleave",
+          "rotate_half",
+          "intercalado",
+          "apply_rotary_pos_emb_interleave"
+        ]
+      },
+      "en": {
+        "term": "interleave",
+        "definition": "The RoPE variant this model uses: it rotates <code>x[2i]</code> with <code>x[2i+1]</code>, not <code>x[i]</code> with <code>x[i + rot/2]</code>, which is <code>rotate_half</code>. At position 0 the two coincide (<code>cos = 1</code>, <code>sin = 0</code>) and the error grows with position — this was the mistake that walked past 32/32 and past perplexity unseen.",
+        "usual": null,
+        "aliases": [
+          "rope_interleave",
+          "rotate_half",
+          "interleaved",
+          "apply_rotary_pos_emb_interleave"
+        ]
+      }
+    },
+    {
+      "id": "contracao",
+      "category": "numerica",
+      "pt": {
+        "term": "contração",
+        "definition": "Quando o compilador funde uma multiplicação e uma soma em um FMA por conta própria. É mais rápido e arredonda diferente, então o build usa <code>/fp:precise</code> sem contração — conferido no disassembly, porque é disso que a reprodutibilidade depende.",
+        "usual": null,
+        "aliases": [
+          "contração de FMA",
+          "contraction"
+        ]
+      },
+      "en": {
+        "term": "contraction",
+        "definition": "When the compiler fuses a multiply and an add into an FMA on its own. It is faster and it rounds differently, so the build uses <code>/fp:precise</code> with no contraction — verified in the disassembly, because that is what reproducibility rests on.",
+        "usual": null,
+        "aliases": [
+          "FMA contraction"
+        ]
+      }
+    },
+    {
+      "id": "estado-da-decisao",
+      "category": "projeto",
+      "pt": {
+        "term": "estado da decisão",
+        "definition": "O rótulo de cada linha do placar: <strong>SETTLED</strong> quando a medição fechou a questão, <strong>REJECTED</strong> quando a coisa foi medida e recusada — a KV em bf16 deu 29/32 no oráculo e ficou como opção, não como padrão — e aberta quando ainda não há número. Não existe \"decidido em reunião\".",
+        "usual": "\"aprovado\" ou \"pendente\"; aqui é o número que decide",
+        "aliases": [
+          "SETTLED",
+          "REJECTED"
+        ]
+      },
+      "en": {
+        "term": "decision state",
+        "definition": "The label on each scoreboard line: <strong>SETTLED</strong> when measurement closed the question, <strong>REJECTED</strong> when the thing was measured and turned down — bf16 KV scored 29/32 against the oracle and stayed an option, not the default — and open when there is no number yet. There is no \"decided in a meeting\".",
+        "usual": "\"approved\" or \"pending\"; here the number decides",
+        "aliases": [
+          "SETTLED",
+          "REJECTED"
+        ]
+      }
+    },
+    {
+      "id": "cuda-dense",
+      "category": "projeto",
+      "pt": {
+        "term": "CUDA_DENSE",
+        "definition": "A variável de ambiente do engine anterior que colocava os tensores densos na GPU. Ligada com VRAM insuficiente, o desempenho caía <strong>13×</strong> sem erro nenhum: é a lição de que configuração ruim pode não falhar, só degradar.",
+        "usual": null,
+        "aliases": [
+          "CUDA_DENSE=1"
+        ]
+      },
+      "en": {
+        "term": "CUDA_DENSE",
+        "definition": "The previous engine's environment variable that placed dense tensors on the GPU. Switched on with not enough VRAM, performance dropped <strong>13×</strong> with no error at all: the lesson that a bad configuration may not fail, only degrade.",
+        "usual": null,
+        "aliases": [
+          "CUDA_DENSE=1"
+        ]
+      }
+    },
+    {
+      "id": "pilot",
+      "category": "armadilha",
+      "pt": {
+        "term": "PILOT",
+        "definition": "Um dos mecanismos do engine anterior para esconder o disco, junto com prefetch entre camadas, roteamento em dois SSDs, <code>O_DIRECT</code>, mapa de calor persistido e tier LRU por camada. Aparece aqui só na lista do que foi jogado fora: era a maior parte do orçamento de complexidade daquele projeto e não vale nada quando o modelo é residente.",
+        "usual": "um teste-piloto, uma versão de avaliação",
+        "aliases": []
+      },
+      "en": {
+        "term": "PILOT",
+        "definition": "One of the previous engine's mechanisms for hiding disk, along with cross-layer prefetch, dual-SSD routing, <code>O_DIRECT</code>, a persisted heat map and a per-layer LRU tier. It appears here only on the list of what was thrown away: it was most of that project's complexity budget and it is worth nothing when the model is resident.",
+        "usual": "a pilot run, a trial version",
+        "aliases": []
+      }
+    },
+    {
+      "id": "pool-de-threads",
+      "category": "maquina",
+      "pt": {
+        "term": "pool de threads",
+        "definition": "As threads criadas uma vez na carga e reaproveitadas em cada camada, em vez de nascer e morrer por matmul. É o pool próprio do engine — decisão D6, e o motivo de não haver OpenMP no binário. O trabalho é dividido por linhas de saída da matriz, e o preço de ter várias threads é a barreira.",
+        "usual": null,
+        "aliases": [
+          "pool"
+        ]
+      },
+      "en": {
+        "term": "thread pool",
+        "definition": "The threads created once at load and reused on every layer, instead of being born and dying per matmul. It is the engine's own pool — decision D6, and the reason there is no OpenMP in the binary. Work is split by matrix output rows, and the price of having several threads is the barrier.",
+        "usual": null,
+        "aliases": [
+          "pool"
+        ]
+      }
+    },
+    {
+      "id": "kv-paginado",
+      "category": "execucao",
+      "pt": {
+        "term": "KV paginado",
+        "definition": "Guardar o KV em blocos de tamanho fixo em vez de um bloco contínuo por conversa. Duas conversas com o mesmo começo apontam para os mesmos blocos, e liberar uma não deixa buraco. Está simples no M1 e completo no M3 — decisão D8, ainda aberta nos detalhes.",
+        "usual": null,
+        "aliases": [
+          "paged KV",
+          "paginado",
+          "paged"
+        ]
+      },
+      "en": {
+        "term": "paged KV",
+        "definition": "Keeping the KV in fixed-size blocks instead of one contiguous block per conversation. Two conversations sharing a prefix point at the same blocks, and freeing one leaves no hole. Simple in M1 and complete in M3 — decision D8, still open in the details.",
+        "usual": null,
+        "aliases": [
+          "paged"
+        ]
+      }
+    },
+    {
+      "id": "referencia-externa",
+      "category": "projeto",
+      "pt": {
+        "term": "referência externa",
+        "definition": "Uma referência escrita por outra gente, a partir de outra leitura do problema. É o único tipo que serve: três testes internos verdes nasceram da mesma leitura e foram cegos ao mesmo erro — um RoPE na variante errada. A referência externa custou 2 minutos e resolveu o que dias de teste interno não resolveram.",
+        "usual": "\"a documentação diz que\"; aqui é outro código, de outra gente, rodando o mesmo caso",
+        "aliases": [
+          "external reference"
+        ]
+      },
+      "en": {
+        "term": "external reference",
+        "definition": "A reference written by other people, from another reading of the problem. It is the only kind that works: three green internal tests were born of the same reading and were blind to the same error — a RoPE in the wrong variant. The external reference cost 2 minutes and settled what days of internal testing did not.",
+        "usual": "\"the docs say so\"; here it is other code, by other people, running the same case",
+        "aliases": [
+          "external reference"
+        ]
       }
     }
   ]

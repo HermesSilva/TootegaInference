@@ -1,7 +1,7 @@
 /* container.h -- the `.tootega` reader.
  *
  * The normative specification is docs/14-container-format.md; the writer is
- * `convert_to_int4.py`.  This reader has to match it byte for byte, and so it
+ * `tools/convert`.  This reader has to match it byte for byte, and so it
  * validates everything the spec promises instead of trusting: magic, version,
  * the 64-byte alignment of every blob, and the relationship between `shape`,
  * `group` and each blob's size.  A container that gets past here can be read by

@@ -207,7 +207,7 @@ with perplexity in hand.
 
 ### D1. Nibble packing order
 
-`convert_to_int4.py` already writes int4 as **even/odd**: `byte[i]` holds weight
+The converter already wrote int4 as **even/odd**: `byte[i]` holds weight
 `2i` in the low nibble and `2i+1` in the high one.
 
 When unpacking 32 bytes with AVX2, `v & 0x0F` delivers weights `0, 2, 4, …, 62`

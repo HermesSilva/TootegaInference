@@ -116,13 +116,18 @@ Write-Host "  -> tootega.exe ($kb KB)"
 # As ferramentas de Tests/ e tools/ linkam src/ estaticamente.  Compilar so o
 # engine as deixa medindo o codigo velho -- e elas nao avisam.  Ja custou horas
 # de caca a um bug ja corrigido (docs/17).
+#
+# `$bin` e nao `$exe`: PowerShell nao distingue maiusculas em nome de variavel,
+# entao a variavel do laco SOBRESCREVIA `$Exe` -- e o `selftest` la embaixo
+# passava a rodar a ultima ferramenta de `tools/`, nao o engine.
 $stale = @()
+$built = (Get-Item $Exe).LastWriteTime
 foreach ($dir in @('Tests', 'tools')) {
     $d = Join-Path $PSScriptRoot $dir
     if (-not (Test-Path $d)) { continue }
-    foreach ($exe in Get-ChildItem (Join-Path $d '*.exe') -ErrorAction SilentlyContinue) {
-        if ($exe.LastWriteTime -lt (Get-Item $Exe).LastWriteTime) {
-            $stale += "$dir\$($exe.Name)"
+    foreach ($bin in Get-ChildItem (Join-Path $d '*.exe') -ErrorAction SilentlyContinue) {
+        if ($bin.LastWriteTime -lt $built) {
+            $stale += "$dir\$($bin.Name)"
         }
     }
 }

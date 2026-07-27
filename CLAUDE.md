@@ -24,21 +24,26 @@ Where a document cites a measurement or a lesson from earlier work, that is
 | `src/` | the engine | ISO C11, **zero dependencies**, only `compat.c` has OS `#ifdef`s |
 | `Tests/` | **measurement** tools | one folder per tool, **the `.exe` at the root of `Tests/`** |
 | `tools/` | **production** tools | same rule; `tools/shared/` is the common library |
-| `ptools/` | Python tools | legacy and references that need `transformers`/`numpy` |
 | `docs/` | the specification | every decision with its why and the number behind it |
 
 ### New tools: C or Rust, never Python
 
 A new tool goes into `Tests/<name>/` or `tools/<name>/`, and the executable is
-produced at the root of the corresponding tree. Python only remains in `ptools/`
-for what depends on `transformers` or `tokenizers` as an external reference.
+produced at the root of the corresponding tree.
 
 Each tool's `build.ps1` only delegates to `tools/shared/build-tool.ps1`, passing
 its own path — which is why the same script serves both trees.
 
 Today: `Tests/` has `ablate` (perplexity and ablation), `gentest` (generation
-quality) and `bench` (time, memory, roofline). `tools/` has `convert` and `agent`
-(the agentic client).
+quality), `bench` (time, memory, roofline) and `oracle` (the independent
+forward). `tools/` has `convert`, `agent` (the agentic client), `finetune`,
+`ucd` (generates `src/unicode_tables.h`) and `fixture` (generates
+`src/fixture_kernels.h`).
+
+**Only two Python files are left, and both are outside the engine's path:**
+`ForDummies/build.py`, which builds documents and not artefacts the engine
+consumes, and `download_model.py`, which needs HTTPS to fetch the checkpoint
+from HuggingFace. Everything else was rewritten in C.
 
 **Master is pure CPU.** The CUDA backend, VRAM placement and the M2 gate exist
 and live on the `GPU` branch — they were measured and the conclusion was that the
@@ -59,9 +64,18 @@ whatever), as long as it does not enter `src/`.
 A tool written in C can — and should — **reuse the sources in `src/`**. That is
 what guarantees the tool measures the engine, and not a reimplementation of it.
 
-The documentation generator is the one exception on record:
-`ForDummies/build.py` is Python because it builds documents, not artefacts the
-engine consumes. Port it to C when it becomes worth doing.
+Two exceptions are on record, and no third one is welcome. The documentation
+generator `ForDummies/build.py` is Python because it builds documents, not
+artefacts the engine consumes; port it to C when it becomes worth doing.
+`download_model.py` is Python because fetching the checkpoint needs HTTPS, and
+the engine has no TLS stack — it is bootstrap, run once, before any of this
+exists.
+
+Everything a C tool could do, a C tool does. The oracle, the perplexity meter,
+the converter, the Unicode tables and the kernel fixture were all Python once;
+each one is now a native tool, and the reason is the same every time: a
+measurement made by a program that the engine does not share code with is
+evidence, and one that shares is a tautology.
 
 ## Build
 

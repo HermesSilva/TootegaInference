@@ -168,10 +168,10 @@ terms the sum has. There is no cancellation.
 
 **The optimal scale is not `absmax`.** `absmax/qmax` optimises the group's worst
 weight, not the group. Shrinking the scale clips the extremes and tightens the
-step for every other weight. `convert_to_int4.py` now does a per-group MSE search
-over a grid of fractions of `absmax` (`--clip-grid`, default 13 points between
-0.70 and 1.00). Measured on 24 real tensors from shard 4, 512 rows each, with the
-same `x` per tensor:
+step for every other weight. `tools/convert` does a per-group MSE search over a
+grid of fractions of `absmax` (`--clip-grid`, default 13 points between 0.70 and
+1.00). Measured on 24 real tensors from shard 4, 512 rows each, with the same `x`
+per tensor:
 
 | `--clip-grid` | int4 g64 output | gain | int8 g64 output | gain |
 |---|---|---|---|---|
@@ -185,18 +185,22 @@ kernel cannot tell the difference. In int8 the gain is zero — with 255 levels
 `absmax` is already essentially optimal, and the search stays there only to avoid
 opening a special case.
 
+Confirmed a second time by the native converter, which measures the probe with a
+generator of its own: over the first 51 int4 tensors, output error **10.87% with
+`--clip-grid 1` against 9.67% with the default 13** — −11.0%, against the −11.6%
+the table above predicted on a different sample.
+
 > **The container on disk does not have this yet.** It was written before the
 > change, with a pure `absmax/qmax` scale, and its error is the one in the first
 > table: **10.81%**. Its `meta` does not even have the `clip_grid` key. The
-> **~9.6%** that the 13-point grid should give on the whole model is an
-> **extrapolation** from 24 tensors of one shard, not a measurement — and it only
-> holds after reconverting. The cost of that reconversion was not measured
-> either: the search runs 13 quantisation passes per block, so expect a multiple
-> of the 11.3 min a 1-point-grid conversion takes.
+> **~9.6%** on the whole model is still an **extrapolation**, and it only holds
+> after reconverting. The search does run 13 quantisation passes per block, but
+> `tools/convert` now spreads them over the P-cores, partitioned by output row —
+> so the conversion does not cost 13× the 11.3 min that the 1-point grid took.
 
 Side effect: with a scale smaller than `absmax/7`, code `-8` becomes reachable.
-Before, `rint` never produced it and int4 used **15 of the 16 levels** that
-`dequant_grouped` already knew how to read. Verified by unpacking a 1-shard test
+Before, `rint` never produced it and int4 used **15 of the 16 levels** that the
+dequantiser already knew how to read. Verified by unpacking a 1-shard test
 container and matching the round-trip against the source: 16/16 levels occupied,
 against 15/16 before.
 
@@ -221,7 +225,7 @@ criterion demands.
 
 ### Measured perplexity — M0's exit criterion
 
-`tools/perplexity.py`, fixed set (the `docs/*.md` files themselves), **10 windows
+`Tests/ablate`, fixed set (the `docs/*.md` files themselves), **10 windows
 of 384 tokens, 3,830 predictions**, **paired** comparison window by window. The
 int4 side is measured with `tootega.exe` — the artefact that actually runs — and
 BF16 is read from the original safetensors through an independent path.

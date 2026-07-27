@@ -63,7 +63,7 @@ if not defined MODEL (
     echo   Nenhum container .tootega encontrado em models\.
     echo.
     echo   Baixe os pesos e converta:
-    echo       python ptools\download_model.py
+    echo       python download_model.py
     echo       tools\convert.exe models\glm47flash-bf16 --out models\glm47flash-int4\model.tootega
     echo.
     exit /b 1

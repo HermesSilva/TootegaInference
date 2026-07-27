@@ -1,0 +1,157 @@
+---
+license: mit
+base_model: zai-org/GLM-4.7-Flash
+base_model_relation: quantized
+language:
+  - en
+  - zh
+pipeline_tag: text-generation
+tags:
+  - tootega
+  - int4
+  - moe
+  - cpu-inference
+  - quantized
+---
+
+# GLM-4.7-Flash — int4 g64, `.tootega` container
+
+GLM-4.7-Flash quantised to **int4 with f32 scales per group of 64**, in the
+container format the [TootegaEngine](https://github.com/HermesSilva/TootegaInference)
+reads. **19.8 GB**, resident in RAM, decoding on **CPU only**.
+
+> **This file does not load in `transformers`, vLLM, llama.cpp or anything else.**
+> `.tootega` is not GGUF, not safetensors and not a variant of either — it is the
+> format of one engine, specified in
+> [`docs/14`](https://github.com/HermesSilva/TootegaInference/blob/master/docs/14-container-format.md).
+> If you were looking for a quantisation that runs on your usual stack, this is
+> not it. What is here is the artefact that engine consumes, published so that
+> nobody has to download 62.4 GB and convert it again.
+
+## Files
+
+| file | size | what it is |
+|---|---|---|
+| `model.tootega` | 19.8 GB | the container: weights, scales, index and the full `config.json` inside |
+| `tokenizer.json` | 20 MB | HuggingFace tokenizer, copied unchanged from the base model |
+| `chat_template.jinja` | 3 KB | reference only — the engine reproduces this template in C, without Jinja |
+| `config.json` | 1 KB | the architecture, also embedded in the container |
+
+The engine reads the architecture **from the container**, never from a file
+alongside it. `config.json` is here so the metadata is visible on this page.
+
+## How to run
+
+```powershell
+git clone https://github.com/HermesSilva/TootegaInference
+cd TootegaInference
+.\build.ps1                       # MSVC, found via vswhere; Linux uses the Makefile
+.\tootega.exe serve model.tootega --tokenizer tokenizer.json
+```
+
+The web chat comes up at `http://127.0.0.1:8080`. Also available:
+
+```powershell
+.\tootega.exe chat     model.tootega --tokenizer tokenizer.json
+.\tootega.exe generate model.tootega --tokenizer tokenizer.json --prompt "..." -n 64
+.\tootega.exe inspect  model.tootega        # header, index and budget
+.\tootega.exe plan     model.tootega --ram-gb 32
+```
+
+`inspect` opens and validates the file: magic, version, the 64-byte alignment of
+every blob and the relationship between `shape`, `group` and each blob's size. If
+it opens, the container is intact.
+
+## Measured, on the machine below
+
+Reference machine: **i9-14900K** (8 P-cores), **64 GB DDR5-4800 dual channel**,
+RAID0 NVMe. **No GPU is used** — a CUDA backend was built and measured on a
+separate branch, and rejected: the granularity was wrong, and no GPU code lands
+on master until it shows a gain in the complete decode.
+
+```
+memory bandwidth     68.7 GB/s     measured at runtime, not from the spec sheet
+traffic per token    2.87 GB       tensors a decode actually touches
+roofline ceiling     24.0 tok/s    bandwidth / traffic
+
+warm decode          71 ms/token   = 13.1 tok/s   (55% of the ceiling)
+mean ttft            2.25 s
+prefill              ~11 tok/s
+warm-up              18.54 GB in 5.3 s
+RSS                  16.8 GB peak
+```
+
+Matmul in isolation reaches 62 GB/s — 90% of bandwidth. The gap to the ceiling is
+in attention and thread barriers, not in the matmuls.
+
+### Quality
+
+| property | result |
+|---|---|
+| perplexity, 384 positions of prose, BF16 weights | engine **8.63** against `transformers`' **8.89** |
+| perplexity int4 against BF16, paired, 10 windows of 384 tokens | nll **+0.0513 ± 0.0076** → **×1.0526** |
+| teacher-forced oracle, independent implementation | **32/32** identical tokens |
+| determinism | **byte-identical** logits from 1 to 20 threads |
+| tokenizer against HuggingFace `tokenizers` | **36/36** cases, exact round-trip |
+
+The paired comparison is the one that counts: comparing two configurations by the
+global mean swallows the effect in the variance between windows, and that mistake
+once produced a perplexity measurement **with the sign inverted**.
+
+## Precision policy, per tensor
+
+Not everything is int4, and the split comes from a paired ablation, not from
+taste:
+
+| group | precision | why |
+|---|---|---|
+| experts, attention | int4 g64 | 8,973 tensors, 15.9 GB — this is where the model's size is |
+| `lm_head`, MTP layer | int8 g64 | int4 on the MTP head drops draft acceptance to 0–4% |
+| norms, router, `e_score_correction_bias` | f32 | the router decides *which* experts run: an error swaps the expert, not the last bit |
+| `kv_a_proj_with_mqa` | f32 | feeds the compressed KV of every position |
+| `embed_tokens` | bf16 | read one row per token; never resident |
+
+The ablation found only one group with an effect above the noise: **the experts**
+(−0.0225 ± 0.0076 nll when restored to BF16). Attention gives −0.0007 ± 0.0019 —
+noise. An earlier version of this table said the opposite; that measurement had
+the RoPE wrong and compared global means instead of paired windows.
+
+## Quantisation detail
+
+Symmetric, per group of 64 along the input dimension, no zero-point, one f32
+scale per group. Nibbles packed **half/half** inside the group: `byte[j]` carries
+weight `j` in the low nibble and `j + 32` in the high one, which unpacks with
+AVX2 into two contiguous vectors with no activation shuffle.
+
+The scale is **not** `absmax/qmax`. That choice optimises the group's worst
+weight instead of the group; shrinking it clips the extremes and tightens the
+step for all the others. The converter searches 13 fractions of `absmax` between
+0.70 and 1.00 and keeps the one with the lowest squared error — measured, that
+takes int4 g64 output error from **10.87% to 9.67%**, with no change to the
+format and no change to the kernel.
+
+## Provenance and licence
+
+Derived from [`zai-org/GLM-4.7-Flash`](https://huggingface.co/zai-org/GLM-4.7-Flash),
+**MIT**. The weights are theirs; the quantisation, the container format and the
+engine are [TootegaEngine](https://github.com/HermesSilva/TootegaInference), also MIT.
+`tokenizer.json` and `chat_template.jinja` are copied unchanged from the base
+model.
+
+Reproducing this file from the original checkpoint:
+
+```powershell
+python download_model.py                          # 62.4 GB in BF16, resumable
+.\tools\convert.exe models\glm47flash-bf16 --out model.tootega --clip-grid 13
+.\tools\convert.exe --verify model.tootega
+```
+
+## What is not here
+
+- **Batching and slots.** One request at a time; a second client waits in the TCP
+  backlog, silently.
+- **MTP speculation** and **persistent state**: the tensors are in the container,
+  the paths are not implemented.
+- **GPU.** Master is pure CPU by decision, not by omission.
+- **A guarantee that int4 is good enough for your case.** +5.26% perplexity is a
+  measurement, not a verdict. Measure on your own task.

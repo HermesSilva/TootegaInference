@@ -51,7 +51,8 @@ branch:
 | **interleave** — correct | `x[2i]` with `x[2i+1]` |
 
 At position 0 the two coincide (`cos = 1`, `sin = 0`), and the error grows with
-position. Fixed in `src/forward.c` and in `ptools/oracle.py`.
+position. Fixed in `src/forward.c` and in the oracle (then in Python, today
+`Tests/oracle` in C — the fix survived the rewrite, and the 32/32 with it).
 
 **Effect:** generation went from salad to a correct answer with complete
 reasoning and a stop at EOS.
@@ -90,13 +91,22 @@ was written the same day, and was not used.
 and 281.
 
 **Result: false — but it led to the test that settled everything.** The suspicion
-motivated building `ptools/hf_ref.py`, the **project's first external
-reference**.
+motivated building a script that ran `transformers` on the real model — the
+**project's first external reference**.
 
 ## What the external reference established
 
 Running `transformers` with disk offload cost **2 minutes**. The 62 GB do not fit
 in RAM, and I had treated that as "cannot be run" from the start.
+
+> That script no longer exists: it needed `transformers`, and there is no C to
+> write in its place. What it established is recorded here, and the numbers below
+> are the record. **Anyone reopening the question of whether the engine matches
+> the reference implementation has to bring the external reference back for the
+> occasion** — the two oracles that remain (`Tests/oracle` and the engine) are
+> both ours, and agreement between them validates arithmetic, never
+> interpretation. It was exactly that blind spot that let the wrong RoPE variant
+> survive a whole comparison.
 
 | measurement | value |
 |---|---|
@@ -163,3 +173,53 @@ And the second, which follows from it:
 
 > **A metric with a known absolute value gets its range declared before
 > measuring.** Perplexity outside 5–40 is a failure, not an observation.
+
+## How to bring the external reference back
+
+The script is gone; the recipe is not. It is here so that repeating the pass is a
+morning's work and not a rediscovery. External reference is an **event** — when
+the architecture is touched (MTP, long context, another model) — not
+infrastructure to keep alive.
+
+```python
+# once, in a throwaway venv: pip install transformers accelerate torch
+from transformers import AutoModelForCausalLM
+import torch, numpy as np
+
+ids = [int(v) for v in open("ids32.txt").read().replace(",", " ").split()]
+
+model = AutoModelForCausalLM.from_pretrained(
+    "models/glm47flash-bf16",
+    dtype=torch.bfloat16,
+    device_map="auto",            # accelerate keeps in RAM only what is in use
+    offload_folder="offload",     # the rest streams from disk -- 62 GB do not fit
+    trust_remote_code=True)
+model.eval()
+
+with torch.no_grad():
+    out = model(torch.tensor([ids]))
+
+# f32, [T][vocab] -- the same layout `tootega forward --dump-logits` writes
+out.logits[0].float().numpy().astype("<f4").tofile("hf_logits.bin")
+```
+
+Then compare, with our own tools and no Python:
+
+```powershell
+.\tootega.exe forward <model.tootega> --ids-file ids32.txt --dump-logits l.bin
+.\Tests\oracle.exe --check-ref ref32.json --logits hf_logits.bin
+```
+
+Three points that cost time the first round, and cost nothing if read first:
+
+- **`device_map="auto"` plus `offload_folder` is what makes it runnable at all.**
+  62 GB in bf16 against 64 GB of RAM reads as "cannot be run", and that reading
+  is what delayed the external reference until after the RoPE bug. It takes
+  **2 minutes** per 32-position pass. It leaves tens of GB in `offload/`.
+- **Compare argmax first, magnitude second.** A relative error of 4% with 7 of 8
+  tokens equal is quantisation; a divergence that GROWS with position is a bug in
+  the positional encoding, which is exactly how `rotate_half` was caught.
+- **Bisect by layer when they disagree.** `tootega forward --dump-layers` writes
+  the hidden state per layer; against `output_hidden_states=True` on the
+  transformers side, the layer where the error jumps is the layer to read. A
+  smooth rise from 4% to 15% across 46 layers is noise, not a defect.

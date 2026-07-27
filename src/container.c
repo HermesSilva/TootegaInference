@@ -420,6 +420,16 @@ static void print_meta(const tt_container *c)
     if (group > 0)   printf("  grupo        %lld pesos por escala\n", (long long)group);
     if (mtp >= 0)    printf("  mtp          camada %lld\n", (long long)mtp);
 
+    /* A busca de clipping nao muda o formato, entao nada aqui a detecta olhando
+     * os dados -- so o `meta` diz se ela rodou.  E a diferenca entre 10,81% e
+     * 9,67% de erro de saida (docs/04): container sem a chave e container
+     * antigo, escrito com absmax puro. */
+    const int64_t clip = tt_json_int(tt_json_get(c->meta, "clip_grid"), -1);
+    if (clip > 0)
+        printf("  clip-grid    %lld pontos de busca de escala\n", (long long)clip);
+    else
+        printf("  clip-grid    ausente -- absmax puro, ~12%% mais erro (docs/04)\n");
+
     if (c->config) {
         printf("  config       %zu campos (a arquitetura vem daqui, nao de "
                "config.json ao lado)\n", c->config->count);

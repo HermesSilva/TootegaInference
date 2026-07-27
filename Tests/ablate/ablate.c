@@ -1,8 +1,8 @@
 /* ablate -- perplexidade e ablação de precisão, em C, sobre o próprio engine.
  *
- * Substitui `ptools/perplexity.py`.  A diferença que importa não é linguagem, é
- * QUEM mede: aqui os dois lados da comparação passam pelo mesmo forward de
- * `src/`, e o que muda entre eles é só de onde vem o peso.
+ * O que importa aqui não é a linguagem, é QUEM mede: os dois lados da
+ * comparação passam pelo mesmo forward de `src/`, e o que muda entre eles é só
+ * de onde vem o peso.
  *
  * O truque é que o engine já sabe ler bf16 -- `TT_KIND_BF16` existe no
  * container e nos kernels.  Então "restaurar um grupo de tensores para a

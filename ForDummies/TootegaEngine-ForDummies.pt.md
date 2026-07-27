@@ -225,8 +225,8 @@ Não é uma diferença de 3×. É uma diferença de **regime**, medida entre 11�
 ### Ideia 5 — nada entra sem passar no oráculo
 
 Toda mudança que possa alterar a saída é comparada contra uma implementação de
-referência independente (em Python, com a biblioteca `transformers`), e só é
-aceita se produzir **32 de 32 tokens idênticos**.
+referência independente — `Tests/oracle`, que não compartilha uma linha de código
+com o engine —, e só é aceita se produzir **32 de 32 tokens idênticos**.
 
 Três otimizações boas já foram **reprovadas** por esse critério e ficaram como
 opção desligada. → [§12](#12--como-se-sabe-que-está-certo)
@@ -247,13 +247,13 @@ Esta é a seção que o resto da documentação assume que você já leu.
 | banda | banda de internet, medida em Mbps | Quantos gigabytes por segundo a memória entrega. Nada a ver com internet, e **diferente de latência**: banda é quantos bytes por segundo, latência é quanto tempo até o primeiro byte. Quase toda conta deste projeto é de banda, porque no decode a leitura é grande, previsível e sequencial. Nesta máquina são **68,7 GB/s**, medidos em execução — não lidos da caixa. |
 | residente | que está instalado na máquina | Que está inteiro na RAM e não sai de lá durante a execução. Não é o mesmo que "instalado" nem que "carregado". |
 | quantização | discretizar qualquer sinal | Guardar cada peso em 4 ou 8 bits em vez de 16. Só os pesos: as contas continuam em 32 bits, e o kernel *desempacota* antes de multiplicar. Isso tem nome aqui — **W4A32**, pesos em 4 bits e ativações em 32. Custa perplexidade: medido, +5,26% com tudo em int4 e **−0,19%** (indistinguível de zero) deixando a atenção em int8. |
-| LoRA | técnica de ajuste fino de modelos | Aqui (`q_lora_rank`, `kv_lora_rank`) é só projeção de posto baixo, parte da arquitetura original. Não tem relação com a técnica de ajuste fino de mesmo nome. |
+| LoRA | técnica de ajuste fino de modelos | *Low-Rank Adaptation — as letras vêm da técnica de ajuste fino; aqui o nome pegou carona e designa só a projeção.* Aqui (`q_lora_rank`, `kv_lora_rank`) é só projeção de posto baixo, parte da arquitetura original. Não tem relação com a técnica de ajuste fino de mesmo nome. |
 | token | um símbolo, ou uma credencial de acesso | Um pedaço de texto, ~4 caracteres em média. O modelo só enxerga o número inteiro que representa esse pedaço. |
 | contexto | o assunto de que se está falando | O número máximo de tokens que cabem na janela da conversa — tudo o que o modelo consegue "ter em vista" de uma vez. Não é memória de longo prazo: o que sai da janela deixa de existir para ele. E custa RAM, linearmente: **105,8 KB por posição** no padrão f32, *por conversa*. No teto deste modelo, 202.752 posições, são 21,96 GB — mais do que os 18,54 GB dos pesos. |
 | grupo | agrupamento genérico | Dois homônimos independentes: `group=64` (quantos pesos compartilham uma escala) e `n_group` (limite de roteamento entre experts). |
 | página | página de um documento ou da web | Bloco de 4 KB (ou 2 MB) com que o sistema operacional gerencia memória. Nada de páginas de documento. |
 | plano | uma intenção ou um cronograma | A decisão de onde cada peso vai morar (RAM ou VRAM), calculada na inicialização a partir das bandas medidas. |
-| oráculo | um adivinho, ou um banco de dados | A implementação de referência em Python contra a qual o engine é comparado token a token. Ela é lenta e não importa: existe para ser *externa* — escrita por outra gente, a partir de outra leitura do modelo. Foi uma referência externa que pegou um RoPE na variante errada depois de três testes internos verdes, todos cegos ao mesmo engano. |
+| oráculo | um adivinho, ou um banco de dados | A implementação de referência contra a qual o engine é comparado token a token — hoje `Tests/oracle`, em C, com leitor de container, desquantizador, matmul e atenção próprios. Ela é lenta e não importa: existe para *não compartilhar código* com o engine. Vale lembrar do limite: duas implementações da mesma leitura do modelo concordam também quando a leitura está errada, e foi uma referência *externa* que pegou um RoPE na variante errada depois de três testes internos verdes. |
 | ablação | um procedimento médico | Desligar (ou restaurar) uma parte de cada vez para medir quanto ela contribui para o resultado. É emprestado da biologia experimental, e a lógica é a mesma: você não descobre para que serve uma peça olhando para ela, e sim tirando-a. Aqui é o que mostrou que a atenção em int8 não custa nada e que o resto do modelo em int4 custa 5%. |
 | slot | um encaixe físico, um horário na agenda | Um contexto de conversa independente dentro do engine, com o seu próprio cache KV. É o que permitiria atender várias pessoas ao mesmo tempo sem misturar as conversas. **Ainda não existe**: hoje é um pedido por vez, e o segundo espera calado na fila do TCP. É o marco M3. |
 | shard | fragmento genérico, partição de banco de dados | Um dos 48 arquivos em que o modelo original vem partido, por limite de tamanho de cada arquivo. Não têm significado próprio: um tensor pode começar num e terminar no seguinte. O conversor os lê todos e escreve um container único. |
@@ -263,6 +263,9 @@ Esta é a seção que o resto da documentação assume que você já leu.
 | engine | motor de carro, ou motor de jogo | O programa que executa o modelo: carrega os pesos, faz as contas, gerencia o cache. Não é o modelo, e não é a interface. |
 | agente | uma pessoa que representa outra | Um programa que usa o modelo em ciclo: pergunta, recebe uma resposta, executa ferramentas, realimenta o resultado. |
 | ferramenta | utensílio, ou programa de linha de comando | No sentido de agente: uma função que o modelo pode pedir para executar (ler arquivo, rodar comando). O esquema dela entra no prompt. |
+| MAC | o endereço de rede de uma placa, ou o computador da Apple | *Multiply-ACcumulate — multiplicar e acumular.* Aqui é a operação que o kernel repete milhões de vezes por token: multiplicar dois números e somar ao acumulador. "Vazão de MACs" é quantas dessas cabem num ciclo de processador. |
+| transformers | a arquitetura Transformer, de que o modelo é feito | A biblioteca Python da Hugging Face que roda o modelo original em BF16. Foi a *referência externa* do projeto: lenta, e isso não importava — importava ser de outra gente. Foi ela que apontou o RoPE na variante errada depois de três testes internos verdes. O script que a chamava não existe mais, e o número que ela deu está registrado em `docs/17`; reabrir a questão exige trazê-la de volta. Nunca entrou em `src/`. |
+| PILOT | um teste-piloto, uma versão de avaliação | Um dos mecanismos do engine anterior para esconder o disco, junto com prefetch entre camadas, roteamento em dois SSDs, `O_DIRECT`, mapa de calor persistido e tier LRU por camada. Aparece aqui só na lista do que foi jogado fora: era a maior parte do orçamento de complexidade daquele projeto e não vale nada quando o modelo é residente. |
 
 ### 3.2 As quatro que mais confundem, com exemplo
 
@@ -301,30 +304,33 @@ geralmente logo depois de um erro custar tempo.
 | termo | significado |
 |---|---|
 | a inversão | A descoberta de que o PCIe desta máquina (12 GB/s) é mais lento que o disco (18,4 GB/s), invertendo a hierarquia que quase todo engine assume. |
-| lei de colocação | "Coloque na GPU apenas o que couber lá permanentemente; nunca transmita pesos por um link mais lento que o tier de origem." |
+| lei de colocação (colocação) | "Coloque na GPU apenas o que couber lá permanentemente; nunca transmita pesos por um link mais lento que o tier de origem." |
 | partição por camada | Dividir o modelo entre GPU e CPU por camadas, não por tensores. Os pesos ficam fixos onde a camada é calculada; entre camadas cruzam só 8 KB. |
 | fração de residência | Que porcentagem do modelo está na memória rápida. É a variável que governa a velocidade, mais que qualquer especificação de hardware. |
 | a armadilha desta máquina | A configuração `CUDA_DENSE=1` do engine anterior, que não recusou o impossível e degradou 13× em silêncio: 0,684 → 0,054 tok/s. |
 | recusar em vez de degradar | Se o plano não cabe no orçamento declarado, o engine sai com erro dizendo o que reduzir. Nunca aceita e fica lento. |
-| 32/32 | O critério de aceitação: 32 posições de teste, todas com o mesmo token da referência. Binário, e bloqueia merge. |
-| medição pareada | Comparar duas configurações janela a janela sobre o mesmo texto, nunca por média global. A média global já produziu um número invertido. |
+| 32/32 (ref32, ref32.json) | O critério de aceitação: 32 posições de teste, todas com o mesmo token da referência. Binário, e bloqueia merge. |
+| medição pareada (pareada, pareado) | Comparar duas configurações janela a janela sobre o mesmo texto, nunca por média global. A média global já produziu um número invertido. |
 | determinismo por estado | Duas execuções no mesmo estado dão bytes idênticos; estados diferentes podem divergir legitimamente. Não se assume que "greedy basta". |
-| absorção | Reescrever a atenção para operar no espaço comprimido, projetando a query uma vez em vez de expandir cada posição do cache. |
-| desabsorvida | A formulação original da atenção, que expande o cache antes de usá-lo. É a que o oráculo usa. |
+| absorção (absorvida, absorbed) | Reescrever a atenção para operar no espaço comprimido, projetando a query uma vez em vez de expandir cada posição do cache. |
+| desabsorvida (expandida) | A formulação original da atenção, que expande o cache antes de usá-lo. É a que o oráculo usa. |
 | metade/metade | A convenção de empacotamento dos nibbles: o byte `j` guarda os pesos `j` e `j+32`, não `2j` e `2j+1`. |
 | arena de scratch | Um bloco de memória alocado uma vez na inicialização e fatiado para todos os buffers temporários. Zero `malloc` no laço de token. |
 | estável primeiro, volátil por último | A regra de ordenação do prompt que faz o cache funcionar: system → ferramentas → contexto longo → histórico → turno atual. |
 | critério de saída | O número que fecha um marco do roadmap. Sem número, o marco não fecha — e "está funcionando" não é número. É o que impede a conversa de virar discussão de opinião: ou o valor medido passou do limiar declarado *antes*, ou não passou. |
 | critério de corte | O número abaixo do qual a funcionalidade é cancelada, não adiada. O M2 tem um: ganho abaixo de 20% mata a partição GPU/CPU. |
 | file-backed | Memória que veio de um arquivo mapeado: o sistema operacional pode descartá-la e reler do disco. Por isso não conta no orçamento de RAM. |
-| memória anônima | Memória que só existe na RAM, sem arquivo por trás. Se for despejada, o conteúdo se perde — por isso conta no orçamento. |
+| memória anônima (anônimas, anônima) | Memória que só existe na RAM, sem arquivo por trás. Se for despejada, o conteúdo se perde — por isso conta no orçamento. |
 | publica-se o que foi medido | Quando a intuição diz uma coisa e a medição diz outra, publica-se a medição — mesmo que a alternativa pareça mais segura. |
-| teto | O limite superior de velocidade obtido dividindo bytes por banda, ignorando compute e overhead. Também chamado de roofline. |
-| engine de streaming | Engine que roda um modelo maior que a RAM lendo pedaços do disco conforme precisa. Funciona, e é lento pelo motivo certo: o disco é ~370× mais lento que a RAM. Medimos **0,93 tok/s** nesse regime, contra os 13,5 do TootegaEngine com o modelo inteiro na memória. |
+| teto (roofline) | O limite superior de velocidade obtido dividindo bytes por banda, ignorando compute e overhead. Também chamado de roofline. |
+| engine de streaming (streaming de disco) | Engine que roda um modelo maior que a RAM lendo pedaços do disco conforme precisa. Funciona, e é lento pelo motivo certo: o disco é ~370× mais lento que a RAM. Medimos **0,93 tok/s** nesse regime, contra os 13,5 do TootegaEngine com o modelo inteiro na memória. |
 | container .tootega | O formato de arquivo do projeto: cabeçalho de 128 bytes, blobs alinhados a 64 bytes, índice JSON no fim. É lido direto, sem conversão. |
-| marco | Uma etapa do projeto com **critério de saída mensurável**, não com data. M0 converte e valida o modelo; M1 é o forward em CPU token-exato; M2 era a GPU; M3 é atender vários pedidos ao mesmo tempo; M4 é o agente; M5 é especulação. Um marco fecha quando o número aparece, não quando o código compila. |
-| decisão numerada | Cada escolha de projeto que teve alternativas reais ganha um número — D1 a D14 — e uma linha no placar com o estado: aberta, fechada, ou fechada com o número que a fechou. Serve para que ninguém precise reabrir a discussão por não saber que ela já aconteceu. |
-| licença MIT | Uma licença de software livre curta e permissiva: qualquer um pode usar, copiar, alterar e vender, desde que mantenha o aviso de copyright, e sem garantia nenhuma. É a licença deste engine. **Não cobre o modelo** — pesos e tokenizer têm licença própria, de quem os treinou. |
+| marco (M0, M1, M2, M3, M4, M5) | Uma etapa do projeto com **critério de saída mensurável**, não com data. M0 converte e valida o modelo; M1 é o forward em CPU token-exato; M2 era a GPU; M3 é atender vários pedidos ao mesmo tempo; M4 é o agente; M5 é especulação. Um marco fecha quando o número aparece, não quando o código compila. |
+| decisão numerada (D1, D11, D14) | Cada escolha de projeto que teve alternativas reais ganha um número — D1 a D14 — e uma linha no placar com o estado: aberta, fechada, ou fechada com o número que a fechou. Serve para que ninguém precise reabrir a discussão por não saber que ela já aconteceu. |
+| licença MIT (MIT) | *Massachusetts Institute of Technology, onde a licença nasceu.* Uma licença de software livre curta e permissiva: qualquer um pode usar, copiar, alterar e vender, desde que mantenha o aviso de copyright, e sem garantia nenhuma. É a licença deste engine. **Não cobre o modelo** — pesos e tokenizer têm licença própria, de quem os treinou. |
+| estado da decisão (SETTLED, REJECTED) | O rótulo de cada linha do placar: **SETTLED** quando a medição fechou a questão, **REJECTED** quando a coisa foi medida e recusada — a KV em bf16 deu 29/32 no oráculo e ficou como opção, não como padrão — e aberta quando ainda não há número. Não existe "decidido em reunião". |
+| CUDA_DENSE | A variável de ambiente do engine anterior que colocava os tensores densos na GPU. Ligada com VRAM insuficiente, o desempenho caía **13×** sem erro nenhum: é a lição de que configuração ruim pode não falhar, só degradar. |
+| referência externa (external reference) | Uma referência escrita por outra gente, a partir de outra leitura do problema. É o único tipo que serve: três testes internos verdes nasceram da mesma leitura e foram cegos ao mesmo erro — um RoPE na variante errada. A referência externa custou 2 minutos e resolveu o que dias de teste interno não resolveram. |
 
 ### O apelido que mais aparece: **engine de streaming**
 
@@ -358,44 +364,56 @@ Referência rápida. Nada aqui é específico do projeto.
 
 | termo | uma linha |
 |---|---|
-| LLM | Large Language Model, modelo de linguagem grande: um programa que prevê o próximo token de um texto. Toda a aparência de conversa vem daí — prever a próxima peça, milhares de vezes, cada vez com o resultado anterior na entrada. Não há plano, não há intenção guardada entre uma previsão e a seguinte. |
+| LLM | *Large Language Model — modelo de linguagem grande.* Um programa que prevê o próximo token de um texto. Toda a aparência de conversa vem daí — prever a próxima peça, milhares de vezes, cada vez com o resultado anterior na entrada. Não há plano, não há intenção guardada entre uma previsão e a seguinte. |
 | transformer | A arquitetura que praticamente todos os LLMs usam: uma pilha de camadas iguais, cada uma com atenção e um bloco de multiplicações. |
 | camada | Um bloco da pilha do transformer. Aqui são 47, executados em sequência — a saída de uma é a entrada da seguinte. |
 | peso | Um dos números aprendidos durante o treino. Aqui são 31,2 bilhões deles, e são eles que ocupam os 19,65 GB. |
 | parâmetro | Sinônimo de peso quando se fala do tamanho do modelo. "31,2 bilhões de parâmetros" = 31,2 bilhões de números aprendidos. |
-| parâmetro ativo | Quantos pesos são realmente lidos para gerar um token. Aqui são 3,57 bilhões de 31,2 — e é esse número que determina a velocidade. |
+| parâmetro ativo (ativo por token) | Quantos pesos são realmente lidos para gerar um token. Aqui são 3,57 bilhões de 31,2 — e é esse número que determina a velocidade. |
 | tensor | Um array multidimensional de pesos, com nome. O container tem 9.703 deles, e o índice diz onde cada um começa. |
-| hidden | O vetor que atravessa a pilha de camadas. Aqui tem 2048 números — 8 KB. Também chamado de estado residual. |
-| embedding | A tabela que converte um id de token no vetor inicial de 2048 números. Aqui tem 154.880 linhas e lê-se uma por token. |
+| hidden (estado residual) | O vetor que atravessa a pilha de camadas. Aqui tem 2048 números — 8 KB. Também chamado de estado residual. |
+| embedding (embed_tokens) | A tabela que converte um id de token no vetor inicial de 2048 números. Aqui tem 154.880 linhas e lê-se uma por token. |
 | logits | As 154.880 notas de saída, uma por peça do vocabulário, antes de virarem probabilidades. Nota alta = candidato provável. |
 | softmax | A função que transforma notas em probabilidades que somam 1. Subtrai-se o máximo antes, para não estourar o expoente. |
-| RMSNorm | Normalização que reescala o vetor para uma magnitude previsível antes de cada bloco. Sem ela, 47 camadas empilhadas explodem ou somem. |
+| RMSNorm (normalização) | *Root Mean Square Normalization — normalização pela raiz do valor quadrático médio.* Normalização que reescala o vetor para uma magnitude previsível antes de cada bloco. Sem ela, 47 camadas empilhadas explodem ou somem. |
 | resíduo | Somar a entrada de volta na saída do bloco. Faz a camada corrigir o vetor em vez de substituí-lo, e é o que permite empilhar 47. |
 | atenção | O mecanismo pelo qual o token atual olha para todos os anteriores e decide de quais aproveitar. É o que dá ao modelo a noção de contexto — e é o único ponto onde o custo cresce com o tamanho da conversa, porque o novo token precisa consultar tudo o que veio antes. Por isso existe o cache KV: sem ele, cada token recalcularia a conversa inteira. |
 | cabeça | Uma das 20 vistas paralelas dentro da atenção. Cada uma pode se especializar em um tipo de relação entre tokens. |
-| Q, K, V | Query, key e value: o que eu procuro, o que eu ofereço, o que eu entrego. A atenção compara Q com todos os K e mistura os V. |
-| RoPE | Codificação de posição por rotação do vetor. Aqui é parcial: só 64 das 256 dimensões de cada cabeça giram. |
-| MLP | O bloco de duas multiplicações que vem depois da atenção. Também chamado de FFN, feed-forward network. |
-| MoE | Mixture-of-Experts: em vez de um MLP por camada, muitos — e só alguns rodam por token. É o que torna 31,2 B de pesos custarem 3,57 B por token. |
-| roteador | A pequena matriz que dá uma nota a cada expert e decide quais rodam. No código e na configuração aparece como `gate`. |
+| Q, K, V (query, key, value) | Query, key e value: o que eu procuro, o que eu ofereço, o que eu entrego. A atenção compara Q com todos os K e mistura os V. |
+| RoPE | *Rotary Position Embedding — codificação de posição por rotação.* Codificação de posição por rotação do vetor. Aqui é parcial: só 64 das 256 dimensões de cada cabeça giram. |
+| MLP (FFN, feed-forward, feed forward) | *Multi-Layer Perceptron — perceptron de várias camadas; também FFN, Feed-Forward Network.* O bloco de duas multiplicações que vem depois da atenção. Também chamado de FFN, feed-forward network. |
+| MoE | *Mixture-of-Experts — mistura de especialistas.* Em vez de um MLP por camada, muitos — e só alguns rodam por token. É o que torna 31,2 B de pesos custarem 3,57 B por token. |
+| roteador (gate, roteamento) | A pequena matriz que dá uma nota a cada expert e decide quais rodam. No código e na configuração aparece como `gate`. |
 | top-k | "Pegue os k maiores". No roteador é top-4 de 64; na amostragem é escolher entre os k tokens de maior nota. |
 | expert compartilhado | Um expert que roda sempre, além dos escolhidos pelo roteador. Guarda o que é útil para qualquer token. |
-| MLA | Multi-head Latent Attention: atenção que guarda o cache comprimido, 576 números por token por camada em vez de 10.240. |
-| GQA / MHA | As variantes mais comuns de atenção. Funcionam, mas o cache delas é muito maior — por isso o modelo alvo usa MLA. |
-| MTP | Multi-Token Prediction: uma cabeça extra que chuta o token seguinte quase de graça, para acelerar por especulação. |
+| MLA | *Multi-head Latent Attention — atenção latente multi-cabeça.* Atenção que guarda o cache comprimido, 576 números por token por camada em vez de 10.240. |
+| GQA / MHA | *GQA = Grouped-Query Attention, atenção de consulta agrupada · MHA = Multi-Head Attention, atenção multi-cabeça.* As variantes mais comuns de atenção. Funcionam, mas o cache delas é muito maior — por isso o modelo alvo usa MLA. |
+| MTP | *Multi-Token Prediction — predição de vários tokens.* Uma cabeça extra que chuta o token seguinte quase de graça, para acelerar por especulação. |
 | lm_head | A matriz final, 2048 × 154.880, que converte o vetor da última camada nas notas de saída. É lida inteira a cada token. |
-| vocabulário | As 154.880 peças de texto que o modelo conhece. Só 154.856 existem de fato; o resto é preenchimento. |
+| vocabulário (vocab_size) | As 154.880 peças de texto que o modelo conhece. Só 154.856 existem de fato; o resto é preenchimento. |
 | camada densa | Uma camada sem MoE, com um MLP comum. Aqui só a camada 0 é assim, com tamanho interno 10.240. |
 | arquitetura | O desenho do modelo: quantas camadas, de que tipo, com que tamanhos. Vem do `config.json`, que o container guarda inteiro. |
 | checkpoint | O conjunto de arquivos publicado com os pesos treinados. Aqui vem em 48 shards no formato `safetensors`, 62,4 GB em BF16, e é entrada do conversor — o engine não o lê em execução. A licença dele é de quem o treinou, e não a deste código. |
 | safetensors | O formato em que os pesos são publicados: um cabeçalho JSON dizendo nome, forma e offset, e os números crus em seguida. |
 | Hugging Face | O repositório público de onde o modelo e o tokenizer são baixados, e de onde vem a biblioteca usada como referência. |
-| chamada de ferramenta | Quando o modelo, em vez de responder, pede que um programa faça algo por ele — ler um arquivo, rodar um comando. Ele não executa nada: escreve um pedido, alguém executa, e o resultado volta como uma mensagem nova. Neste modelo o pedido usa `<tool_call>`, que é um **token único** do vocabulário, não um texto a ser reconhecido. |
+| chamada de ferramenta (tool_call) | Quando o modelo, em vez de responder, pede que um programa faça algo por ele — ler um arquivo, rodar um comando. Ele não executa nada: escreve um pedido, alguém executa, e o resultado volta como uma mensagem nova. Neste modelo o pedido usa `<tool_call>`, que é um **token único** do vocabulário, não um texto a ser reconhecido. |
 | diretiva | Uma instrução de como responder, dada antes da conversa começar: "responda no idioma da pergunta", "vá direto ao ponto". Vai numa mensagem de sistema no **início** do prompt — que é onde o cache de prefixo a reaproveita em todos os turnos. Mudá-la no meio invalidaria o cache inteiro. |
 | degeneração | Quando o modelo perde o fio e passa a repetir, dobrar palavras ou não parar. Não é um erro de programa — é o texto se enrolando sobre si mesmo. Foi assim que se descobriu que um container estava ruim mesmo com a perplexidade dizendo que estava bom. |
-| MHA | *Multi-Head Attention*: a atenção clássica, em que cada cabeça guarda a própria chave e o próprio valor. É a mais simples e a mais cara em memória — o oposto do MLA deste modelo, que comprime os dois num espaço menor e economiza 18× de tráfego. |
-| GLM | A família de modelos abertos em que este projeto roda. O alvo é o **GLM-4.7-Flash**: 31 bilhões de parâmetros no total, mas só ~3 bilhões ativos por token, porque é um MoE. É essa razão que o faz caber e ser rápido ao mesmo tempo. |
-| rascunho | O texto que o modelo escreve para si mesmo antes de responder, entre `<think>` e `</think>`. Medido neste modelo: com 400 tokens de orçamento ele **não termina 8 de 12 perguntas**, repete 8× mais e custa 4,5× o tempo — para "qual é a capital do Brasil" ele escreve seis etapas em inglês e é cortado antes de responder. |
+| MHA | *Multi-Head Attention — atenção multi-cabeça.* A atenção clássica, em que cada cabeça guarda a própria chave e o próprio valor. É a mais simples e a mais cara em memória — o oposto do MLA deste modelo, que comprime os dois num espaço menor e economiza 18× de tráfego. |
+| GLM | *General Language Model.* A família de modelos abertos em que este projeto roda. O alvo é o **GLM-4.7-Flash**: 31 bilhões de parâmetros no total, mas só ~3 bilhões ativos por token, porque é um MoE. É essa razão que o faz caber e ser rápido ao mesmo tempo. |
+| rascunho (raciocínio, thinking) | O texto que o modelo escreve para si mesmo antes de responder, entre `<think>` e `</think>`. Medido neste modelo: com 400 tokens de orçamento ele **não termina 8 de 12 perguntas**, repete 8× mais e custa 4,5× o tempo — para "qual é a capital do Brasil" ele escreve seis etapas em inglês e é cortado antes de responder. |
+| GPT | *Generative Pre-trained Transformer — transformador generativo pré-treinado.* A família que popularizou o nome. Aqui aparece só como referência: o tokenizer usa a mesma tabela de pré-divisão do GPT-4. |
+| kv_lora_rank / q_lora_rank (q_lora_rank) | As duas dimensões comprimidas da MLA neste modelo: a consulta desce a **768** e o KV a **512** antes de subir de volta. É de onde sai o 576 por token por camada — 512 do KV comprimido mais 64 do RoPE — em vez de 10.240. |
+| n_group (topk_group) | Quantos grupos de experts o roteador considera antes de escolher. Neste modelo é **1** — nenhum limite por grupo — e é o único caminho implementado no primeiro dia. O engine anterior tinha `n_group == 1` cravado no parser, e isso reduzia o universo de modelos a uma família só; aqui é variante de configuração, não regra do código. |
+| norm_topk_prob | A chave que manda renormalizar as notas dos experts escolhidos: as 4 notas que sobraram são divididas pela soma delas, para somar 1. Aqui é `true`. |
+| routed_scaling_factor | O fator que multiplica a saída dos experts roteados antes de ela voltar para o residual. Neste modelo é **1,8** — número do modelo, não escolha nossa. |
+| first_k_dense_replace | Quantas camadas do início são densas em vez de MoE. Aqui é **1**: a camada 0 tem um MLP normal, as outras 45 têm roteador e experts. |
+| ignore_merges | A chave do tokenizer que muda o algoritmo: se a palavra inteira já está no vocabulário, usa aquele id e **não aplica merge nenhum**. Só quando não está é que o BPE clássico roda. Está `true` neste modelo, e ignorá-la dá tokenização errada justamente nas palavras mais comuns. |
+| [gMASK] (gMASK) | O token especial que abre todo prompt deste modelo: a sequência começa com `[gMASK]<sop>` antes de `<\|user\|>`. É reconhecido por texto exato, antes do BPE, como os outros 36 marcadores. |
+| Ġ (marcador de espaço) | *o marcador de espaço do BPE.* O caractere que representa o espaço dentro do vocabulário. O BPE é byte-level: os bytes imprimíveis mapeiam para si mesmos e o resto para `0x100 + n`, e é por isso que `Ġthe` quer dizer " the", com espaço. Não é lixo de codificação. |
+| Qwen3-30B-A3B | O candidato mais próximo do modelo escolhido: 15,3 GB, cabe em RAM, e é bom. Ficou de fora porque usa GQA sem MLA — o KV por token é ordens de grandeza maior, e é justamente o que a MLA resolve. |
+| A3B | *Active 3 Billion — 3 bilhões de parâmetros ativos.* A convenção de nome que diz quanto do modelo trabalha por token: em `Qwen3-30B-A3B`, 30 B guardados e **3 B ativos**. É o número que manda no tempo; o outro manda na memória. |
+| DeepSeek | A família onde a MLA e o roteamento por grupo aparecem. Serve de contraexemplo duas vezes: `DeepSeek-V4-Flash` tem 79,8 GB e não é residente nesta máquina, e `n_group=8` é o caso que o parser do engine anterior recusava. |
 
 ### 5.2 A execução
 
@@ -403,70 +421,78 @@ Referência rápida. Nada aqui é específico do projeto.
 |---|---|
 | inferência | Executar um modelo já treinado para obter uma resposta. É tudo o que este projeto faz — não há treino em lugar nenhum. |
 | treino | O processo, caríssimo, que produziu os pesos. Acontece uma vez, em outro lugar, e não se repete aqui. |
-| fine-tuning | Ajustar um modelo já treinado para uma tarefa específica. Declarado fora de escopo neste projeto. |
-| forward | Uma passagem completa pela pilha de camadas, da entrada até os logits. Também é o nome do subcomando que faz isso sobre ids fixos. |
+| fine-tuning (ajuste fino) | Ajustar um modelo já treinado para uma tarefa específica. Declarado fora de escopo neste projeto. |
+| forward (passe) | Uma passagem completa pela pilha de camadas, da entrada até os logits. Também é o nome do subcomando que faz isso sobre ids fixos. |
 | prefill | Processar o prompt inteiro de uma vez, antes de gerar. Todos os tokens passam juntos, então os pesos são lidos uma vez para muitos tokens. |
 | decode | Gerar um token de cada vez, em cadeia. Cada token relê os 2,01 GB de peso inteiros — é aqui que a banda manda. |
-| TTFT | Time to first token: quanto tempo até a primeira palavra aparecer na tela. Não é meta deste projeto até o marco M3. |
+| TTFT | *Time To First Token — tempo até o primeiro token.* Quanto tempo até a primeira palavra aparecer na tela. Não é meta deste projeto até o marco M3. |
 | tok/s | Tokens por segundo, a métrica principal do projeto. Sempre acompanhada do contexto em que foi medida, porque o número muda com ele: **13,1 tok/s** no decode quente aqui, contra um teto de 24,0 calculado da banda. Citar tok/s sem dizer o contexto, se estava quente e quantas threads é o jeito mais fácil de publicar um número que ninguém consegue reproduzir. |
-| cache KV | O estado de atenção já calculado para os tokens anteriores. Guardá-lo evita refazer o prompt inteiro a cada palavra. |
+| cache KV (KV) | *KV = Key/Value — chave e valor.* O estado de atenção já calculado para os tokens anteriores. Guardá-lo evita refazer o prompt inteiro a cada palavra. |
 | cache de prefixo | Reaproveitar o KV do começo da conversa entre turnos. Vale até o primeiro token diferente; dali em diante tudo é refeito. |
 | teacher forcing | Rodar o modelo sobre um texto conhecido, forçando cada palavra correta, para comparar previsão a previsão com a referência. |
 | greedy | Escolher sempre o token de maior nota, sem sorteio. É determinístico, e é o modo usado em toda medição — porque comparar duas configurações com amostragem aleatória mede o gerador de números aleatórios junto. Cuidado com a armadilha: greedy **não** garante saída igual entre máquinas; um empate decidido por um bit diferente separa os caminhos. |
-| top-p | Sortear entre os tokens de maior nota que, somados, atingem a probabilidade p. Também chamado de nucleus sampling. |
-| amostragem | A etapa que escolhe um token entre os 154.880 candidatos, a partir das notas. Greedy, temperatura, top-k e top-p são modos dela. |
+| top-p (nucleus, amostragem por núcleo) | Sortear entre os tokens de maior nota que, somados, atingem a probabilidade p. Também chamado de nucleus sampling. |
+| amostragem (sampler) | A etapa que escolhe um token entre os 154.880 candidatos, a partir das notas. Greedy, temperatura, top-k e top-p são modos dela. |
 | batching contínuo | Atender várias conversas ao mesmo tempo, aproveitando a mesma leitura de peso para todas. É onde mora a segunda meta do projeto. |
 | especulação | Chutar vários tokens de uma vez com um mecanismo barato e verificar todos em bloco. Paga quando o modelo é residente. |
 | prompt | O texto de entrada completo: instruções, ferramentas, histórico e a pergunta atual. É ele que o cache de prefixo tenta reaproveitar. |
 | system prompt | A parte fixa do prompt, com as instruções permanentes. Vai primeiro justamente para nunca invalidar o cache. |
-| chat template | As regras de como montar o texto de uma conversa a partir dos turnos, com os marcadores de quem fala. Vem junto com o modelo. |
-| turno | Uma rodada da conversa: o que o usuário disse mais o que o assistente respondeu. |
+| chat template (chat_template, chat_template.jinja) | As regras de como montar o texto de uma conversa a partir dos turnos, com os marcadores de quem fala. Vem junto com o modelo. |
+| turno (multi-turno) | Uma rodada da conversa: o que o usuário disse mais o que o assistente respondeu. |
 | tokenizer | O componente que converte texto em ids e de volta. Erro nele não estoura: produz ids ligeiramente diferentes e resposta plausível e errada. |
-| BPE | Byte Pair Encoding: junta repetidamente os dois pedaços vizinhos mais baratos, segundo uma tabela de 321.649 regras. |
-| token especial | Um dos 36 marcadores como `<\|user\|>`, reconhecidos por texto exato antes do BPE. Delimitam quem fala. |
+| BPE | *Byte Pair Encoding — codificação por pares de bytes.* Junta repetidamente os dois pedaços vizinhos mais baratos, segundo uma tabela de 321.649 regras. |
+| token especial (tokens especiais) | Um dos 36 marcadores como `<\|user\|>`, reconhecidos por texto exato antes do BPE. Delimitam quem fala. |
 | futex | O mecanismo pelo qual uma thread dorme esperando um valor mudar, e é **acordada por quem mudou** — em vez de acordar sozinha de tempos em tempos para conferir. A diferença aparece em número: dormir por tempo fez um matmul de 1,6 MB custar 26 ms em vez de 0,026 ms. |
 | barreira | O ponto em que todas as threads param e esperam a última chegar. É necessária e é cara: sincronizar 20 threads custa da mesma ordem de grandeza que o trabalho de um expert. Foi por isso que 15 barreiras por camada viraram 2 — fundindo os matmuls num despacho só. |
 | processo | Um programa em execução, com a própria memória. O servidor é um; o agente é outro, um por aba da interface. Separar assim tem preço e tem razão: se o agente morre, o servidor e os 18,5 GB que ele carregou continuam de pé. |
 | pipe | Um cano entre dois programas: o que um escreve, o outro lê. É por um pipe que a interface manda a pergunta ao agente. Tem uma armadilha que custou horas aqui: o programa pode ter *lido* os bytes para um buffer interno, e quem olha só o cano vê vazio — e conclui, errado, que nada chegou. |
+| RAG | *Retrieval-Augmented Generation — geração aumentada por recuperação.* Em vez de o modelo *lembrar* a resposta, ele *lê*: um índice acha os trechos relevantes de um acervo e os cola no contexto antes da pergunta. Não é usado neste projeto — está aqui porque é a alternativa que sempre aparece ao lado de ajuste fino, e resolve um problema diferente. |
+| EOS | *End Of Sequence — fim da sequência.* O token que o modelo emite para dizer que terminou. Sem ele a geração só para no limite de tokens pedido. |
+| KV paginado (paged KV, paginado, paged) | Guardar o KV em blocos de tamanho fixo em vez de um bloco contínuo por conversa. Duas conversas com o mesmo começo apontam para os mesmos blocos, e liberar uma não deixa buraco. Está simples no M1 e completo no M3 — decisão D8, ainda aberta nos detalhes. |
 
 ### 5.3 A máquina
 
 | termo | uma linha |
 |---|---|
-| CPU | O processador principal. Aqui, um i9-14900K com 8 núcleos rápidos, 16 econômicos e 32 threads no total. |
-| GPU | A placa de vídeo, usada como acelerador de contas. Aqui é uma RTX 2060 SUPER de 8 GB — rápida por dentro, mal conectada por fora. |
-| RAM | A memória principal do computador. Aqui, 64 GB entregando ~60 GB/s. É onde o modelo inteiro precisa caber. |
-| VRAM | A memória da placa de vídeo. Rápida (448 GB/s aqui) e pequena (8 GB), e só alcançável pelo PCIe — que nesta máquina entrega ~12 GB/s, menos que o disco. É a combinação dos três números que decide tudo: com o modelo em 18,54 GB, nada cabe permanentemente, e o que não cabe tem de atravessar o elo mais lento a cada camada. |
-| PCIe | O barramento que liga a GPU ao resto do computador. Aqui é gen 3: ~12 GB/s, o elo mais lento da máquina. |
-| NVMe | O padrão dos SSDs rápidos ligados direto ao barramento. Aqui, dois em RAID0 entregando 18,4 GB/s sequenciais. |
+| CPU | *Central Processing Unit — unidade central de processamento.* O processador principal. Aqui, um i9-14900K com 8 núcleos rápidos, 16 econômicos e 32 threads no total. |
+| GPU | *Graphics Processing Unit — unidade de processamento gráfico.* A placa de vídeo, usada como acelerador de contas. Aqui é uma RTX 2060 SUPER de 8 GB — rápida por dentro, mal conectada por fora. |
+| RAM | *Random Access Memory — memória de acesso aleatório.* A memória principal do computador. Aqui, 64 GB entregando ~60 GB/s. É onde o modelo inteiro precisa caber. |
+| VRAM | *Video RAM — a RAM da placa de vídeo.* A memória da placa de vídeo. Rápida (448 GB/s aqui) e pequena (8 GB), e só alcançável pelo PCIe — que nesta máquina entrega ~12 GB/s, menos que o disco. É a combinação dos três números que decide tudo: com o modelo em 18,54 GB, nada cabe permanentemente, e o que não cabe tem de atravessar o elo mais lento a cada camada. |
+| PCIe | *Peripheral Component Interconnect Express.* O barramento que liga a GPU ao resto do computador. Aqui é gen 3: ~12 GB/s, o elo mais lento da máquina. |
+| NVMe (RAID0) | *Non-Volatile Memory Express.* O padrão dos SSDs rápidos ligados direto ao barramento. Aqui, dois em RAID0 entregando 18,4 GB/s sequenciais. |
 | tier | Um nível da hierarquia de memória: VRAM, RAM, disco. Cada tier tem sua banda, sua capacidade e seu link de acesso. |
 | memory-bound | Quando o tempo é dominado por esperar a memória, não por fazer contas. É o regime do decode: ~33 ms de leitura contra 4–7 ms de conta. |
 | compute-bound | Quando o tempo é dominado pela aritmética. É o regime do prefill, e é por isso que otimizá-lo é outro problema. |
 | núcleo | Uma unidade de execução independente dentro da CPU. Este processador é híbrido: 8 P-cores rápidos e 16 E-cores econômicos. |
 | thread | Uma linha de execução. O engine usa um pool próprio de threads, com o trabalho dividido por linhas de saída da matriz. |
 | afinidade | Fixar cada thread em núcleos escolhidos. O default é ficar só nos P-cores: espalhar trabalho memory-bound pelos E-cores costuma piorar. |
-| SIMD | Uma instrução que opera sobre vários números de uma vez. É como o kernel processa 8 ou 16 pesos por ciclo em vez de um. |
-| AVX2 / AVX-VNNI | Os conjuntos de instruções SIMD desta CPU. O engine escolhe qual usar em tempo de execução, para o binário rodar em outras máquinas. |
-| FMA | Multiplicar e somar numa instrução só. Rápido, mas arredonda diferente — por isso o build proíbe fundir automaticamente. |
-| cache L1/L2/L3 | Memórias minúsculas e rapidíssimas dentro do processador. O L3 desta CPU tem 36 MB, e cabe o cache de uma camada inteira a 4k. |
-| mmap | Mapear um arquivo direto no espaço de endereços do processo. O arquivo passa a ser a memória, sem passo de cópia. |
+| SIMD | *Single Instruction, Multiple Data — uma instrução, vários dados.* Uma instrução que opera sobre vários números de uma vez. É como o kernel processa 8 ou 16 pesos por ciclo em vez de um. |
+| AVX2 / AVX-VNNI (AVX-VNNI, VNNI, vpdpbusd, x86-64-v3) | *AVX = Advanced Vector eXtensions, extensões vetoriais avançadas · VNNI = Vector Neural Network Instructions, instruções vetoriais para redes neurais.* Os conjuntos de instruções SIMD desta CPU. O engine escolhe qual usar em tempo de execução, para o binário rodar em outras máquinas. |
+| FMA (vfmadd) | *Fused Multiply-Add — multiplicação e soma fundidas numa instrução.* Multiplicar e somar numa instrução só. Rápido, mas arredonda diferente — por isso o build proíbe fundir automaticamente. |
+| cache L1/L2/L3 (L3, L2, L1) | Memórias minúsculas e rapidíssimas dentro do processador. O L3 desta CPU tem 36 MB, e cabe o cache de uma camada inteira a 4k. |
+| mmap (mapeado, mapeamento) | Mapear um arquivo direto no espaço de endereços do processo. O arquivo passa a ser a memória, sem passo de cópia. |
 | page cache | O cache que o sistema operacional mantém dos arquivos lidos. Como o modelo é mapeado, esse cache é o cache de pesos. |
-| falta de página | O que acontece no primeiro acesso a uma página mapeada: o sistema para tudo e vai buscar do disco. Daí o pre-fault na carga. |
+| falta de página (pre-fault) | O que acontece no primeiro acesso a uma página mapeada: o sistema para tudo e vai buscar do disco. Daí o pre-fault na carga. |
 | páginas grandes | Usar páginas de 2 MB em vez de 4 KB. Com 19,3 GB de pesos, isso reduz de 4,7 milhões de páginas para ~9 mil. |
-| TLB | A tabelinha do processador que traduz endereços. Tem ~2048 entradas: com páginas de 4 KB cobre 8 MB, com 2 MB cobre 4 GB. |
-| RSS | Resident Set Size: quanta memória física o processo realmente ocupa. É o número que o watchdog compara com o orçamento. |
+| TLB | *Translation Lookaside Buffer — buffer de tradução de endereços.* A tabelinha do processador que traduz endereços. Tem ~2048 entradas: com páginas de 4 KB cobre 8 MB, com 2 MB cobre 4 GB. |
+| RSS | *Resident Set Size — tamanho do conjunto residente.* Quanta memória física o processo realmente ocupa. É o número que o watchdog compara com o orçamento. |
 | swap | Quando o sistema operacional escreve memória no disco por falta de RAM. Aqui é considerado falha: o orçamento existe para nunca chegar lá. |
-| OOM | Out of memory: quando o sistema mata o processo por falta de RAM. É o que a regra de recusar em vez de degradar previne. |
+| OOM | *Out Of Memory — sem memória.* Quando o sistema mata o processo por falta de RAM. É o que a regra de recusar em vez de degradar previne. |
 | orçamento | Um teto duro de RAM, VRAM ou threads passado por parâmetro. Verificado em execução, não só no plano. |
 | gargalo | O recurso que limita tudo o mais. Aqui é a banda de memória; otimizar qualquer outra coisa não muda o tempo total. |
 | overhead | Custo que não é o trabalho em si: chamar função, sincronizar threads, alocar memória. Invisível a 1 tok/s, percentual a 20. |
 | lei de Amdahl | A conta que diz quanto acelerar uma parte acelera o todo. Usada aqui para estimar o ganho de mover 39% das camadas para a GPU. |
-| CUDA | A plataforma da NVIDIA para rodar cálculo em placa de vídeo. Um programa CUDA tem duas metades: a que roda na CPU e a que roda na GPU, escritas em arquivos diferentes e compiladas por compiladores diferentes. Aqui ela foi escrita, medida e **não adotada** — vive na branch `GPU`. |
-| SMT | *Simultaneous Multithreading* — a Intel chama de Hyper-Threading. Um núcleo físico se apresenta como dois lógicos, que dividem as mesmas unidades de execução. Para trabalho limitado por memória, como o nosso, os dois irmãos brigam pelo mesmo recurso e não ajudam: por isso o pool usa **um lógico por núcleo físico**. |
-| P-core e E-core | Processadores modernos da Intel misturam dois tipos de núcleo: **P** de *performance*, grandes e rápidos, e **E** de *efficiency*, pequenos e econômicos. Espalhar um trabalho igual pelos dois faz os rápidos esperarem os lentos, então o engine prende as threads nos P-cores por padrão. |
-| DDR5-4800 | A geração e a velocidade da memória RAM. O número é a taxa nominal em milhões de transferências por segundo. Nominal não é real: os **68,7 GB/s** que este projeto usa em todas as contas foram *medidos em execução*, não lidos da caixa. |
-| RTX | A linha de placas de vídeo da NVIDIA para consumidor. A desta máquina é uma RTX 2060 SUPER com 8 GB. Os 8 GB são o número que decide: o modelo ocupa 18,5 GB, então ele **não cabe**, e qualquer uso de GPU vira partição — o que foi medido e não compensou. |
-| SO | Sistema operacional — Windows, Linux, macOS. É quem entrega memória, arquivos e threads ao programa. O engine toca o SO em **um único arquivo**, `compat.c`: é a fronteira onde as diferenças entre Windows e Linux moram, para que o resto do código não precise saber onde está rodando. |
+| CUDA | *Compute Unified Device Architecture.* A plataforma da NVIDIA para rodar cálculo em placa de vídeo. Um programa CUDA tem duas metades: a que roda na CPU e a que roda na GPU, escritas em arquivos diferentes e compiladas por compiladores diferentes. Aqui ela foi escrita, medida e **não adotada** — vive na branch `GPU`. |
+| SMT (hyper-threading) | *Simultaneous Multithreading.* A Intel chama de Hyper-Threading. Um núcleo físico se apresenta como dois lógicos, que dividem as mesmas unidades de execução. Para trabalho limitado por memória, como o nosso, os dois irmãos brigam pelo mesmo recurso e não ajudam: por isso o pool usa **um lógico por núcleo físico**. |
+| P-core e E-core (E-core, E-cores) | Processadores modernos da Intel misturam dois tipos de núcleo: **P** de *performance*, grandes e rápidos, e **E** de *efficiency*, pequenos e econômicos. Espalhar um trabalho igual pelos dois faz os rápidos esperarem os lentos, então o engine prende as threads nos P-cores por padrão. |
+| DDR5-4800 | *Double Data Rate, 5ª geração — 4800 MT/s, milhões de transferências por segundo.* A geração e a velocidade da memória RAM. O número é a taxa nominal em milhões de transferências por segundo. Nominal não é real: os **68,7 GB/s** que este projeto usa em todas as contas foram *medidos em execução*, não lidos da caixa. |
+| RTX | *Ray Tracing — a NVIDIA não expande o X.* A linha de placas de vídeo da NVIDIA para consumidor. A desta máquina é uma RTX 2060 SUPER com 8 GB. Os 8 GB são o número que decide: o modelo ocupa 18,5 GB, então ele **não cabe**, e qualquer uso de GPU vira partição — o que foi medido e não compensou. |
+| SO (sistema operacional) | *OS, Operating System — sistema operacional.* Sistema operacional — Windows, Linux, macOS. É quem entrega memória, arquivos e threads ao programa. O engine toca o SO em **um único arquivo**, `compat.c`: é a fronteira onde as diferenças entre Windows e Linux moram, para que o resto do código não precise saber onde está rodando. |
+| SSD | *Solid-State Drive — unidade de estado sólido.* Disco sem partes móveis. Os desta máquina são *NVMe* em RAID0, 18,4 GB/s — mais rápidos que o PCIe que liga a placa de vídeo. |
+| prefetch (madvise, pré-busca) | Pedir a página antes de precisar dela. Na carga o engine chama `madvise(MADV_WILLNEED)` ou `PrefetchVirtualMemory` e traz 18,54 GB em 5,3 s, de uma vez — em vez de tomar falta de página no meio do decode. |
+| linha de cache (cache line, linhas de cache) | Os **64 bytes** que a CPU move de uma vez entre a RAM e o cache. É a unidade real de leitura: pedir 4 bytes custa uma linha. Todo blob do contêiner começa em múltiplo de 64 por causa dela. |
+| alinhamento | O endereço começar em múltiplo de 64. Sem isso não existe zero-copy: o kernel teria de copiar o tensor para um buffer alinhado antes de multiplicar. O conversor alinha todo blob na escrita e o `--verify` confere; o enchimento desaparece no arredondamento dos 19,3 GB. |
+| pool de threads | As threads criadas uma vez na carga e reaproveitadas em cada camada, em vez de nascer e morrer por matmul. É o pool próprio do engine — decisão D6, e o motivo de não haver OpenMP no binário. O trabalho é dividido por linhas de saída da matriz, e o preço de ter várias threads é a barreira. |
 
 ### 5.4 A numérica
 
@@ -474,22 +500,27 @@ Referência rápida. Nada aqui é específico do projeto.
 |---|---|
 | bit | A menor unidade de informação: 0 ou 1. Um peso em int4 ocupa 4 bits. |
 | byte | Oito bits. Cabem dois pesos int4 num byte — daí o empacotamento por nibbles. |
-| GB | Gigabyte, mil milhões de bytes. O modelo tem 19,65 GB; lê-se 2,01 GB por token. |
-| float | Um número com casas decimais, guardado em formato de ponto flutuante. As contas do engine são todas em float de 32 bits. |
-| fp32 | Ponto flutuante de 32 bits, com 23 bits de mantissa. É a precisão de trabalho do engine, e a do oráculo. |
-| bf16 | Ponto flutuante de 16 bits com o expoente do fp32 e só 7 bits de mantissa. É como o modelo é publicado. |
-| int4 / int8 | Inteiros de 4 e 8 bits, usados para guardar os pesos. Sempre acompanhados de uma escala que os reconverte. |
+| GB (KB, MB) | *Gigabyte — mil milhões de bytes.* O modelo tem 19,65 GB; lê-se 2,01 GB por token. |
+| float (ponto flutuante) | Um número com casas decimais, guardado em formato de ponto flutuante. As contas do engine são todas em float de 32 bits. |
+| fp32 (f32) | Ponto flutuante de 32 bits, com 23 bits de mantissa. É a precisão de trabalho do engine, e a do oráculo. |
+| bf16 (bfloat16) | Ponto flutuante de 16 bits com o expoente do fp32 e só 7 bits de mantissa. É como o modelo é publicado. |
+| int4 / int8 (int8) | Inteiros de 4 e 8 bits, usados para guardar os pesos. Sempre acompanhados de uma escala que os reconverte. |
 | nibble | Meio byte, 4 bits. Exatamente um peso int4 — e por isso a ordem em que os dois nibbles de um byte são lidos importa. |
 | escala | O float que reconverte um inteiro no peso real: `peso ≈ (código − 8) × escala`. Uma escala para cada 64 pesos. |
 | g64 | "Grupo de 64": uma escala compartilhada a cada 64 pesos vizinhos. Custa 4/64 = 0,0625 byte extra por peso. |
 | absmax | O maior valor absoluto de um grupo. Dividido por 7, dá a escala mais simples — mas não a ótima. |
-| W4A32 | Pesos em 4 bits, ativações em 32. O kernel desempacota e multiplica em float, sem quantizar as ativações. |
+| W4A32 (W4A8, W4A16) | Pesos em 4 bits, ativações em 32. O kernel desempacota e multiplica em float, sem quantizar as ativações. |
 | ativação | Os números que fluem entre camadas — o vetor de 2048 valores. São minúsculos perto dos pesos: 8 KB contra 4,7 MB por expert. |
-| associatividade | Somar em ordem diferente dá resultado diferente em ponto flutuante. Por isso a ordem de redução do engine é fixa e independente do número de threads. |
+| associatividade (ordem de redução) | Somar em ordem diferente dá resultado diferente em ponto flutuante. Por isso a ordem de redução do engine é fixa e independente do número de threads. |
 | /fp:precise | A opção do compilador que proíbe reassociar somas e fundir multiplicação com adição. Custa desempenho e compra reprodutibilidade. |
 | arredondamento | Escolher o valor representável mais próximo. O erro do int4 é o piso do arredondamento, não um bug. |
 | erro relativo | De quanto o resultado se afasta do correto, em porcentagem. Aqui é medido na saída de uma multiplicação, não em cada peso isolado. |
 | outlier | Um valor muito fora da faixa dos vizinhos. Em ativações reais alguns canais têm magnitude 10–100× a mediana, e são eles que dominam o erro. |
+| TOPS | *Tera-Operations Per Second — trilhões de operações por segundo.* Medida de vazão de cálculo inteiro, como GFLOP/s é para ponto flutuante. |
+| fp16 (float16, meia precisão) | Ponto flutuante de 16 bits com 5 bits de expoente e 10 de mantissa — mais precisão e menos alcance que o bf16. Aparece só na aritmética de teto: o engine nunca desquantiza para fp16 antes de multiplicar. |
+| Q4_0 (llama.cpp) | O formato de 4 bits do llama.cpp. A convenção dele para empacotar dois pesos em um byte é **metade/metade** — o nibble baixo guarda a primeira metade do grupo, o alto a segunda — e é a que o contêiner segue, registrada como decisão D1. |
+| interleave (rope_interleave, rotate_half, intercalado, apply_rotary_pos_emb_interleave) | A variante de RoPE que este modelo usa: gira `x[2i]` com `x[2i+1]`, e não `x[i]` com `x[i + rot/2]`, que é o `rotate_half`. Na posição 0 as duas coincidem (`cos = 1`, `sin = 0`) e o erro cresce com a posição — foi o engano que passou pelo 32/32 e pela perplexidade sem ser visto. |
+| contração | Quando o compilador funde uma multiplicação e uma soma em um FMA por conta própria. É mais rápido e arredonda diferente, então o build usa `/fp:precise` sem contração — conferido no disassembly, porque é disso que a reprodutibilidade depende. |
 
 ### 5.5 A medição
 
@@ -501,18 +532,19 @@ Referência rápida. Nada aqui é específico do projeto.
 | janela | Um trecho fixo de texto usado na medição. Aqui são 10 janelas de 384 tokens, e a comparação é feita janela a janela. |
 | fixture | Um arquivo com respostas corretas pré-calculadas, gerado uma vez e comparado a cada execução do teste. |
 | selftest | O teste embutido no binário: kernels, parser JSON, pool de threads, tokenizer e sampler contra fixtures. Roda em segundos. |
-| teste de regressão | Um teste que existe só para impedir que um bug antigo volte. O caso `CUDA_DENSE` virou um. |
+| teste de regressão (regressão) | Um teste que existe só para impedir que um bug antigo volte. O caso `CUDA_DENSE` virou um. |
 | baseline | O número de referência a ser batido. Aqui é 0,93 tok/s, medido com o engine anterior e o modelo grande. |
 | benchmark | Uma medição controlada e repetível. Sem orçamento fixado, aquecimento e hash da saída, ela não vale nada. |
-| aquecimento | Uma execução descartada antes de medir, para que o custo de encher os caches não caia toda na primeira medida. |
-| reprodutibilidade | A propriedade de obter exatamente o mesmo resultado ao repetir. Aqui é critério de saída, não conveniência. |
+| aquecimento (quente, a frio) | Uma execução descartada antes de medir, para que o custo de encher os caches não caia toda na primeira medida. |
+| reprodutibilidade (determinismo, determinístico) | A propriedade de obter exatamente o mesmo resultado ao repetir. Aqui é critério de saída, não conveniência. |
 | hash | Um número curto calculado a partir de um conteúdo, que muda se qualquer byte mudar. Usado para provar que duas saídas são idênticas. |
 | throughput | Quanto trabalho sai por unidade de tempo, somando todas as conversas. Diferente de latência, que é o tempo de uma só. |
 | latência | O tempo até a resposta começar. Banda alta com latência ruim é comum em disco; a RAM tem as duas boas. |
 | entropia | Quão espalhada está a opinião do modelo sobre o próximo token, medida em *bits*. Entropia baixa: ele tem poucos candidatos. Alta: muitos, quase empatados. Serve junto da perplexidade porque separa dois casos que ela confunde — **seguro e certeiro** de **seguro por falta de opção**, e o segundo é o que antecede repetição. |
 | rep4 | A fração de sequências de quatro tokens que já apareceram antes na mesma resposta. É o detector precoce de *degeneração*: o modelo começando a se repetir aparece aqui muito antes de incomodar quem lê. Acima de ~15% é degeneração declarada. |
 | match@ref | Quantos tokens iniciais uma geração tem em comum com a geração de referência antes de divergir. É a medida mais direta de "este container gera o que o original geraria". Divergir não é erro: dois caminhos quase idênticos se separam no primeiro empate. |
-| intervalo de confiança | A faixa em que o valor verdadeiro provavelmente está, dado o quanto as medidas variaram. Se a faixa **cruza o zero**, a medição não distingue "melhorou" de "piorou" — e a resposta honesta é *inconclusivo*, não "deu quase igual". |
+| intervalo de confiança (IC95) | A faixa em que o valor verdadeiro provavelmente está, dado o quanto as medidas variaram. Se a faixa **cruza o zero**, a medição não distingue "melhorou" de "piorou" — e a resposta honesta é *inconclusivo*, não "deu quase igual". |
+| SWE-bench | *Software Engineering benchmark — teste de engenharia de software.* Defeitos reais de repositórios públicos: o modelo recebe o problema e tem de produzir a correção. O alvo deste projeto marca 59,2 na variante Verified — número do fabricante, com o desconto de praxe. |
 
 ### 5.6 O software e o sistema
 
@@ -523,34 +555,54 @@ Referência rápida. Nada aqui é específico do projeto.
 | linkagem estática | Embutir tudo no executável, para ele rodar sem instalar nada. A meta é um binário só, com o backend de GPU carregado à parte. |
 | compilador | O programa que transforma código em executável. Aqui é o MSVC no Windows, encontrado dinamicamente, e gcc ou clang no Linux. |
 | build id | Um hash das fontes e das opções de compilação, gravado no binário. Serve para invalidar caches persistidos quando o engine muda. |
-| CLI | Interface de linha de comando: o programa que se usa digitando comandos no terminal. |
+| CLI | *Command-Line Interface — interface de linha de comando.* Interface de linha de comando: o programa que se usa digitando comandos no terminal. |
 | ponteiro | Um endereço de memória guardado numa variável. Mover um bloco grande aqui é trocar ponteiros, nunca copiar bytes. |
-| malloc | A função que pede memória ao sistema durante a execução. O laço de token do engine não a chama nenhuma vez. |
+| malloc (alocador, alocação) | A função que pede memória ao sistema durante a execução. O laço de token do engine não a chama nenhuma vez. |
 | zero-copy | Usar os dados onde eles já estão, sem passo intermediário de cópia. Aqui, os ponteiros do kernel apontam para dentro do arquivo mapeado. |
-| JSON | Um formato de texto para dados estruturados. O índice do container e a configuração do modelo são JSON, lidos por um parser próprio. |
-| UTF-8 | A codificação padrão de texto, em que um caractere ocupa de 1 a 4 bytes. O tokenizer trabalha nos bytes, não nos caracteres. |
-| Unicode | O catálogo de todos os caracteres de todas as escritas. O pré-tokenizador precisa saber, por caractere, se é letra, número ou espaço. |
-| expressão regular | Um padrão que descreve como quebrar um texto. O tokenizer usa uma fixa, a mesma do GPT-4, implementada à mão em vez de com um motor genérico. |
-| HTTP | O protocolo da web. O subcomando `serve` abre um servidor local em `127.0.0.1:8080` com uma interface de chat. |
+| JSON | *JavaScript Object Notation.* Um formato de texto para dados estruturados. O índice do container e a configuração do modelo são JSON, lidos por um parser próprio. |
+| UTF-8 | *Unicode Transformation Format, 8 bits.* A codificação padrão de texto, em que um caractere ocupa de 1 a 4 bytes. O tokenizer trabalha nos bytes, não nos caracteres. |
+| Unicode (code point) | O catálogo de todos os caracteres de todas as escritas. O pré-tokenizador precisa saber, por caractere, se é letra, número ou espaço. |
+| expressão regular (regex) | Um padrão que descreve como quebrar um texto. O tokenizer usa uma fixa, a mesma do GPT-4, implementada à mão em vez de com um motor genérico. |
+| HTTP | *HyperText Transfer Protocol.* O protocolo da web. O subcomando `serve` abre um servidor local em `127.0.0.1:8080` com uma interface de chat. |
 | loopback | O endereço `127.0.0.1`, que só a própria máquina alcança. É o padrão do servidor porque isto não é um serviço de produção. |
-| escrita atômica | Escrever num arquivo temporário e renomear no fim. Uma queda de energia no meio não deixa um arquivo pela metade com cara de válido. |
+| atômico (escrita atômica) | Operação que acontece inteira ou não acontece. Gravar estado no disco é atômico por arquivo temporário mais `rename`: uma queda de energia no meio não deixa um arquivo pela metade com cara de válido. No pool de threads são quatro funções atômicas atrás de um atalho em `compat.h` (`_Interlocked*` no Windows, `__atomic_*` no gcc e no clang), porque o MSVC só habilita `<stdatomic.h>` com `/experimental:c11atomics`. |
 | watchdog | Uma thread que compara o consumo real com o orçamento durante a execução. Sem ela, "orçamento" seria só uma opinião. |
-| MSVC | O compilador C e C++ da Microsoft, que vem com o Visual Studio. É o que transforma os arquivos `.c` em `tootega.exe` no Windows. O projeto o localiza com a ferramenta `vswhere` em vez de cravar o caminho: caminho fixo quebra quando a versão muda. |
-| ISO | Organização que publica normas internacionais. "C11 ISO" quer dizer que o código segue a norma da linguagem C de 2011 *como escrita*, sem extensões de um compilador específico. É o que faz o mesmo arquivo compilar no MSVC e no gcc sem alteração. |
-| SSE | *Server-Sent Events* — o jeito padrão de um servidor HTTP mandar texto em pedaços, conforme produz, sem que o cliente fique perguntando. É como a resposta aparece palavra por palavra na tela em vez de surgir pronta depois de meio minuto. |
-| CORS | *Cross-Origin Resource Sharing* — a regra do navegador que impede uma página de um endereço de chamar um servidor de outro, salvo se o servidor autorizar. Sem essa autorização, um cliente que roda *dentro* do navegador nem chega a fazer o pedido. |
-| NDJSON | *Newline-Delimited JSON*: um objeto JSON por linha, um evento por linha. É como o agente conversa com a interface — cada linha é completa em si, então quem lê pode processar a primeira sem esperar a última. |
-| stdin e stdout | Os dois canais de texto que todo programa recebe ao nascer: **stdin** é por onde entra, **stdout** é por onde sai. O agente e a interface conversam por eles — sem rede, sem porta, sem arquivo. Fechar o stdin é como desligar o telefone: o programa vê o fim e encerra. |
-| EOF | *End Of File*, fim do arquivo. O sinal de que não vem mais nada. Quando a interface fecha o canal do agente, ele recebe um EOF e sai na hora — é o mecanismo de desligamento limpo, mais confiável que qualquer temporizador. |
-| protocolo OpenAI | O formato de mensagem que a OpenAI publicou para conversar com modelos, e que virou padrão de fato: uma lista de mensagens com `role` e `content`, e a resposta no mesmo molde. Falar esse formato é o que permite ao Copilot, ao Continue e a qualquer outro cliente conectar neste servidor **sem uma linha de código nossa**. |
-| endpoint | Um endereço específico dentro de um servidor, com uma função. `/v1/chat/completions` gera texto; `/stats` conta como o servidor está. É o "ramal" do serviço: mesma máquina, mesma porta, propósitos diferentes. |
-| JSON Schema | Uma descrição, em JSON, de como outro JSON deve ser: quais campos, de que tipo, quais obrigatórios. O cliente manda o schema das ferramentas, e é por ele que o servidor sabe que `3` deve virar o **número** 3 e não o texto `"3"` — sem isso, toda ferramenta com argumento numérico chega errada. |
-| MCP | *Model Context Protocol* — um padrão para um agente descobrir e usar ferramentas oferecidas por outros programas, em vez de só as que ele mesmo tem. É hoje o "protocolo comum de ferramentas". O TootegaEngine **não o implementa**; está registrado como não feito. |
+| MSVC | *Microsoft Visual C++.* O compilador C e C++ da Microsoft, que vem com o Visual Studio. É o que transforma os arquivos `.c` em `tootega.exe` no Windows. O projeto o localiza com a ferramenta `vswhere` em vez de cravar o caminho: caminho fixo quebra quando a versão muda. |
+| ISO | *Não é sigla: vem do grego *isos*, "igual".* Organização que publica normas internacionais. "C11 ISO" quer dizer que o código segue a norma da linguagem C de 2011 *como escrita*, sem extensões de um compilador específico. É o que faz o mesmo arquivo compilar no MSVC e no gcc sem alteração. |
+| SSE (server-sent events) | *Server-Sent Events — eventos enviados pelo servidor.* O jeito padrão de um servidor HTTP mandar texto em pedaços, conforme produz, sem que o cliente fique perguntando. É como a resposta aparece palavra por palavra na tela em vez de surgir pronta depois de meio minuto. |
+| CORS | *Cross-Origin Resource Sharing — compartilhamento de recursos entre origens.* A regra do navegador que impede uma página de um endereço de chamar um servidor de outro, salvo se o servidor autorizar. Sem essa autorização, um cliente que roda *dentro* do navegador nem chega a fazer o pedido. |
+| NDJSON | *Newline-Delimited JSON — um JSON por linha.* Um objeto JSON por linha, um evento por linha. É como o agente conversa com a interface — cada linha é completa em si, então quem lê pode processar a primeira sem esperar a última. |
+| stdin e stdout (entrada padrão, saída padrão) | Os dois canais de texto que todo programa recebe ao nascer: **stdin** é por onde entra, **stdout** é por onde sai. O agente e a interface conversam por eles — sem rede, sem porta, sem arquivo. Fechar o stdin é como desligar o telefone: o programa vê o fim e encerra. |
+| EOF | *End Of File — fim do arquivo.* O sinal de que não vem mais nada. Quando a interface fecha o canal do agente, ele recebe um EOF e sai na hora — é o mecanismo de desligamento limpo, mais confiável que qualquer temporizador. |
+| protocolo OpenAI (API OpenAI, compatível com OpenAI) | O formato de mensagem que a OpenAI publicou para conversar com modelos, e que virou padrão de fato: uma lista de mensagens com `role` e `content`, e a resposta no mesmo molde. Falar esse formato é o que permite ao Copilot, ao Continue e a qualquer outro cliente conectar neste servidor **sem uma linha de código nossa**. |
+| endpoint (rota) | Um endereço específico dentro de um servidor, com uma função. `/v1/chat/completions` gera texto; `/stats` conta como o servidor está. É o "ramal" do serviço: mesma máquina, mesma porta, propósitos diferentes. |
+| JSON Schema (schema) | *JSON = JavaScript Object Notation.* Uma descrição, em JSON, de como outro JSON deve ser: quais campos, de que tipo, quais obrigatórios. O cliente manda o schema das ferramentas, e é por ele que o servidor sabe que `3` deve virar o **número** 3 e não o texto `"3"` — sem isso, toda ferramenta com argumento numérico chega errada. |
+| MCP | *Model Context Protocol.* Um padrão para um agente descobrir e usar ferramentas oferecidas por outros programas, em vez de só as que ele mesmo tem. É hoje o "protocolo comum de ferramentas". O TootegaEngine **não o implementa**; está registrado como não feito. |
 | sandbox | Uma cerca em volta do que um programa pode tocar. No agente é a pasta de trabalho: todo caminho é resolvido contra ela e recusado se escapar — **inclusive com a aprovação automática ligada**. É a única coisa entre um modelo de 31 bilhões de parâmetros e o resto do disco. |
 | aprovação | A pergunta que o agente faz antes de executar algo que muda estado — escrever arquivo, rodar comando. Leitura não pergunta, de propósito: pedir confirmação para tudo, a 13 tokens por segundo, transforma a tarefa em meia hora de Enter — e **treina a pessoa a aprovar sem ler**, que é o pior resultado possível. |
-| branch | Uma linha paralela de desenvolvimento no controle de versão. Aqui a `master` é o engine em CPU pura e a `GPU` guarda todo o trabalho de placa de vídeo — escrito, medido, e não adotado. Separar assim é o que permite **manter a medição sem carregar o código**. |
-| CRLF | Os dois caracteres invisíveis com que o Windows termina cada linha de texto, contra um só no Linux. Invisível não quer dizer inofensivo: um trecho de código copiado com um estilo não casa com o arquivo salvo no outro, e a busca falha sem que nada apareça na tela para explicar. |
-| UUID | Um identificador longo o bastante para ser único sem que ninguém coordene quem usa qual. Serve para nomear uma conversa, um bloco, uma sessão — quando duas partes precisam falar do mesmo item sem um cadastro central. |
+| branch (ramo) | Uma linha paralela de desenvolvimento no controle de versão. Aqui a `master` é o engine em CPU pura e a `GPU` guarda todo o trabalho de placa de vídeo — escrito, medido, e não adotado. Separar assim é o que permite **manter a medição sem carregar o código**. |
+| CRLF (LF, fim de linha) | *Carriage Return + Line Feed — retorno de carro e avanço de linha.* Os dois caracteres invisíveis com que o Windows termina cada linha de texto, contra um só no Linux. Invisível não quer dizer inofensivo: um trecho de código copiado com um estilo não casa com o arquivo salvo no outro, e a busca falha sem que nada apareça na tela para explicar. |
+| UUID | *Universally Unique Identifier — identificador universalmente único.* Um identificador longo o bastante para ser único sem que ninguém coordene quem usa qual. Serve para nomear uma conversa, um bloco, uma sessão — quando duas partes precisam falar do mesmo item sem um cadastro central. |
+| HF | *Hugging Face.* O repositório de onde vêm o checkpoint e o `tokenizer.json`. "Formato HF" é o layout de arquivos que essa plataforma padronizou, não um formato deste projeto. |
+| IR | *Intermediate Representation — representação intermediária.* A forma em que o motor guarda a arquitetura depois de ler a configuração: ponteiros já resolvidos e conferidos, uma vez, na abertura. É o que faz um tensor trocado errar com nome e forma, em vez de virar lixo numérico 47 camadas adiante. |
+| API | *Application Programming Interface — interface de programação.* O conjunto de chamadas que um programa oferece a outro. Aqui, os endereços HTTP compatíveis com o protocolo da OpenAI. |
+| ABI | *Application Binary Interface — interface binária.* O contrato de baixo nível entre dois binários já compilados: quem passa o quê, em qual registrador. Uma ABI em C é o que permite carregar o backend de GPU sem recompilar o motor. |
+| DLL | *Dynamic-Link Library — biblioteca de vínculo dinâmico.* Um arquivo de código que o programa carrega durante a execução, em vez de embutir na compilação. É como o backend de GPU entra sem que o binário de CPU dependa de CUDA. |
+| TCP | *Transmission Control Protocol — protocolo de controle de transmissão.* O transporte por baixo do HTTP: entrega os bytes em ordem e sem perda. Aparece aqui porque, com um pedido por vez, o segundo espera calado na fila do TCP. |
+| LRU | *Least Recently Used — o usado menos recentemente.* A política de despejo mais comum: quando falta espaço, sai o que ficou mais tempo sem ser tocado. |
+| URL | *Uniform Resource Locator — localizador uniforme de recurso.* O endereço de um recurso na web. O do servidor local é `http://127.0.0.1:8080`. |
+| HTML | *HyperText Markup Language — linguagem de marcação de hipertexto.* A linguagem das páginas web. Este guia é um único arquivo HTML, sem servidor e sem dependência: abre com dois cliques. |
+| UI | *User Interface — interface de usuário.* A parte com que se interage. Aqui é a página que `tootega serve` abre em `127.0.0.1:8080`. |
+| BLAS | *Basic Linear Algebra Subprograms — sub-rotinas básicas de álgebra linear.* A biblioteca clássica de multiplicação de matrizes. O motor não usa nenhuma — os kernels são escritos aqui —, mas uma ferramenta pode. |
+| SHA-256 | *Secure Hash Algorithm, 256 bits — algoritmo de resumo seguro.* Uma função que resume qualquer conteúdo num número de tamanho fixo. Serve para provar que duas execuções produziram exatamente a mesma resposta. |
+| GNU | *GNU's Not Unix — sigla recursiva: ela se contém.* O projeto de software livre de onde vêm o compilador `gcc` e o `make` usados na compilação em Linux. |
+| tokenizers | A biblioteca de tokenização da Hugging Face, usada como referência externa: **36/36** casos idênticos, ida e volta exata. O tokenizer do engine é escrito aqui, do zero, e é comparado com ela. |
+| numpy | A biblioteca de arrays do Python. Foi a referência da quantização enquanto o oráculo era em Python; hoje a referência é `Tests/oracle`, em C, e o que o kernel produz bate **bit a bit** com a fixture gerada por `tools/fixture`. Nunca entrou em `src/`. |
+| OpenMP (libgomp) | *Open Multi-Processing.* O runtime de paralelismo do compilador — o `#pragma omp parallel for`. O engine anterior linkava ele estático (`libgomp.a`) e era a única dependência de runtime que carregava. Este engine **não usa**: tem pool de threads próprio, e é isso que deixa o binário sem dependência nenhuma. |
+| mlock (VirtualLock) | Pedir ao sistema para não tirar estas páginas da RAM. Trava o conjunto residente para que uma falta de página não apareça no meio do decode. É opcional e limitado pelo orçamento de memória — `VirtualLock` é o nome no Windows. |
+| O_DIRECT | Ler do disco sem passar pelo cache do sistema operacional. Era afinado no engine anterior e aqui não serve para nada: só ajuda quem lê do disco, e este engine lê da RAM. Está na lista do que foi jogado fora. |
+| dlopen (LoadLibrary) | Carregar uma biblioteca em tempo de execução, em vez de linká-la no binário. Era assim que o backend CUDA entrava, atrás de uma ABI C — e é o motivo de o binário com GPU não poder ser totalmente estático: `dlopen` em binário estático não é confiável. O master é CPU pura e não usa nenhum. |
+| vswhere | O utilitário da Microsoft que diz onde o Visual Studio está instalado. O build chama ele em vez de escrever o caminho do MSVC à mão: caminho fixo quebra quando a versão muda. |
 
 ### 5.7 A matemática
 
@@ -558,13 +610,13 @@ Referência rápida. Nada aqui é específico do projeto.
 |---|---|
 | vetor | Uma lista de números. Aqui, o estado de um token é um vetor de 2048 floats. |
 | matriz | Uma tabela de números, com linhas e colunas. Um peso do modelo é uma matriz; a maior tem 2048 × 154.880. |
-| multiplicação de matriz | A operação central: cada linha da saída é a soma dos produtos de uma linha de pesos pela entrada. É onde vai quase todo o tempo. |
+| multiplicação de matriz (matmul, matmuls) | A operação central: cada linha da saída é a soma dos produtos de uma linha de pesos pela entrada. É onde vai quase todo o tempo. |
 | produto escalar | Multiplicar dois vetores elemento a elemento e somar tudo. Uma multiplicação de matriz é um monte de produtos escalares. |
-| posto baixo | Substituir uma matriz grande por duas menores multiplicadas. Comprime, e é o que `q_lora_rank` e `kv_lora_rank` fazem. |
+| posto baixo (low-rank, rank) | Substituir uma matriz grande por duas menores multiplicadas. Comprime, e é o que `q_lora_rank` e `kv_lora_rank` fazem. |
 | transposta | A matriz com linhas e colunas trocadas. Aqui importa porque ler uma coluna é caro e ler uma linha é barato. |
-| FLOP | Uma operação de ponto flutuante. Gerar um token custa ~7,1 GFLOP — pouco, perto dos 2,01 GB de leitura. |
+| FLOP (GFLOP) | *FLoating-point OPeration — operação de ponto flutuante.* Uma operação de ponto flutuante. Gerar um token custa ~7,1 GFLOP — pouco, perto dos 2,01 GB de leitura. |
 | probabilidade | Um número entre 0 e 1 dizendo quão provável algo é. O softmax converte as notas de saída em probabilidades. |
-| desvio padrão | Quanto os valores se espalham em torno da média. É por causa dele que a comparação pareada existe: a variância entre janelas engolia o efeito. |
+| desvio padrão (variância) | Quanto os valores se espalham em torno da média. É por causa dele que a comparação pareada existe: a variância entre janelas engolia o efeito. |
 | expoente | Em `N^0,25`, o 0,25. Diz que quadruplicar N multiplica o resultado por só 1,41 — a lei de escala que este projeto recusa. |
 
 ---
@@ -1164,9 +1216,13 @@ Esta é, provavelmente, a seção mais característica do projeto.
 
 ### 12.1 O oráculo e o 32/32
 
-Existe uma implementação de referência em Python (`ptools/oracle.py`) que roda o
-mesmo modelo, sobre o mesmo container, usando `numpy` e `transformers`. Ela é
-lenta e simples — de propósito.
+Existe uma implementação de referência (`Tests/oracle`) que roda o mesmo modelo,
+sobre o mesmo container, por um caminho que não compartilha uma linha com o
+engine: leitor de container próprio, desquantizador próprio, matmul próprio,
+atenção própria. Ela é lenta e simples — de propósito. Já foi em Python, com
+`numpy`; hoje é C, porque duas implementações concordando é evidência e uma
+implementação concordando consigo mesma é tautologia — e nenhuma das duas coisas
+depende da linguagem.
 
 O engine roda 32 posições em *teacher forcing* (isto é, forçando o texto
 conhecido) e compara token a token. **32 de 32** ou não passa.
@@ -1454,8 +1510,8 @@ Perplexidade 8 quer dizer "hesitando entre umas 8 possibilidades". Menor é
 melhor. É a régua padrão, e é objetiva: não depende de alguém achar a resposta
 boa.
 
-O número deste engine, contra a implementação de referência em Python, no
-mesmo texto:
+O número deste engine, contra a referência externa que rodou o modelo original,
+no mesmo texto:
 
 | medição | engine | `transformers` |
 |---|---|---|
@@ -1703,7 +1759,6 @@ Quatro regras, todas compradas com tempo perdido:
 | `src/` | o engine | C11 ISO, **zero dependências**; só `compat.c` tem `#ifdef` de SO |
 | `tools/` | ferramentas de **produção** | C ou Rust, uma pasta por ferramenta, o `.exe` na raiz de `tools/` |
 | `Tests/` | ferramentas de **medição** | mesma regra; medem o engine e podem usar o checkpoint original |
-| `ptools/` | ferramentas em Python | só o que exige `transformers`/`tokenizers` como referência externa |
 | `docs/` | a especificação | toda decisão com o porquê e o número que a sustenta |
 | `models/` | os containers | não versionado |
 | `ForDummies/` | este documento e as figuras | PT e EN em paralelo |
@@ -1738,17 +1793,21 @@ desde que não entre em `src/`. E ferramenta em C **deve reusar as fontes de
 
 | ferramenta | o que faz |
 |---|---|
-| `tools/convert` | BF16 → container int4/int8, com política de precisão por tensor |
+| `tools/convert` | BF16 → container int4/int8, política de precisão por tensor e a busca de clipping |
 | `tools/agent` | o cliente agêntico: seis ferramentas, sandbox, aprovação, modo `--tty` |
+| `tools/finetune` | empacota um corpus em janelas de tokens para o treino |
+| `tools/ucd` | gera e **confere** `src/unicode_tables.h` a partir da base Unicode |
+| `tools/fixture` | gera `src/fixture_kernels.h`, as respostas corretas do `selftest` |
+| `Tests/oracle` | a implementação de referência independente, e o 32/32 |
 | `Tests/ablate` | restaura grupos de tensores ao original e mede o efeito, pareado |
 | `Tests/gentest` | qualidade de geração: `rep4`, taxa de parada, `match@ref` |
 | `Tests/bench` | tempo, memória e a conta de roofline |
-| `ptools/oracle.py` | a implementação de referência em Python |
-| `ptools/perplexity.py` | a medida pareada de perplexidade |
-| `ptools/gen_*.py` | geradores de fixture e de tabelas Unicode |
 
-> Alguns documentos ainda citam `tools/oracle.py` e `tools/perplexity.py`. Os
-> arquivos em Python vivem hoje em **`ptools/`**.
+> **Sobraram dois arquivos em Python**, os dois fora do caminho do engine:
+> `build.py`, que gera este documento, e `download_model.py`, que precisa de
+> HTTPS para buscar o checkpoint. Todo o resto que era Python — o oráculo, a
+> perplexidade, o conversor, as tabelas Unicode, a fixture dos kernels — hoje é
+> ferramenta nativa.
 
 ### 17.4 Os 20 documentos
 

@@ -1,8 +1,13 @@
 # Pesos e derivados -- dezenas de GB, e todos reproduziveis.
-#   models/     baixado por ptools/download_model.py, convertido por tools/convert
-#   offload/    pasta de trabalho do accelerate em ptools/hf_ref.py (~62 GB)
+#   models/     baixado por download_model.py, convertido por tools/convert
+#   offload/    sobra da referencia externa em transformers (docs/17); a
+#               ferramenta que a criava nao existe mais, mas quem repetir a
+#               medicao vai gerar de novo -- e sao dezenas de GB
+#   publish/stage/  pasta de upload montada por publish/publish.ps1; o
+#                   container entra nela por LINK DURO, entao aparecem 19,8 GB
 models/
 offload/
+publish/stage/
 
 # Artefatos de build.
 build/
@@ -44,8 +49,10 @@ corpus.txt
 corpus_rep.txt
 
 # NAO ignorados de proposito, e vale dizer por que:
-#   src/fixture_kernels.h    gerado, mas versionado: sem ele o build exige
-#   src/unicode_tables.h     numpy e transformers so para compilar
+#   src/fixture_kernels.h    gerados por tools/fixture e tools/ucd, mas
+#   src/unicode_tables.h     versionados: sem eles o build exigiria rodar as
+#                            duas ferramentas -- e o ucd exige baixar a base
+#                            Unicode -- so para compilar
 #   corpus_prosa.txt         corpus de calibracao; o numero de docs/17 so
 #                            significa alguma coisa com ESTE texto
 #   ids32.txt, ref32.json    referencia do oraculo, presa ao container v3

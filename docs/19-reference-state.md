@@ -36,12 +36,22 @@ measure 13.1. The missing ~28 ms are in **attention and the remaining barriers**
 The 3% difference is 1-D tensors the substitution does not swap (already exact)
 and accumulation order.
 
-| property | state |
-|---|---|
-| teacher-forcing oracle | **32/32** identical tokens |
-| determinism | **byte-identical** logits from 1 to 20 threads |
-| tokenizer against HF `tokenizers` | **36/36** cases, exact round-trip |
-| kernels against numpy's quantisation | **bit for bit** |
+| property | state | how it is reproduced |
+|---|---|---|
+| teacher-forcing oracle | **32/32** identical tokens | `Tests\oracle.exe <model> --ids-file ids32.txt --compare <logits>` |
+| determinism | **byte-identical** logits from 1 to 20 threads | `tootega forward --threads N --dump-logits` |
+| tokenizer against HF `tokenizers` | **36/36** cases, exact round-trip | `tootega tokenize <tokenizer.json> --check tokfixture.json` |
+| kernels against the reference quantisation | **bit for bit** | `tootega selftest`; the fixture from `tools\fixture.exe --check` |
+| Unicode tables against the database | **byte for byte** | `tools\ucd.exe UnicodeData.txt --version 13.0.0 --check src\unicode_tables.h` |
+
+Once a reference exists, checking a logits dump against it does not need the
+oracle to run again: `Tests\oracle.exe --check-ref ref32.json --logits <file>`
+takes milliseconds, and that is what makes it viable to verify every kernel
+change instead of only the ones that look risky.
+
+`tokfixture.json` is a **frozen artefact**: it was produced by HuggingFace's
+`tokenizers`, and there is no C to write in its place. Regenerating it means
+bringing that library back for the occasion.
 
 ## Quantisation — paired ablation
 

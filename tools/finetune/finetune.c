@@ -527,7 +527,7 @@ static void usage(void)
       "  --include <glob>       file name pattern, repeatable (default: *.md)\n"
       "  --exclude <glob>       excluded pattern, repeatable\n"
       "  --holdout N            hold out N whole documents, by even stride\n"
-      "  --holdout-match <glob> hold out every document matching the pattern\n"
+      "  --holdout-match <glob> hold out matching documents, repeatable\n"
       "  --min-section N        fold sections shorter than N ids (default: 48)\n"
       "  --vocab N              vocabulary size (default: 154880)\n"
       "  --no-verify            skip the decode round-trip (not recommended)\n"
@@ -537,7 +537,9 @@ static void usage(void)
 
 static int cmd_pack(int argc, char **argv)
 {
-    const char *dir = NULL, *tokpath = NULL, *out = NULL, *hmatch = NULL;
+    const char *dir = NULL, *tokpath = NULL, *out = NULL;
+    const char *hmatch[MAX_PATTERNS];
+    int n_hmatch = 0;
     int32_t vocab = 154880;
     int holdout_n = 0;
     pack_opt opt = { 1024, 48, 1 };
@@ -554,7 +556,10 @@ static int cmd_pack(int argc, char **argv)
         else if (!strcmp(a, "--min-section") && has) opt.min_section = atoi(argv[++i]);
         else if (!strcmp(a, "--vocab") && has)     vocab = (int32_t)atoi(argv[++i]);
         else if (!strcmp(a, "--holdout") && has)   holdout_n = atoi(argv[++i]);
-        else if (!strcmp(a, "--holdout-match") && has) hmatch = argv[++i];
+        else if (!strcmp(a, "--holdout-match") && has) {
+            if (n_hmatch >= MAX_PATTERNS) return tt_fail("too many --holdout-match");
+            hmatch[n_hmatch++] = argv[++i];
+        }
         else if (!strcmp(a, "--no-verify"))        opt.verify = 0;
         else if (!strcmp(a, "--include") && has) {
             if (w.n_inc >= MAX_PATTERNS) return tt_fail("too many --include");
@@ -602,9 +607,18 @@ static int cmd_pack(int argc, char **argv)
 
     /* ---- holdout, by whole document */
     int n_hold = 0;
-    if (hmatch) {
-        for (int i = 0; i < w.n; i++)
-            if (glob_match(hmatch, base_name(docs[i].path))) { docs[i].holdout = 1; n_hold++; }
+    /* Patterns accumulate, like --include and --exclude.  A single pointer here
+     * silently kept only the last one, and the split came out one document
+     * wide while the command line asked for six -- a validation set that small
+     * moves several points of perplexity between runs on noise alone. */
+    for (int p = 0; p < n_hmatch; p++) {
+        for (int i = 0; i < w.n; i++) {
+            if (docs[i].holdout) continue;    /* two patterns, one document */
+            if (glob_match(hmatch[p], base_name(docs[i].path))) {
+                docs[i].holdout = 1;
+                n_hold++;
+            }
+        }
     }
     if (holdout_n > 0) {
         if (holdout_n >= w.n) { tt_fail("--holdout %d leaves no training document", holdout_n);

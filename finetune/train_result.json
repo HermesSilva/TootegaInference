@@ -1,0 +1,38 @@
+{
+ "args": {
+  "data": "data/sft_final.jsonl",
+  "epochs": 2,
+  "lr": 0.0002,
+  "r": 32,
+  "micro_bs": 1,
+  "accum": 16,
+  "max_len": 4096,
+  "warmup": 0.08,
+  "wd": 0.05,
+  "val_frac": 0.05,
+  "seed": 1234,
+  "attention_only": false
+ },
+ "trainable": 59070464,
+ "modules": 376,
+ "val_before": 0.8890875467034274,
+ "history": [
+  {
+   "epoch": 1,
+   "val_loss": 0.3527285031281238,
+   "by_mode": {
+    "oracle": 0.3430681105348326,
+    "distractors": 0.7584649920463562
+   }
+  },
+  {
+   "epoch": 2,
+   "val_loss": 0.34757227104070576,
+   "by_mode": {
+    "oracle": 0.33846625951784,
+    "distractors": 0.7300247550010681
+   }
+  }
+ ],
+ "minutes": 65.13289289871851
+}

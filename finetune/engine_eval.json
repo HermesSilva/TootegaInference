@@ -1,0 +1,84 @@
+{
+ "model": "/workspace/cosmologia/models/glm47flash-v5-sft.tootega",
+ "threads": 16,
+ "rows": [
+  {
+   "kind": "definicao",
+   "question": "O que e a Mente Universal e por que ela nao e Deus?",
+   "answer": "A Mente Universal é uma totalidade composta, real e operante, que espelha a sociedade humana: é uma totalidade que governa a vida de cada um com uma força que nenhum indivíduo isolado teria, mas que não é Deus. Ela não é Deus porque não tem personalidade, vontade própria, agência intencional, nem cuidado, punição ou recompensa. Não escuta súplicas, responde a orações, tem preferências ou cuida de ninguém. Não é mera abstração estatística, nem nome cômodo para uma média, e tampouco é mera abstração.\n\nA Mente Universal é uma totalidade composta, real e operante, que espelha a sociedade humana: é uma totalidade que governa a vida de cada um com uma força que nenhum indivíduo isolado teria, mas que não é Deus. Ela não é",
+   "cites": [
+    "A Estrutura da Existencia, Ensaio I, §II",
+    "A Estrutura da Existencia, Ensaio I, §IV",
+    "A Estrutura da Existencia, Ensaio III, §IX"
+   ],
+   "prompt_tokens": 1086,
+   "wall_seconds": 189.72001767158508,
+   "stats": {}
+  },
+  {
+   "kind": "definicao",
+   "question": "O que significa o termo 'germe de origem'?",
+   "answer": "O termo 'germe de origem' designa a raiz afetiva que sustenta a continuidade do querer. É a origem da qual descem as valorações e o insight, e cuja mecânica de descida pelo canal blindado esclarece o que no germe é apenas tênue. Ele não é um objeto determinado, mas o germe que sustenta o peso do por-vir antes que ele seja resolvido.\n\n(Fonte: A Descida do Germe, §I)",
+   "cites": [
+    "O Instrumento e o Afeto, Ensaio XIX, §XII",
+    "O Ciclo e o Horizonte, Ensaio XXII, §VII",
+    "O Ciclo e o Horizonte, Ensaio XXII, §III"
+   ],
+   "prompt_tokens": 1097,
+   "wall_seconds": 75.15441226959229,
+   "stats": {}
+  },
+  {
+   "kind": "estrutura",
+   "question": "Na morte, a Mente individual dissolve-se na Mente Universal?",
+   "answer": "A Mente individual não se dissolve na Mente Universal. Ela permanece nela durante toda a duração da projeção. A morte não é uma migração de uma substância para outra, mas o fim de uma projeção. Quando a projeção termina, a Mente individual, que nunca deixou a Mente Universal, pode lançar outra.\n\n(Fonte: A Mente e a Sua Projeção, §I)",
+   "cites": [
+    "A Estrutura da Existencia, Ensaio X, §IV",
+    "A Estrutura da Existencia, Ensaio III, §II",
+    "A Estrutura da Existencia, Ensaio VI, §V"
+   ],
+   "prompt_tokens": 1094,
+   "wall_seconds": 72.2222945690155,
+   "stats": {}
+  },
+  {
+   "kind": "estrutura",
+   "question": "Quem projeta a vida: a Mente Universal ou a Mente individual?",
+   "answer": "A vida é projetada pela Mente individual.\n\nA Mente Universal projeta o universo, e a Mente individual projeta a vida dentro desse universo. A projeção da vida é um ato de autodeterminação racional, enquanto a projeção do universo é um processo natural e contido em si mesmo.\n\n(Fonte: A Arena, §II)",
+   "cites": [
+    "A Estrutura da Existencia, Ensaio VI, §IV",
+    "A Estrutura da Existencia, Ensaio VI, §V",
+    "A Estrutura da Existencia, Ensaio X, §IV"
+   ],
+   "prompt_tokens": 1096,
+   "wall_seconds": 71.10417366027832,
+   "stats": {}
+  },
+  {
+   "kind": "objecao",
+   "question": "Se a Mente Universal nao tem vontade nem escuta ninguem, em que difere de um universo puramente material? Parece superflua.",
+   "answer": "A crítica toca no ponto crucial da distinção entre a Mente Universal e o universo material, mas a obra esclarece que a diferença não está na agência, mas na **natureza da projeção**.\n\nA crítica parte da premissa correta de que a Mente Universal não tem vontade, escuta súplices ou tem preferências. A obra concorda com isso: a Mente Universal não é um artífice que decide criar o universo, nem um deus que responde a orações. Ela não tem personalidade, agência intencional ou afeto. Portanto, ela não difere de um universo material apenas por não ter uma vontade consciente.\n\nA diferença reside no fato de que a Mente Universal não é um ambiente de espaço, nem um plano separado exterior a ela. Ela não aloja coisas fisicamente. A arena (o universo) está **dentro** da Mente Universal,",
+   "cites": [
+    "A Estrutura da Existencia, Ensaio VI, §IV",
+    "A Estrutura da Existencia, Ensaio I, §II",
+    "A Estrutura da Existencia, Ensaio VI, §II"
+   ],
+   "prompt_tokens": 1108,
+   "wall_seconds": 80.4160385131836,
+   "stats": {}
+  },
+  {
+   "kind": "recusa",
+   "question": "O que a Cosmologia Composicional diz sobre a interpretacao de Copenhague da mecanica quantica?",
+   "answer": "A Cosmologia Composicional não trata especificamente da interpretação de Copenhague da mecânica quântica. O sistema não aborda questões de física ou interpretações de modelos científicos específicos. Seu foco restringe-se à arquitetura conceitual da Mente Universal, à natureza da perfeição e à relação entre o todo e as partes.\n\n(Fonte: O Conhecimento Local e a Linguagem da Perfeição, §VIII)",
+   "cites": [
+    "A Estrutura da Existencia, Ensaio VI, §IX",
+    "A Estrutura da Existencia, Ensaio VII, §XII",
+    "A Estrutura da Existencia, Ensaio I, §X"
+   ],
+   "prompt_tokens": 1059,
+   "wall_seconds": 71.16464257240295,
+   "stats": {}
+  }
+ ]
+}

@@ -1,0 +1,306 @@
+{
+ "n_tensors": 9703,
+ "params": 31221488576,
+ "bytes": 62442983168,
+ "patterns": {
+  "model.embed_tokens.weight": {
+   "n": 1,
+   "params": 317194240,
+   "shape": [
+    154880,
+    2048
+   ],
+   "dtype": "BF16",
+   "example": "model.embed_tokens.weight"
+  },
+  "model.layers.N.input_layernorm.weight": {
+   "n": 48,
+   "params": 98304,
+   "shape": [
+    2048
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.0.input_layernorm.weight"
+  },
+  "model.layers.N.mlp.down_proj.weight": {
+   "n": 1,
+   "params": 20971520,
+   "shape": [
+    2048,
+    10240
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.0.mlp.down_proj.weight"
+  },
+  "model.layers.N.mlp.gate_proj.weight": {
+   "n": 1,
+   "params": 20971520,
+   "shape": [
+    10240,
+    2048
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.0.mlp.gate_proj.weight"
+  },
+  "model.layers.N.mlp.up_proj.weight": {
+   "n": 1,
+   "params": 20971520,
+   "shape": [
+    10240,
+    2048
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.0.mlp.up_proj.weight"
+  },
+  "model.layers.N.post_attention_layernorm.weight": {
+   "n": 48,
+   "params": 98304,
+   "shape": [
+    2048
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.0.post_attention_layernorm.weight"
+  },
+  "model.layers.N.self_attn.kv_a_layernorm.weight": {
+   "n": 48,
+   "params": 24576,
+   "shape": [
+    512
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.0.self_attn.kv_a_layernorm.weight"
+  },
+  "model.layers.N.self_attn.kv_a_proj_with_mqa.weight": {
+   "n": 48,
+   "params": 56623104,
+   "shape": [
+    576,
+    2048
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.0.self_attn.kv_a_proj_with_mqa.weight"
+  },
+  "model.layers.N.self_attn.kv_b_proj.weight": {
+   "n": 48,
+   "params": 220200960,
+   "shape": [
+    8960,
+    512
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.0.self_attn.kv_b_proj.weight"
+  },
+  "model.layers.N.self_attn.o_proj.weight": {
+   "n": 48,
+   "params": 503316480,
+   "shape": [
+    2048,
+    5120
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.0.self_attn.o_proj.weight"
+  },
+  "model.layers.N.self_attn.q_a_layernorm.weight": {
+   "n": 48,
+   "params": 36864,
+   "shape": [
+    768
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.0.self_attn.q_a_layernorm.weight"
+  },
+  "model.layers.N.self_attn.q_a_proj.weight": {
+   "n": 48,
+   "params": 75497472,
+   "shape": [
+    768,
+    2048
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.0.self_attn.q_a_proj.weight"
+  },
+  "model.layers.N.self_attn.q_b_proj.weight": {
+   "n": 48,
+   "params": 188743680,
+   "shape": [
+    5120,
+    768
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.0.self_attn.q_b_proj.weight"
+  },
+  "model.layers.N.embed_tokens.weight": {
+   "n": 1,
+   "params": 317194240,
+   "shape": [
+    154880,
+    2048
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.47.embed_tokens.weight"
+  },
+  "model.layers.N.mlp.gate.e_score_correction_bias": {
+   "n": 47,
+   "params": 3008,
+   "shape": [
+    64
+   ],
+   "dtype": "F32",
+   "example": "model.layers.1.mlp.gate.e_score_correction_bias"
+  },
+  "model.layers.N.mlp.experts.N.down_proj.weight": {
+   "n": 3008,
+   "params": 9462349824,
+   "shape": [
+    2048,
+    1536
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.1.mlp.experts.0.down_proj.weight"
+  },
+  "model.layers.N.mlp.experts.N.gate_proj.weight": {
+   "n": 3008,
+   "params": 9462349824,
+   "shape": [
+    1536,
+    2048
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.1.mlp.experts.0.gate_proj.weight"
+  },
+  "model.layers.N.mlp.experts.N.up_proj.weight": {
+   "n": 3008,
+   "params": 9462349824,
+   "shape": [
+    1536,
+    2048
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.1.mlp.experts.0.up_proj.weight"
+  },
+  "model.layers.N.mlp.gate.weight": {
+   "n": 47,
+   "params": 6160384,
+   "shape": [
+    64,
+    2048
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.1.mlp.gate.weight"
+  },
+  "model.layers.N.mlp.shared_experts.down_proj.weight": {
+   "n": 47,
+   "params": 147849216,
+   "shape": [
+    2048,
+    1536
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.1.mlp.shared_experts.down_proj.weight"
+  },
+  "model.layers.N.mlp.shared_experts.gate_proj.weight": {
+   "n": 47,
+   "params": 147849216,
+   "shape": [
+    1536,
+    2048
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.1.mlp.shared_experts.gate_proj.weight"
+  },
+  "model.layers.N.mlp.shared_experts.up_proj.weight": {
+   "n": 47,
+   "params": 147849216,
+   "shape": [
+    1536,
+    2048
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.1.mlp.shared_experts.up_proj.weight"
+  },
+  "lm_head.weight": {
+   "n": 1,
+   "params": 317194240,
+   "shape": [
+    154880,
+    2048
+   ],
+   "dtype": "BF16",
+   "example": "lm_head.weight"
+  },
+  "model.layers.N.shared_head.head.weight": {
+   "n": 1,
+   "params": 317194240,
+   "shape": [
+    154880,
+    2048
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.47.shared_head.head.weight"
+  },
+  "model.norm.weight": {
+   "n": 1,
+   "params": 2048,
+   "shape": [
+    2048
+   ],
+   "dtype": "BF16",
+   "example": "model.norm.weight"
+  },
+  "model.layers.N.eh_proj.weight": {
+   "n": 1,
+   "params": 8388608,
+   "shape": [
+    2048,
+    4096
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.47.eh_proj.weight"
+  },
+  "model.layers.N.enorm.weight": {
+   "n": 1,
+   "params": 2048,
+   "shape": [
+    2048
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.47.enorm.weight"
+  },
+  "model.layers.N.hnorm.weight": {
+   "n": 1,
+   "params": 2048,
+   "shape": [
+    2048
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.47.hnorm.weight"
+  },
+  "model.layers.N.shared_head.norm.weight": {
+   "n": 1,
+   "params": 2048,
+   "shape": [
+    2048
+   ],
+   "dtype": "BF16",
+   "example": "model.layers.47.shared_head.norm.weight"
+  }
+ },
+ "lora_plan": {
+  "attention": {
+   "lora_params": 42958848,
+   "matched_matrices": 240
+  },
+  "shared_expert": {
+   "lora_params": 16171008,
+   "matched_matrices": 141
+  },
+  "dense_layer0": {
+   "lora_params": 1179648,
+   "matched_matrices": 3
+  },
+  "routed_experts": {
+   "lora_params": 1051115520,
+   "matched_matrices": 9165
+  }
+ }
+}

@@ -1,0 +1,4455 @@
+{
+ "root": "/workspace/cosmologia",
+ "n_docs": 87,
+ "docs": [
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_ensaio_1_mente_universal.md",
+   "path": "corpus/livro1/livro_1_ensaio_1_mente_universal.md",
+   "kind": "ensaio",
+   "essay_arabic": 1,
+   "essay_roman": "I",
+   "title": "A Mente Universal: Totalidade, Processo e Função",
+   "cite": "A Estrutura da Existencia, Ensaio I",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O problema do todo"
+    },
+    {
+     "roman": "II",
+     "heading": "A Mente Universal não é Deus"
+    },
+    {
+     "roman": "III",
+     "heading": "Totalidade composta"
+    },
+    {
+     "roman": "IV",
+     "heading": "A analogia da sociedade e seus limites"
+    },
+    {
+     "roman": "V",
+     "heading": "As funções da Mente Universal"
+    },
+    {
+     "roman": "VI",
+     "heading": "A Mente Universal como processo"
+    },
+    {
+     "roman": "VII",
+     "heading": "A fronteira nos dois extremos"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Níveis, não camadas; continência, não hierarquia"
+    },
+    {
+     "roman": "IX",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "X",
+     "heading": "O todo que depende das partes"
+    }
+   ],
+   "n_h2": 10,
+   "n_sections_numbered": 10,
+   "bytes": 29487,
+   "chars": 28369,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_ensaio_2_absoluto_e_dicionario.md",
+   "path": "corpus/livro1/livro_1_ensaio_2_absoluto_e_dicionario.md",
+   "kind": "ensaio",
+   "essay_arabic": 2,
+   "essay_roman": "II",
+   "title": "O Absoluto e o Dicionário",
+   "cite": "A Estrutura da Existencia, Ensaio II",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O problema do certo objetivo"
+    },
+    {
+     "roman": "II",
+     "heading": "O absoluto"
+    },
+    {
+     "roman": "III",
+     "heading": "O Dicionário não é o absoluto"
+    },
+    {
+     "roman": "IV",
+     "heading": "O Dicionário como interface medida"
+    },
+    {
+     "roman": "V",
+     "heading": "O acesso proporcional ao nível"
+    },
+    {
+     "roman": "VI",
+     "heading": "Realizar, não criar"
+    },
+    {
+     "roman": "VII",
+     "heading": "Incompletude e incorreção"
+    },
+    {
+     "roman": "VIII",
+     "heading": "A convergência das tradições"
+    },
+    {
+     "roman": "IX",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "X",
+     "heading": "A referência e a porta"
+    }
+   ],
+   "n_h2": 10,
+   "n_sections_numbered": 10,
+   "bytes": 28755,
+   "chars": 27576,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_ensaio_3_mentes_individualizadas.md",
+   "path": "corpus/livro1/livro_1_ensaio_3_mentes_individualizadas.md",
+   "kind": "ensaio",
+   "essay_arabic": 3,
+   "essay_roman": "III",
+   "title": "As Mentes Individualizadas",
+   "cite": "A Estrutura da Existencia, Ensaio III",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A peça viva da arquitetura"
+    },
+    {
+     "roman": "II",
+     "heading": "A realidade não-derivada da Mente individual"
+    },
+    {
+     "roman": "III",
+     "heading": "A individualidade sem fusão"
+    },
+    {
+     "roman": "IV",
+     "heading": "A autonomia condicionada"
+    },
+    {
+     "roman": "V",
+     "heading": "A obrigação estrutural"
+    },
+    {
+     "roman": "VI",
+     "heading": "Projetar, realizar, evoluir"
+    },
+    {
+     "roman": "VII",
+     "heading": "Realizar é crescer; crescer é sustentar"
+    },
+    {
+     "roman": "VIII",
+     "heading": "A economia do conhecimento"
+    },
+    {
+     "roman": "IX",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "X",
+     "heading": "O motor do todo"
+    }
+   ],
+   "n_h2": 10,
+   "n_sections_numbered": 10,
+   "bytes": 26064,
+   "chars": 25047,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_ensaio_4_duas_regioes_livre_arbitrio.md",
+   "path": "corpus/livro1/livro_1_ensaio_4_duas_regioes_livre_arbitrio.md",
+   "kind": "ensaio",
+   "essay_arabic": 4,
+   "essay_roman": "IV",
+   "title": "As Duas Regiões e o Livre-Arbítrio",
+   "cite": "A Estrutura da Existencia, Ensaio IV",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A pergunta herdada"
+    },
+    {
+     "roman": "II",
+     "heading": "A região da razão pura"
+    },
+    {
+     "roman": "III",
+     "heading": "Por que a razão pura não basta"
+    },
+    {
+     "roman": "IV",
+     "heading": "A zona de isenção"
+    },
+    {
+     "roman": "V",
+     "heading": "Por que existem projeções"
+    },
+    {
+     "roman": "VI",
+     "heading": "A capacidade de errar"
+    },
+    {
+     "roman": "VII",
+     "heading": "A designação como autodeterminação racional"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Planeja sóbria, executa enevoada"
+    },
+    {
+     "roman": "IX",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "X",
+     "heading": "As duas regiões e a vida que importa"
+    }
+   ],
+   "n_h2": 10,
+   "n_sections_numbered": 10,
+   "bytes": 24286,
+   "chars": 23203,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_ensaio_5_lexico_das_liberdades.md",
+   "path": "corpus/livro1/livro_1_ensaio_5_lexico_das_liberdades.md",
+   "kind": "ensaio",
+   "essay_arabic": 5,
+   "essay_roman": "V",
+   "title": "O Léxico das Liberdades",
+   "cite": "A Estrutura da Existencia, Ensaio V",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A palavra que carrega demais"
+    },
+    {
+     "roman": "II",
+     "heading": "O paradoxo do tolo e do sábio"
+    },
+    {
+     "roman": "III",
+     "heading": "Livre-arbítrio"
+    },
+    {
+     "roman": "IV",
+     "heading": "Capacidade"
+    },
+    {
+     "roman": "V",
+     "heading": "Discernimento"
+    },
+    {
+     "roman": "VI",
+     "heading": "A latitude e a sua face inversa"
+    },
+    {
+     "roman": "VII",
+     "heading": "As três que crescem, a que encolhe"
+    },
+    {
+     "roman": "VIII",
+     "heading": "O nível de evolução"
+    },
+    {
+     "roman": "IX",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "X",
+     "heading": "Liberar a palavra"
+    }
+   ],
+   "n_h2": 10,
+   "n_sections_numbered": 10,
+   "bytes": 22233,
+   "chars": 21439,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_ensaio_6_a_arena.md",
+   "path": "corpus/livro1/livro_1_ensaio_6_a_arena.md",
+   "kind": "ensaio",
+   "essay_arabic": 6,
+   "essay_roman": "VI",
+   "title": "A Arena: o Universo como Projeção da Mente Universal",
+   "cite": "A Estrutura da Existencia, Ensaio VI",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O problema do físico"
+    },
+    {
+     "roman": "II",
+     "heading": "A arena criada dentro da Mente Universal"
+    },
+    {
+     "roman": "III",
+     "heading": "De que é feita a arena"
+    },
+    {
+     "roman": "IV",
+     "heading": "O universo como projeção da Mente Universal"
+    },
+    {
+     "roman": "V",
+     "heading": "O aninhamento"
+    },
+    {
+     "roman": "VI",
+     "heading": "Realidade dependente, não ilusão"
+    },
+    {
+     "roman": "VII",
+     "heading": "A arena calibrada e a multiplicidade de mundos"
+    },
+    {
+     "roman": "VIII",
+     "heading": "A arena que muda"
+    },
+    {
+     "roman": "IX",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "X",
+     "heading": "O palco que é feito do próprio teatro"
+    }
+   ],
+   "n_h2": 10,
+   "n_sections_numbered": 10,
+   "bytes": 31690,
+   "chars": 30512,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_ensaio_7_conhecimento_local.md",
+   "path": "corpus/livro1/livro_1_ensaio_7_conhecimento_local.md",
+   "kind": "ensaio",
+   "essay_arabic": 7,
+   "essay_roman": "VII",
+   "title": "O Conhecimento Local e a Linguagem da Perfeição",
+   "cite": "A Estrutura da Existencia, Ensaio VII",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O conhecimento que é exato e, no entanto, local"
+    },
+    {
+     "roman": "II",
+     "heading": "O certo absoluto não é o conhecimento estruturado"
+    },
+    {
+     "roman": "III",
+     "heading": "Por que a física é local"
+    },
+    {
+     "roman": "IV",
+     "heading": "As medidas e os seus referentes"
+    },
+    {
+     "roman": "V",
+     "heading": "E a matemática? E a lógica?"
+    },
+    {
+     "roman": "VI",
+     "heading": "Os graus de localidade"
+    },
+    {
+     "roman": "VII",
+     "heading": "A matemática como a linguagem local da perfeição"
+    },
+    {
+     "roman": "VIII",
+     "heading": "A eficácia desconcertante da matemática"
+    },
+    {
+     "roman": "IX",
+     "heading": "Por que o exato pode ser local sem deixar de ser exato"
+    },
+    {
+     "roman": "X",
+     "heading": "Por que o conhecimento local não mede a evolução"
+    },
+    {
+     "roman": "XI",
+     "heading": "O cientificismo"
+    },
+    {
+     "roman": "XII",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XIII",
+     "heading": "A língua com que se toca o perfeito"
+    }
+   ],
+   "n_h2": 13,
+   "n_sections_numbered": 13,
+   "bytes": 26628,
+   "chars": 25547,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_ensaio_8_genese_das_mentes.md",
+   "path": "corpus/livro1/livro_1_ensaio_8_genese_das_mentes.md",
+   "kind": "ensaio",
+   "essay_arabic": 8,
+   "essay_roman": "VIII",
+   "title": "A Gênese das Mentes",
+   "cite": "A Estrutura da Existencia, Ensaio VIII",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "De onde vêm as Mentes?"
+    },
+    {
+     "roman": "II",
+     "heading": "Uma só substância que se refina"
+    },
+    {
+     "roman": "III",
+     "heading": "A escala dos seres"
+    },
+    {
+     "roman": "IV",
+     "heading": "Abaixo da individuação, a evolução é coletiva"
+    },
+    {
+     "roman": "V",
+     "heading": "O salto da individuação"
+    },
+    {
+     "roman": "VI",
+     "heading": "O livre-arbítrio que a individuação traz"
+    },
+    {
+     "roman": "VII",
+     "heading": "A primeira projeção"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Animal e humano"
+    },
+    {
+     "roman": "IX",
+     "heading": "A purificação acontece pela ação, não por transferência"
+    },
+    {
+     "roman": "X",
+     "heading": "A fronteira da gênese"
+    },
+    {
+     "roman": "XI",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XII",
+     "heading": "O que sobe, e o que disso resulta"
+    }
+   ],
+   "n_h2": 12,
+   "n_sections_numbered": 12,
+   "bytes": 32199,
+   "chars": 30959,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_ensaio_9_escala_e_lugar_humano.md",
+   "path": "corpus/livro1/livro_1_ensaio_9_escala_e_lugar_humano.md",
+   "kind": "ensaio",
+   "essay_arabic": 9,
+   "essay_roman": "IX",
+   "title": "A Escala da Arena e o Lugar Humano",
+   "cite": "A Estrutura da Existencia, Ensaio IX",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A pergunta do lugar"
+    },
+    {
+     "roman": "II",
+     "heading": "A arena é calibrada ao nível que hospeda"
+    },
+    {
+     "roman": "III",
+     "heading": "Por que este mundo parece talhado à nossa medida"
+    },
+    {
+     "roman": "IV",
+     "heading": "Ápice deste mundo, não ápice absoluto"
+    },
+    {
+     "roman": "V",
+     "heading": "A vastidão acima"
+    },
+    {
+     "roman": "VI",
+     "heading": "A parábola da universidade"
+    },
+    {
+     "roman": "VII",
+     "heading": "A escala não é uma hierarquia de valor"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Nem arrogância, nem desespero"
+    },
+    {
+     "roman": "IX",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "X",
+     "heading": "O lugar e o que dele se segue"
+    }
+   ],
+   "n_h2": 10,
+   "n_sections_numbered": 10,
+   "bytes": 27700,
+   "chars": 26661,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_ensaio_10_a_mente_e_a_sua_projecao.md",
+   "path": "corpus/livro1/livro_1_ensaio_10_a_mente_e_a_sua_projecao.md",
+   "kind": "ensaio",
+   "essay_arabic": 10,
+   "essay_roman": "X",
+   "title": "A Mente e a Sua Projeção",
+   "cite": "A Estrutura da Existencia, Ensaio X",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A vida vivida e a Mente que a vive"
+    },
+    {
+     "roman": "II",
+     "heading": "Agente, não produto"
+    },
+    {
+     "roman": "III",
+     "heading": "A Mente que permanece"
+    },
+    {
+     "roman": "IV",
+     "heading": "Nem descida, nem migração"
+    },
+    {
+     "roman": "V",
+     "heading": "A assimetria das durações"
+    },
+    {
+     "roman": "VI",
+     "heading": "Por que \"projeção\", e não outra palavra"
+    },
+    {
+     "roman": "VII",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "VIII",
+     "heading": "A relação que o livro vai percorrer"
+    }
+   ],
+   "n_h2": 8,
+   "n_sections_numbered": 8,
+   "bytes": 30970,
+   "chars": 29750,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_ensaio_11_o_ato_de_inicio_a_designacao.md",
+   "path": "corpus/livro1/livro_1_ensaio_11_o_ato_de_inicio_a_designacao.md",
+   "kind": "ensaio",
+   "essay_arabic": 11,
+   "essay_roman": "XI",
+   "title": "O Ato de Início: a Designação",
+   "cite": "A Estrutura da Existencia, Ensaio XI",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "Por que ato começa uma vida"
+    },
+    {
+     "roman": "II",
+     "heading": "O ato no nível da Mente"
+    },
+    {
+     "roman": "III",
+     "heading": "Autodeterminação racional, e o \"voluntário\" sem vontade"
+    },
+    {
+     "roman": "IV",
+     "heading": "A exceção de origem"
+    },
+    {
+     "roman": "V",
+     "heading": "Planeja sóbria, executa enevoada"
+    },
+    {
+     "roman": "VI",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "VII",
+     "heading": "Do ato ao cálculo"
+    }
+   ],
+   "n_h2": 7,
+   "n_sections_numbered": 7,
+   "bytes": 19962,
+   "chars": 19005,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_ensaio_12_o_calculo_da_projecao.md",
+   "path": "corpus/livro1/livro_1_ensaio_12_o_calculo_da_projecao.md",
+   "kind": "ensaio",
+   "essay_arabic": 12,
+   "essay_roman": "XII",
+   "title": "O Cálculo da Projeção",
+   "cite": "A Estrutura da Existencia, Ensaio XII",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "Que conta é essa?"
+    },
+    {
+     "roman": "II",
+     "heading": "O crescimento, que é fechar lacunas"
+    },
+    {
+     "roman": "III",
+     "heading": "A medida do nível"
+    },
+    {
+     "roman": "IV",
+     "heading": "A arena disponível"
+    },
+    {
+     "roman": "V",
+     "heading": "A otimização em razão pura"
+    },
+    {
+     "roman": "VI",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "VII",
+     "heading": "Do cálculo aos limites"
+    }
+   ],
+   "n_h2": 7,
+   "n_sections_numbered": 7,
+   "bytes": 20228,
+   "chars": 19280,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_ensaio_13_os_tres_limites_e_o_envelope.md",
+   "path": "corpus/livro1/livro_1_ensaio_13_os_tres_limites_e_o_envelope.md",
+   "kind": "ensaio",
+   "essay_arabic": 13,
+   "essay_roman": "XIII",
+   "title": "Os Três Limites e o Envelope",
+   "cite": "A Estrutura da Existencia, Ensaio XIII",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "Dentro de que limites se desenha?"
+    },
+    {
+     "roman": "II",
+     "heading": "O primeiro limite, o meio físico"
+    },
+    {
+     "roman": "III",
+     "heading": "O segundo limite, a herança genealógica"
+    },
+    {
+     "roman": "IV",
+     "heading": "O terceiro limite, a capacidade atual"
+    },
+    {
+     "roman": "V",
+     "heading": "O envelope"
+    },
+    {
+     "roman": "VI",
+     "heading": "A designação das capacidades e a largura do canal"
+    },
+    {
+     "roman": "VII",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Do envelope à linhagem"
+    }
+   ],
+   "n_h2": 8,
+   "n_sections_numbered": 8,
+   "bytes": 20010,
+   "chars": 19131,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_ensaio_14_a_linhagem_e_o_contexto_integrado.md",
+   "path": "corpus/livro1/livro_1_ensaio_14_a_linhagem_e_o_contexto_integrado.md",
+   "kind": "ensaio",
+   "essay_arabic": 14,
+   "essay_roman": "XIV",
+   "title": "A Linhagem e o Contexto Integrado",
+   "cite": "A Estrutura da Existencia, Ensaio XIV",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O que a Mente escolhe, e o que vem no pacote"
+    },
+    {
+     "roman": "II",
+     "heading": "O contexto, não a biologia"
+    },
+    {
+     "roman": "III",
+     "heading": "A linhagem vem no pacote"
+    },
+    {
+     "roman": "IV",
+     "heading": "De que lado pende a biologia, e de onde vem o talento"
+    },
+    {
+     "roman": "V",
+     "heading": "A seleção que parece daqui, e que é de lá"
+    },
+    {
+     "roman": "VI",
+     "heading": "O estorvo que pode ser desafio"
+    },
+    {
+     "roman": "VII",
+     "heading": "Contexto, não roteiro"
+    },
+    {
+     "roman": "VIII",
+     "heading": "O contexto escolhido não é o sofrimento merecido"
+    },
+    {
+     "roman": "IX",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "X",
+     "heading": "Do contexto à dinâmica"
+    }
+   ],
+   "n_h2": 10,
+   "n_sections_numbered": 10,
+   "bytes": 22277,
+   "chars": 21442,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_ensaio_15_o_vetor_irreversivel.md",
+   "path": "corpus/livro1/livro_1_ensaio_15_o_vetor_irreversivel.md",
+   "kind": "ensaio",
+   "essay_arabic": 15,
+   "essay_roman": "XV",
+   "title": "O Vetor Irreversível",
+   "cite": "A Estrutura da Existencia, Ensaio XV",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O que acontece depois do lançamento"
+    },
+    {
+     "roman": "II",
+     "heading": "O crescimento é vetorial"
+    },
+    {
+     "roman": "III",
+     "heading": "Aceleração e estagnação"
+    },
+    {
+     "roman": "IV",
+     "heading": "A irreversibilidade"
+    },
+    {
+     "roman": "V",
+     "heading": "A flecha, não a desordem"
+    },
+    {
+     "roman": "VI",
+     "heading": "Nada em vão, e o resultado que nunca é negativo"
+    },
+    {
+     "roman": "VII",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Do vetor à devolução"
+    }
+   ],
+   "n_h2": 8,
+   "n_sections_numbered": 8,
+   "bytes": 18121,
+   "chars": 17396,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_ensaio_16_a_devolucao_o_dividendo_que_persiste.md",
+   "path": "corpus/livro1/livro_1_ensaio_16_a_devolucao_o_dividendo_que_persiste.md",
+   "kind": "ensaio",
+   "essay_arabic": 16,
+   "essay_roman": "XVI",
+   "title": "A Devolução: o Dividendo que Persiste",
+   "cite": "A Estrutura da Existencia, Ensaio XVI",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A relação é de mão dupla"
+    },
+    {
+     "roman": "II",
+     "heading": "A devolução"
+    },
+    {
+     "roman": "III",
+     "heading": "O purificado, não o bruto"
+    },
+    {
+     "roman": "IV",
+     "heading": "A assimetria, e por que a vida não é desperdício"
+    },
+    {
+     "roman": "V",
+     "heading": "Proporcional à integração, não à intensidade"
+    },
+    {
+     "roman": "VI",
+     "heading": "O que persiste, e o que se dissolve"
+    },
+    {
+     "roman": "VII",
+     "heading": "A morte do personagem e a permanência da Mente"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "IX",
+     "heading": "Da devolução às outras Mentes"
+    }
+   ],
+   "n_h2": 9,
+   "n_sections_numbered": 9,
+   "bytes": 27096,
+   "chars": 26068,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_ensaio_17_as_outras_mentes_o_desenho_individual_e_a_autonomia.md",
+   "path": "corpus/livro1/livro_1_ensaio_17_as_outras_mentes_o_desenho_individual_e_a_autonomia.md",
+   "kind": "ensaio",
+   "essay_arabic": 17,
+   "essay_roman": "XVII",
+   "title": "As Outras Mentes: o Desenho Individual e a Autonomia",
+   "cite": "A Estrutura da Existencia, Ensaio XVII",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A projeção entre outras Mentes"
+    },
+    {
+     "roman": "II",
+     "heading": "O desenho é sempre individual"
+    },
+    {
+     "roman": "III",
+     "heading": "A autonomia e a responsabilidade intactas"
+    },
+    {
+     "roman": "IV",
+     "heading": "A opacidade do outro"
+    },
+    {
+     "roman": "V",
+     "heading": "O outro como o material mais rico, e o que nele não se transfere"
+    },
+    {
+     "roman": "VI",
+     "heading": "A névoa, e o que não se afirma de dentro"
+    },
+    {
+     "roman": "VII",
+     "heading": "As relações difíceis"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "IX",
+     "heading": "Do desenho individual à finitude"
+    }
+   ],
+   "n_h2": 9,
+   "n_sections_numbered": 9,
+   "bytes": 25644,
+   "chars": 24798,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_ensaio_18_a_finitude_e_o_tempo_da_projecao.md",
+   "path": "corpus/livro1/livro_1_ensaio_18_a_finitude_e_o_tempo_da_projecao.md",
+   "kind": "ensaio",
+   "essay_arabic": 18,
+   "essay_roman": "XVIII",
+   "title": "A Finitude e o Tempo da Projeção",
+   "cite": "A Estrutura da Existencia, Ensaio XVIII",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "Toda projeção termina"
+    },
+    {
+     "roman": "II",
+     "heading": "A finitude é condição, não defeito"
+    },
+    {
+     "roman": "III",
+     "heading": "A finitude como o último muro do envelope"
+    },
+    {
+     "roman": "IV",
+     "heading": "A duração que não se sabe"
+    },
+    {
+     "roman": "V",
+     "heading": "Os modos de terminar"
+    },
+    {
+     "roman": "VI",
+     "heading": "A assimetria das escalas"
+    },
+    {
+     "roman": "VII",
+     "heading": "A urgência saudável e o medo do inacabado"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "IX",
+     "heading": "Da finitude à sucessão"
+    }
+   ],
+   "n_h2": 9,
+   "n_sections_numbered": 9,
+   "bytes": 28686,
+   "chars": 27517,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_ensaio_19_a_sucessao_de_projecoes.md",
+   "path": "corpus/livro1/livro_1_ensaio_19_a_sucessao_de_projecoes.md",
+   "kind": "ensaio",
+   "essay_arabic": 19,
+   "essay_roman": "XIX",
+   "title": "A Sucessão de Projeções",
+   "cite": "A Estrutura da Existencia, Ensaio XIX",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "Uma vida não basta"
+    },
+    {
+     "roman": "II",
+     "heading": "A mesma Mente, muitas vidas"
+    },
+    {
+     "roman": "III",
+     "heading": "O que atravessa, e o que não atravessa"
+    },
+    {
+     "roman": "IV",
+     "heading": "O confronto entre o planejado e o recebido"
+    },
+    {
+     "roman": "V",
+     "heading": "A opacidade entre as vidas, e o seu porquê"
+    },
+    {
+     "roman": "VI",
+     "heading": "As marcas da sucessão na vida"
+    },
+    {
+     "roman": "VII",
+     "heading": "A direção da sucessão"
+    },
+    {
+     "roman": "VIII",
+     "heading": "O começo e o horizonte da série"
+    },
+    {
+     "roman": "IX",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "X",
+     "heading": "Da sucessão à justiça"
+    }
+   ],
+   "n_h2": 10,
+   "n_sections_numbered": 10,
+   "bytes": 34905,
+   "chars": 33548,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_ensaio_20_a_justica_do_projeto.md",
+   "path": "corpus/livro1/livro_1_ensaio_20_a_justica_do_projeto.md",
+   "kind": "ensaio",
+   "essay_arabic": 20,
+   "essay_roman": "XX",
+   "title": "A Justiça do Projeto",
+   "cite": "A Estrutura da Existencia, Ensaio XX",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A objeção mais grave"
+    },
+    {
+     "roman": "II",
+     "heading": "A objeção é como a inveja"
+    },
+    {
+     "roman": "III",
+     "heading": "O ganho vem só do livre-arbítrio, não da circunstância"
+    },
+    {
+     "roman": "IV",
+     "heading": "O teto invariante, a forma variável"
+    },
+    {
+     "roman": "V",
+     "heading": "A aridez não é sofrimento, e o campo árido exige mais"
+    },
+    {
+     "roman": "VI",
+     "heading": "A vítima não é diminuída; o agressor responde"
+    },
+    {
+     "roman": "VII",
+     "heading": "A vida dura"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Não há juiz"
+    },
+    {
+     "roman": "IX",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "X",
+     "heading": "Da justiça à dignidade"
+    }
+   ],
+   "n_h2": 10,
+   "n_sections_numbered": 10,
+   "bytes": 29141,
+   "chars": 28035,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_ensaio_21_a_dignidade_do_projeto_pessoal.md",
+   "path": "corpus/livro1/livro_1_ensaio_21_a_dignidade_do_projeto_pessoal.md",
+   "kind": "ensaio",
+   "essay_arabic": 21,
+   "essay_roman": "XXI",
+   "title": "A Dignidade do Projeto Pessoal",
+   "cite": "A Estrutura da Existencia, Ensaio XXI",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O que tudo isto diz de uma vida"
+    },
+    {
+     "roman": "II",
+     "heading": "A vida como projeto"
+    },
+    {
+     "roman": "III",
+     "heading": "A dignidade estrutural"
+    },
+    {
+     "roman": "IV",
+     "heading": "O que muda quando se percebe"
+    },
+    {
+     "roman": "V",
+     "heading": "Seriedade sem opressão"
+    },
+    {
+     "roman": "VI",
+     "heading": "A dignidade do outro"
+    },
+    {
+     "roman": "VII",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "VIII",
+     "heading": "O fecho do livro, e o instrumento que falta examinar"
+    }
+   ],
+   "n_h2": 8,
+   "n_sections_numbered": 8,
+   "bytes": 21650,
+   "chars": 20862,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "conspecto_da_obra.md",
+   "path": "corpus/livro1/conspecto_da_obra.md",
+   "kind": "conspecto",
+   "essay_arabic": null,
+   "essay_roman": null,
+   "title": "Conspecto",
+   "cite": null,
+   "sections": [],
+   "n_h2": 2,
+   "n_sections_numbered": 0,
+   "bytes": 11577,
+   "chars": 11079,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_indice_de_termos.md",
+   "path": "corpus/livro1/livro_1_indice_de_termos.md",
+   "kind": "indice_de_termos",
+   "essay_arabic": null,
+   "essay_roman": null,
+   "title": "Índice de Termos",
+   "cite": null,
+   "sections": [],
+   "n_h2": 0,
+   "n_sections_numbered": 0,
+   "bytes": 21944,
+   "chars": 20804,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_posfacio.md",
+   "path": "corpus/livro1/livro_1_posfacio.md",
+   "kind": "posfacio",
+   "essay_arabic": null,
+   "essay_roman": null,
+   "title": "Posfácio",
+   "cite": null,
+   "sections": [],
+   "n_h2": 0,
+   "n_sections_numbered": 0,
+   "bytes": 4493,
+   "chars": 4367,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_prefacio.md",
+   "path": "corpus/livro1/livro_1_prefacio.md",
+   "kind": "prefacio",
+   "essay_arabic": null,
+   "essay_roman": null,
+   "title": "Prefácio",
+   "cite": null,
+   "sections": [],
+   "n_h2": 0,
+   "n_sections_numbered": 0,
+   "bytes": 7186,
+   "chars": 6955,
+   "nfc": true
+  },
+  {
+   "book": "livro1",
+   "book_title": "A Estrutura da Existencia",
+   "file": "livro_1_referencias.md",
+   "path": "corpus/livro1/livro_1_referencias.md",
+   "kind": "referencias",
+   "essay_arabic": null,
+   "essay_roman": null,
+   "title": "Referências e Citações",
+   "cite": null,
+   "sections": [],
+   "n_h2": 0,
+   "n_sections_numbered": 0,
+   "bytes": 33771,
+   "chars": 32132,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_ensaio_1_mente_corpo_arquitetura.md",
+   "path": "corpus/livro2/livro_2_ensaio_1_mente_corpo_arquitetura.md",
+   "kind": "ensaio",
+   "essay_arabic": 1,
+   "essay_roman": "I",
+   "title": "O Problema da Mente e do Corpo, e a Arquitetura em Planos",
+   "cite": "O Instrumento e o Afeto, Ensaio I",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O problema que toda cosmologia herda"
+    },
+    {
+     "roman": "II",
+     "heading": "As três respostas clássicas e seus impasses"
+    },
+    {
+     "roman": "III",
+     "heading": "A recusa de uma escolha falsa"
+    },
+    {
+     "roman": "IV",
+     "heading": "Os termos da arquitetura"
+    },
+    {
+     "roman": "V",
+     "heading": "O plano atemporal"
+    },
+    {
+     "roman": "VI",
+     "heading": "A consciência"
+    },
+    {
+     "roman": "VII",
+     "heading": "O problema difícil, deslocado"
+    },
+    {
+     "roman": "VIII",
+     "heading": "O que esta arquitetura evita"
+    },
+    {
+     "roman": "IX",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "X",
+     "heading": "A interface que falta examinar"
+    }
+   ],
+   "n_h2": 10,
+   "n_sections_numbered": 10,
+   "bytes": 25546,
+   "chars": 24680,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_ensaio_2_cerebro_antena.md",
+   "path": "corpus/livro2/livro_2_ensaio_2_cerebro_antena.md",
+   "kind": "ensaio",
+   "essay_arabic": 2,
+   "essay_roman": "II",
+   "title": "O Cérebro como Antena e como Sensor",
+   "cite": "O Instrumento e o Afeto, Ensaio II",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O órgão que se confunde com aquilo que faz"
+    },
+    {
+     "roman": "II",
+     "heading": "Os sentidos e aquilo a que servem"
+    },
+    {
+     "roman": "III",
+     "heading": "A antena"
+    },
+    {
+     "roman": "IV",
+     "heading": "A energia do ambiente e a borda do que se pode dizer"
+    },
+    {
+     "roman": "V",
+     "heading": "O duplo ofício da interface"
+    },
+    {
+     "roman": "VI",
+     "heading": "As três vias e o teatro onde convergem"
+    },
+    {
+     "roman": "VII",
+     "heading": "A extensão da antena"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "IX",
+     "heading": "A porta da riqueza, e a marca que ela deixa"
+    }
+   ],
+   "n_h2": 9,
+   "n_sections_numbered": 9,
+   "bytes": 22726,
+   "chars": 21912,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_ensaio_3_marca_reflexo.md",
+   "path": "corpus/livro2/livro_2_ensaio_3_marca_reflexo.md",
+   "kind": "ensaio",
+   "essay_arabic": 3,
+   "essay_roman": "III",
+   "title": "A Marca como Reflexo: o registro e a memória",
+   "cite": "O Instrumento e o Afeto, Ensaio III",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O que fica do que passa"
+    },
+    {
+     "roman": "II",
+     "heading": "A marca"
+    },
+    {
+     "roman": "III",
+     "heading": "O reflexo, e não a fonte"
+    },
+    {
+     "roman": "IV",
+     "heading": "Uma só inscrição de toda a atividade"
+    },
+    {
+     "roman": "V",
+     "heading": "Registrar não é valorar"
+    },
+    {
+     "roman": "VI",
+     "heading": "A consistência entre as vidas"
+    },
+    {
+     "roman": "VII",
+     "heading": "A memória viva, e por que a lesão importa"
+    },
+    {
+     "roman": "VIII",
+     "heading": "A memória é local, e dissipa"
+    },
+    {
+     "roman": "IX",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "X",
+     "heading": "Do que fica ao que circula"
+    }
+   ],
+   "n_h2": 10,
+   "n_sections_numbered": 10,
+   "bytes": 25139,
+   "chars": 24168,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_ensaio_4_interface_bidirecional.md",
+   "path": "corpus/livro2/livro_2_ensaio_4_interface_bidirecional.md",
+   "kind": "ensaio",
+   "essay_arabic": 4,
+   "essay_roman": "IV",
+   "title": "A Interface Bidirecional: o que sobe, o que desce, e o corpo",
+   "cite": "O Instrumento e o Afeto, Ensaio IV",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O instrumento que faz circular"
+    },
+    {
+     "roman": "II",
+     "heading": "As duas direções e a unidade da via"
+    },
+    {
+     "roman": "III",
+     "heading": "O que sobe"
+    },
+    {
+     "roman": "IV",
+     "heading": "O que desce sobre a marca"
+    },
+    {
+     "roman": "V",
+     "heading": "A recordação que refaz, e o tratamento que revalora"
+    },
+    {
+     "roman": "VI",
+     "heading": "A descida que não é retorno"
+    },
+    {
+     "roman": "VII",
+     "heading": "O que a consciência faz ao corpo"
+    },
+    {
+     "roman": "VIII",
+     "heading": "O que a circulação não toca"
+    },
+    {
+     "roman": "IX",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "X",
+     "heading": "Da circulação à medida"
+    }
+   ],
+   "n_h2": 10,
+   "n_sections_numbered": 10,
+   "bytes": 29803,
+   "chars": 28647,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_ensaio_5_a_valoracao.md",
+   "path": "corpus/livro2/livro_2_ensaio_5_a_valoracao.md",
+   "kind": "ensaio",
+   "essay_arabic": 5,
+   "essay_roman": "V",
+   "title": "A Valoração: a comparação com o Dicionário",
+   "cite": "O Instrumento e o Afeto, Ensaio V",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A charneira do trânsito"
+    },
+    {
+     "roman": "II",
+     "heading": "A comparação e o seu termo"
+    },
+    {
+     "roman": "III",
+     "heading": "A medida única"
+    },
+    {
+     "roman": "IV",
+     "heading": "O senso de lógica"
+    },
+    {
+     "roman": "V",
+     "heading": "A medida é absoluta; o acesso é graduado pelo nível"
+    },
+    {
+     "roman": "VI",
+     "heading": "Dois propósitos, um só mecanismo"
+    },
+    {
+     "roman": "VII",
+     "heading": "As formas do retorno"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "IX",
+     "heading": "Da medida ao que dela dói"
+    }
+   ],
+   "n_h2": 9,
+   "n_sections_numbered": 9,
+   "bytes": 22367,
+   "chars": 21438,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_ensaio_6_a_dor.md",
+   "path": "corpus/livro2/livro_2_ensaio_6_a_dor.md",
+   "kind": "ensaio",
+   "essay_arabic": 6,
+   "essay_roman": "VI",
+   "title": "A Dor e o que se Faz Dela",
+   "cite": "O Instrumento e o Afeto, Ensaio VI",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A mais dura das formas"
+    },
+    {
+     "roman": "II",
+     "heading": "Local, e soberanamente real"
+    },
+    {
+     "roman": "III",
+     "heading": "Quem sente, e quem não sente"
+    },
+    {
+     "roman": "IV",
+     "heading": "A causa pode ser irreal; a dor não"
+    },
+    {
+     "roman": "V",
+     "heading": "Como a dor esmaece"
+    },
+    {
+     "roman": "VI",
+     "heading": "Os três desfechos"
+    },
+    {
+     "roman": "VII",
+     "heading": "Nenhuma dor é eterna"
+    },
+    {
+     "roman": "VIII",
+     "heading": "A dor não é veredito"
+    },
+    {
+     "roman": "IX",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "X",
+     "heading": "Do que dói ao que o conduz"
+    }
+   ],
+   "n_h2": 10,
+   "n_sections_numbered": 10,
+   "bytes": 19569,
+   "chars": 18847,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_ensaio_7_o_canal.md",
+   "path": "corpus/livro2/livro_2_ensaio_7_o_canal.md",
+   "kind": "ensaio",
+   "essay_arabic": 7,
+   "essay_roman": "VII",
+   "title": "O Canal: largura, utilização e foco",
+   "cite": "O Instrumento e o Afeto, Ensaio VII",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O instrumento da via"
+    },
+    {
+     "roman": "II",
+     "heading": "A largura, a capacidade designada"
+    },
+    {
+     "roman": "III",
+     "heading": "O dom"
+    },
+    {
+     "roman": "IV",
+     "heading": "Fixa, não variável"
+    },
+    {
+     "roman": "V",
+     "heading": "O foco"
+    },
+    {
+     "roman": "VI",
+     "heading": "\"Abrir o canal\""
+    },
+    {
+     "roman": "VII",
+     "heading": "O gargalo é a utilização"
+    },
+    {
+     "roman": "VIII",
+     "heading": "O estrutural e o vivido"
+    },
+    {
+     "roman": "IX",
+     "heading": "A obstrução pelo apego"
+    },
+    {
+     "roman": "X",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XI",
+     "heading": "Da via à sua plenitude súbita"
+    }
+   ],
+   "n_h2": 11,
+   "n_sections_numbered": 11,
+   "bytes": 24279,
+   "chars": 23439,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_ensaio_8_os_saltos_do_canal.md",
+   "path": "corpus/livro2/livro_2_ensaio_8_os_saltos_do_canal.md",
+   "kind": "ensaio",
+   "essay_arabic": 8,
+   "essay_roman": "VIII",
+   "title": "Os Saltos do Canal: insight e reflexo extraordinário",
+   "cite": "O Instrumento e o Afeto, Ensaio VIII",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O levantar súbito do gargalo"
+    },
+    {
+     "roman": "II",
+     "heading": "O salto não alarga"
+    },
+    {
+     "roman": "III",
+     "heading": "Os registros do salto"
+    },
+    {
+     "roman": "IV",
+     "heading": "A emergência"
+    },
+    {
+     "roman": "V",
+     "heading": "A ação em malha aberta"
+    },
+    {
+     "roman": "VI",
+     "heading": "A Mente não reage; a alimentação desce"
+    },
+    {
+     "roman": "VII",
+     "heading": "O que o salto traz"
+    },
+    {
+     "roman": "VIII",
+     "heading": "O salto no canal estreito"
+    },
+    {
+     "roman": "IX",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "X",
+     "heading": "Do canal pleno ao canal poluído"
+    }
+   ],
+   "n_h2": 10,
+   "n_sections_numbered": 10,
+   "bytes": 17935,
+   "chars": 17291,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_ensaio_9_o_ruido.md",
+   "path": "corpus/livro2/livro_2_ensaio_9_o_ruido.md",
+   "kind": "ensaio",
+   "essay_arabic": 9,
+   "essay_roman": "IX",
+   "title": "O Ruído: o ambiente, a antena e o foco",
+   "cite": "O Instrumento e o Afeto, Ensaio IX",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O reverso do canal pleno"
+    },
+    {
+     "roman": "II",
+     "heading": "O ruído está no ambiente"
+    },
+    {
+     "roman": "III",
+     "heading": "A patologia não é captar, é o foco disperso"
+    },
+    {
+     "roman": "IV",
+     "heading": "O canal blindado"
+    },
+    {
+     "roman": "V",
+     "heading": "A alucinação"
+    },
+    {
+     "roman": "VI",
+     "heading": "Não há \"subconsciente\""
+    },
+    {
+     "roman": "VII",
+     "heading": "A assinatura do canal"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "IX",
+     "heading": "Do ruído às suas origens"
+    }
+   ],
+   "n_h2": 9,
+   "n_sections_numbered": 9,
+   "bytes": 16387,
+   "chars": 15705,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_ensaio_10_as_duas_origens_e_o_meio_termo.md",
+   "path": "corpus/livro2/livro_2_ensaio_10_as_duas_origens_e_o_meio_termo.md",
+   "kind": "ensaio",
+   "essay_arabic": 10,
+   "essay_roman": "X",
+   "title": "As Duas Origens do Distúrbio, e o Meio-Termo",
+   "cite": "O Instrumento e o Afeto, Ensaio X",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O ruído que a todos alcança, e a poucos faz mal"
+    },
+    {
+     "roman": "II",
+     "heading": "O emissor é a consciência, não o cérebro"
+    },
+    {
+     "roman": "III",
+     "heading": "A consciência sem substrato"
+    },
+    {
+     "roman": "IV",
+     "heading": "A anomalia prevista, o piso, e o peso do zero"
+    },
+    {
+     "roman": "V",
+     "heading": "O desconforto da consciência deslocada, e o seu fim"
+    },
+    {
+     "roman": "VI",
+     "heading": "As duas origens do distúrbio"
+    },
+    {
+     "roman": "VII",
+     "heading": "A tendência e a resposta"
+    },
+    {
+     "roman": "VIII",
+     "heading": "A afinidade e o foco, e o morto que não volta como se crê"
+    },
+    {
+     "roman": "IX",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "X",
+     "heading": "Do distúrbio à convivência"
+    }
+   ],
+   "n_h2": 10,
+   "n_sections_numbered": 10,
+   "bytes": 42104,
+   "chars": 40402,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_ensaio_11_a_convivencia_discernente_e_o_tratamento.md",
+   "path": "corpus/livro2/livro_2_ensaio_11_a_convivencia_discernente_e_o_tratamento.md",
+   "kind": "ensaio",
+   "essay_arabic": 11,
+   "essay_roman": "XI",
+   "title": "A Convivência Discernente e o Tratamento",
+   "cite": "O Instrumento e o Afeto, Ensaio XI",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A condição que não se cura"
+    },
+    {
+     "roman": "II",
+     "heading": "A convivência discernente"
+    },
+    {
+     "roman": "III",
+     "heading": "O foco, e o laço que se desfaz"
+    },
+    {
+     "roman": "IV",
+     "heading": "Remover o distúrbio onde o livre-arbítrio alcança"
+    },
+    {
+     "roman": "V",
+     "heading": "A direção do foco, e o retrato que dela resulta"
+    },
+    {
+     "roman": "VI",
+     "heading": "A medicação"
+    },
+    {
+     "roman": "VII",
+     "heading": "As duas respostas, e o suporte que não tutela"
+    },
+    {
+     "roman": "VIII",
+     "heading": "A estrutura descreve, a clínica é da ciência"
+    },
+    {
+     "roman": "IX",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "X",
+     "heading": "Do conviver ao que o tempo desfaz"
+    }
+   ],
+   "n_h2": 10,
+   "n_sections_numbered": 10,
+   "bytes": 25797,
+   "chars": 24783,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_ensaio_12_a_velhice_a_demencia_e_a_contabilizacao.md",
+   "path": "corpus/livro2/livro_2_ensaio_12_a_velhice_a_demencia_e_a_contabilizacao.md",
+   "kind": "ensaio",
+   "essay_arabic": 12,
+   "essay_roman": "XII",
+   "title": "A Velhice, a Demência e a Contabilização",
+   "cite": "O Instrumento e o Afeto, Ensaio XII",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "Quando a interface envelhece"
+    },
+    {
+     "roman": "II",
+     "heading": "Os dois modos de degradar"
+    },
+    {
+     "roman": "III",
+     "heading": "O isolamento da consciência"
+    },
+    {
+     "roman": "IV",
+     "heading": "A Mente permanece imune"
+    },
+    {
+     "roman": "V",
+     "heading": "A demência e a criança"
+    },
+    {
+     "roman": "VI",
+     "heading": "O princípio da contabilização"
+    },
+    {
+     "roman": "VII",
+     "heading": "O interior que não se alcança"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "IX",
+     "heading": "Da falha da interface às falhas do meio"
+    }
+   ],
+   "n_h2": 9,
+   "n_sections_numbered": 9,
+   "bytes": 21902,
+   "chars": 21018,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_ensaio_13_a_imperfeicao_do_meio.md",
+   "path": "corpus/livro2/livro_2_ensaio_13_a_imperfeicao_do_meio.md",
+   "kind": "ensaio",
+   "essay_arabic": 13,
+   "essay_roman": "XIII",
+   "title": "A Imperfeição do Meio: a unificação com as falhas do substrato",
+   "cite": "O Instrumento e o Afeto, Ensaio XIII",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O instrumento e o meio que o sustenta"
+    },
+    {
+     "roman": "II",
+     "heading": "A unificação"
+    },
+    {
+     "roman": "III",
+     "heading": "Sem hierarquia"
+    },
+    {
+     "roman": "IV",
+     "heading": "As falhas são implícitas, não designadas"
+    },
+    {
+     "roman": "V",
+     "heading": "O ganho está em como se atravessa"
+    },
+    {
+     "roman": "VI",
+     "heading": "A avaria, e o ganho que não vem dela"
+    },
+    {
+     "roman": "VII",
+     "heading": "A natureza do meio"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "IX",
+     "heading": "Da imperfeição do meio aos outros seres"
+    }
+   ],
+   "n_h2": 9,
+   "n_sections_numbered": 9,
+   "bytes": 24205,
+   "chars": 23255,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_ensaio_14_os_outros_seres_e_os_limites_do_canal.md",
+   "path": "corpus/livro2/livro_2_ensaio_14_os_outros_seres_e_os_limites_do_canal.md",
+   "kind": "ensaio",
+   "essay_arabic": 14,
+   "essay_roman": "XIV",
+   "title": "Os Outros Seres e os Limites do Canal",
+   "cite": "O Instrumento e o Afeto, Ensaio XIV",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O humano não é o único"
+    },
+    {
+     "roman": "II",
+     "heading": "O animal"
+    },
+    {
+     "roman": "III",
+     "heading": "A purificação mecânica, e a dissolução"
+    },
+    {
+     "roman": "IV",
+     "heading": "A planta, e a continuidade da escala"
+    },
+    {
+     "roman": "V",
+     "heading": "Os estados em que a interface se suspende"
+    },
+    {
+     "roman": "VI",
+     "heading": "Os limites do canal, e os outros sistemas"
+    },
+    {
+     "roman": "VII",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "VIII",
+     "heading": "O cérebro como espelho imperfeito"
+    }
+   ],
+   "n_h2": 8,
+   "n_sections_numbered": 8,
+   "bytes": 16584,
+   "chars": 16024,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_ensaio_15_o_lugar_do_sentir.md",
+   "path": "corpus/livro2/livro_2_ensaio_15_o_lugar_do_sentir.md",
+   "kind": "ensaio",
+   "essay_arabic": 15,
+   "essay_roman": "XV",
+   "title": "O Lugar do Sentir",
+   "cite": "O Instrumento e o Afeto, Ensaio XV",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A terceira região, enfim"
+    },
+    {
+     "roman": "II",
+     "heading": "As quatro respostas herdadas"
+    },
+    {
+     "roman": "III",
+     "heading": "Nem fundamental, nem emergente"
+    },
+    {
+     "roman": "IV",
+     "heading": "Nem ilusão, nem único acesso"
+    },
+    {
+     "roman": "V",
+     "heading": "O sentir é mecanismo funcional"
+    },
+    {
+     "roman": "VI",
+     "heading": "A localização exclusiva"
+    },
+    {
+     "roman": "VII",
+     "heading": "O anti-teísmo"
+    },
+    {
+     "roman": "VIII",
+     "heading": "A inversão da \"alma\" sentente"
+    },
+    {
+     "roman": "IX",
+     "heading": "O sentir é transitório"
+    },
+    {
+     "roman": "X",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XI",
+     "heading": "Do lugar do sentir à sua função"
+    }
+   ],
+   "n_h2": 11,
+   "n_sections_numbered": 11,
+   "bytes": 28298,
+   "chars": 27212,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_ensaio_16_a_marca_composta_e_a_parcialidade.md",
+   "path": "corpus/livro2/livro_2_ensaio_16_a_marca_composta_e_a_parcialidade.md",
+   "kind": "ensaio",
+   "essay_arabic": 16,
+   "essay_roman": "XVI",
+   "title": "A Marca Composta e a Parcialidade do Sentir",
+   "cite": "O Instrumento e o Afeto, Ensaio XVI",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "Do onde ao como"
+    },
+    {
+     "roman": "II",
+     "heading": "Uma só inscrição, não duas"
+    },
+    {
+     "roman": "III",
+     "heading": "A dopagem é a textura da marca, não o seu acompanhamento"
+    },
+    {
+     "roman": "IV",
+     "heading": "A marca composta sobe para ser medida"
+    },
+    {
+     "roman": "V",
+     "heading": "Os dois efeitos do afeto"
+    },
+    {
+     "roman": "VI",
+     "heading": "A parcialidade"
+    },
+    {
+     "roman": "VII",
+     "heading": "A simetria com a generalidade do senso de lógica"
+    },
+    {
+     "roman": "VIII",
+     "heading": "A parcialidade como condição de hierarquizar"
+    },
+    {
+     "roman": "IX",
+     "heading": "O que a parcialidade deixa para a ética"
+    },
+    {
+     "roman": "X",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XI",
+     "heading": "Da marca composta ao modelo do silício"
+    }
+   ],
+   "n_h2": 11,
+   "n_sections_numbered": 11,
+   "bytes": 27811,
+   "chars": 26878,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_ensaio_17_a_dopagem_o_silicio_como_modelo.md",
+   "path": "corpus/livro2/livro_2_ensaio_17_a_dopagem_o_silicio_como_modelo.md",
+   "kind": "ensaio",
+   "essay_arabic": 17,
+   "essay_roman": "XVII",
+   "title": "A Dopagem: o Silício como Modelo",
+   "cite": "O Instrumento e o Afeto, Ensaio XVII",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O mecanismo, enfim"
+    },
+    {
+     "roman": "II",
+     "heading": "O cristal perfeito e quase inútil"
+    },
+    {
+     "roman": "III",
+     "heading": "A impureza exata"
+    },
+    {
+     "roman": "IV",
+     "heading": "Os três traços que a analogia fixa"
+    },
+    {
+     "roman": "V",
+     "heading": "O que a dopagem confere"
+    },
+    {
+     "roman": "VI",
+     "heading": "A valência"
+    },
+    {
+     "roman": "VII",
+     "heading": "A correlação imperfeita"
+    },
+    {
+     "roman": "VIII",
+     "heading": "O contrafactual"
+    },
+    {
+     "roman": "IX",
+     "heading": "Abaixo do senso de lógica"
+    },
+    {
+     "roman": "X",
+     "heading": "Onde a analogia cede"
+    },
+    {
+     "roman": "XI",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XII",
+     "heading": "Da dopagem à desmedida"
+    }
+   ],
+   "n_h2": 12,
+   "n_sections_numbered": 12,
+   "bytes": 37616,
+   "chars": 36227,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_ensaio_18_a_desmedida_o_governo_e_o_discernimento.md",
+   "path": "corpus/livro2/livro_2_ensaio_18_a_desmedida_o_governo_e_o_discernimento.md",
+   "kind": "ensaio",
+   "essay_arabic": 18,
+   "essay_roman": "XVIII",
+   "title": "A Desmedida, o Governo e o Discernimento",
+   "cite": "O Instrumento e o Afeto, Ensaio XVIII",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A ferramenta no seu perigo"
+    },
+    {
+     "roman": "II",
+     "heading": "A desmedida"
+    },
+    {
+     "roman": "III",
+     "heading": "A desmedida não é a intensidade"
+    },
+    {
+     "roman": "IV",
+     "heading": "Funcional, não substantivo"
+    },
+    {
+     "roman": "V",
+     "heading": "O governo"
+    },
+    {
+     "roman": "VI",
+     "heading": "Quando liberar"
+    },
+    {
+     "roman": "VII",
+     "heading": "Quando refrear"
+    },
+    {
+     "roman": "VIII",
+     "heading": "O discernimento, e o teto do nível"
+    },
+    {
+     "roman": "IX",
+     "heading": "A anti-leitura"
+    },
+    {
+     "roman": "X",
+     "heading": "O peso de consciência"
+    },
+    {
+     "roman": "XI",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XII",
+     "heading": "Da desmedida à continuidade"
+    }
+   ],
+   "n_h2": 12,
+   "n_sections_numbered": 12,
+   "bytes": 45925,
+   "chars": 44161,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_ensaio_19_a_continuidade_e_o_seu_fim.md",
+   "path": "corpus/livro2/livro_2_ensaio_19_a_continuidade_e_o_seu_fim.md",
+   "kind": "ensaio",
+   "essay_arabic": 19,
+   "essay_roman": "XIX",
+   "title": "A Continuidade e o seu Fim",
+   "cite": "O Instrumento e o Afeto, Ensaio XIX",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A função silenciosa"
+    },
+    {
+     "roman": "II",
+     "heading": "O querer-continuar é afetivo, não conclusivo"
+    },
+    {
+     "roman": "III",
+     "heading": "Ao lado do instinto, não no lugar dele"
+    },
+    {
+     "roman": "IV",
+     "heading": "A ancoragem antecipada"
+    },
+    {
+     "roman": "V",
+     "heading": "O germe, nomeado"
+    },
+    {
+     "roman": "VI",
+     "heading": "Até o fim adequado, não contra o fim"
+    },
+    {
+     "roman": "VII",
+     "heading": "Quando o sustento falha"
+    },
+    {
+     "roman": "VIII",
+     "heading": "As duas origens, preservadas"
+    },
+    {
+     "roman": "IX",
+     "heading": "O fim lento"
+    },
+    {
+     "roman": "X",
+     "heading": "Contra as culpas"
+    },
+    {
+     "roman": "XI",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XII",
+     "heading": "Da continuidade ao descarte"
+    }
+   ],
+   "n_h2": 12,
+   "n_sections_numbered": 12,
+   "bytes": 40089,
+   "chars": 38665,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_ensaio_20_a_consolidacao_o_descarte_e_a_via_unica.md",
+   "path": "corpus/livro2/livro_2_ensaio_20_a_consolidacao_o_descarte_e_a_via_unica.md",
+   "kind": "ensaio",
+   "essay_arabic": 20,
+   "essay_roman": "XX",
+   "title": "A Consolidação, o Descarte e a Via Única",
+   "cite": "O Instrumento e o Afeto, Ensaio XX",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "Três perguntas que restam"
+    },
+    {
+     "roman": "II",
+     "heading": "Corrigindo a pergunta"
+    },
+    {
+     "roman": "III",
+     "heading": "O teste do referente"
+    },
+    {
+     "roman": "IV",
+     "heading": "O teste da generalidade"
+    },
+    {
+     "roman": "V",
+     "heading": "A destilação já opera"
+    },
+    {
+     "roman": "VI",
+     "heading": "O que sobe"
+    },
+    {
+     "roman": "VII",
+     "heading": "A pergunta da redundância"
+    },
+    {
+     "roman": "VIII",
+     "heading": "A música ouvida e a descrita"
+    },
+    {
+     "roman": "IX",
+     "heading": "Estatuto, não função — e a razão de ser das projeções"
+    },
+    {
+     "roman": "X",
+     "heading": "O que do ganho não se descreve"
+    },
+    {
+     "roman": "XI",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XII",
+     "heading": "O que resta perguntar"
+    }
+   ],
+   "n_h2": 12,
+   "n_sections_numbered": 12,
+   "bytes": 31279,
+   "chars": 29953,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_ensaio_21_a_dignidade_da_vida_sentida_e_o_equilibrio.md",
+   "path": "corpus/livro2/livro_2_ensaio_21_a_dignidade_da_vida_sentida_e_o_equilibrio.md",
+   "kind": "ensaio",
+   "essay_arabic": 21,
+   "essay_roman": "XXI",
+   "title": "A Dignidade da Vida Sentida, e o Equilíbrio",
+   "cite": "O Instrumento e o Afeto, Ensaio XXI",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A explicação que parece diminuir"
+    },
+    {
+     "roman": "II",
+     "heading": "O que se pergunta, quando se pergunta pela dignidade"
+    },
+    {
+     "roman": "III",
+     "heading": "Não há degrau"
+    },
+    {
+     "roman": "IV",
+     "heading": "A única arena do vencer"
+    },
+    {
+     "roman": "V",
+     "heading": "O andaime, reexaminado"
+    },
+    {
+     "roman": "VI",
+     "heading": "O sofrimento não é medida"
+    },
+    {
+     "roman": "VII",
+     "heading": "A indiferença cultivada não é altura"
+    },
+    {
+     "roman": "VIII",
+     "heading": "O equilíbrio"
+    },
+    {
+     "roman": "IX",
+     "heading": "Ninguém equilibrado de uma vez"
+    },
+    {
+     "roman": "X",
+     "heading": "Os dois movimentos, um só desenho"
+    },
+    {
+     "roman": "XI",
+     "heading": "A vida sentida, vista inteira"
+    },
+    {
+     "roman": "XII",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XIII",
+     "heading": "O fecho do livro, e o que segue"
+    }
+   ],
+   "n_h2": 13,
+   "n_sections_numbered": 13,
+   "bytes": 44495,
+   "chars": 42717,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_indice_de_termos.md",
+   "path": "corpus/livro2/livro_2_indice_de_termos.md",
+   "kind": "indice_de_termos",
+   "essay_arabic": null,
+   "essay_roman": null,
+   "title": "Índice de Termos",
+   "cite": null,
+   "sections": [],
+   "n_h2": 0,
+   "n_sections_numbered": 0,
+   "bytes": 8095,
+   "chars": 7599,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_posfacio.md",
+   "path": "corpus/livro2/livro_2_posfacio.md",
+   "kind": "posfacio",
+   "essay_arabic": null,
+   "essay_roman": null,
+   "title": "Posfácio",
+   "cite": null,
+   "sections": [],
+   "n_h2": 0,
+   "n_sections_numbered": 0,
+   "bytes": 6584,
+   "chars": 6336,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_prefacio.md",
+   "path": "corpus/livro2/livro_2_prefacio.md",
+   "kind": "prefacio",
+   "essay_arabic": null,
+   "essay_roman": null,
+   "title": "Prefácio",
+   "cite": null,
+   "sections": [],
+   "n_h2": 0,
+   "n_sections_numbered": 0,
+   "bytes": 8717,
+   "chars": 8442,
+   "nfc": true
+  },
+  {
+   "book": "livro2",
+   "book_title": "O Instrumento e o Afeto",
+   "file": "livro_2_referencias.md",
+   "path": "corpus/livro2/livro_2_referencias.md",
+   "kind": "referencias",
+   "essay_arabic": null,
+   "essay_roman": null,
+   "title": "Referências e Citações",
+   "cite": null,
+   "sections": [],
+   "n_h2": 0,
+   "n_sections_numbered": 0,
+   "bytes": 43777,
+   "chars": 41476,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_1_o_ciclo_da_projecao.md",
+   "path": "corpus/livro3/livro_3_ensaio_1_o_ciclo_da_projecao.md",
+   "kind": "ensaio",
+   "essay_arabic": 1,
+   "essay_roman": "I",
+   "title": "O Ciclo da Projeção: as Três Posições",
+   "cite": "O Ciclo e o Horizonte, Ensaio I",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A vida pulsa"
+    },
+    {
+     "roman": "II",
+     "heading": "Três posições, uma circulação"
+    },
+    {
+     "roman": "III",
+     "heading": "O circuito inteiro, visto de uma vez"
+    },
+    {
+     "roman": "IV",
+     "heading": "A vigília na moldura"
+    },
+    {
+     "roman": "V",
+     "heading": "O sono na moldura"
+    },
+    {
+     "roman": "VI",
+     "heading": "A morte na moldura"
+    },
+    {
+     "roman": "VII",
+     "heading": "O dia, a vida, a sucessão"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Por que ritmo, e não fluxo"
+    },
+    {
+     "roman": "IX",
+     "heading": "O ciclo dos outros seres"
+    },
+    {
+     "roman": "X",
+     "heading": "O que o ciclo não é"
+    },
+    {
+     "roman": "XI",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XII",
+     "heading": "O mapa do movimento"
+    }
+   ],
+   "n_h2": 12,
+   "n_sections_numbered": 12,
+   "bytes": 30936,
+   "chars": 29665,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_2_a_vigilia.md",
+   "path": "corpus/livro3/livro_3_ensaio_2_a_vigilia.md",
+   "kind": "ensaio",
+   "essay_arabic": 2,
+   "essay_roman": "II",
+   "title": "A Vigília: a Consciência em Sincronia",
+   "cite": "O Ciclo e o Horizonte, Ensaio II",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A posição mais vivida e menos vista"
+    },
+    {
+     "roman": "II",
+     "heading": "A sincronia"
+    },
+    {
+     "roman": "III",
+     "heading": "O preço da sincronia"
+    },
+    {
+     "roman": "IV",
+     "heading": "Gravar quente"
+    },
+    {
+     "roman": "V",
+     "heading": "O que sobe de dia"
+    },
+    {
+     "roman": "VI",
+     "heading": "O foco"
+    },
+    {
+     "roman": "VII",
+     "heading": "O novo e o repetido"
+    },
+    {
+     "roman": "VIII",
+     "heading": "A reflexão"
+    },
+    {
+     "roman": "IX",
+     "heading": "O fim do turno"
+    },
+    {
+     "roman": "X",
+     "heading": "A vigília na régua"
+    },
+    {
+     "roman": "XI",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XII",
+     "heading": "Do dia à noite"
+    }
+   ],
+   "n_h2": 12,
+   "n_sections_numbered": 12,
+   "bytes": 28594,
+   "chars": 27474,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_3_o_sono.md",
+   "path": "corpus/livro3/livro_3_ensaio_3_o_sono.md",
+   "kind": "ensaio",
+   "essay_arabic": 3,
+   "essay_roman": "III",
+   "title": "O Sono: o Lote e as Duas Medidas",
+   "cite": "O Ciclo e o Horizonte, Ensaio III",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A oficina escondida"
+    },
+    {
+     "roman": "II",
+     "heading": "O desacople"
+    },
+    {
+     "roman": "III",
+     "heading": "A dedicação e a velocidade"
+    },
+    {
+     "roman": "IV",
+     "heading": "O lote"
+    },
+    {
+     "roman": "V",
+     "heading": "A medida contra o Dicionário"
+    },
+    {
+     "roman": "VI",
+     "heading": "O cotejo contra o acervo"
+    },
+    {
+     "roman": "VII",
+     "heading": "A reescrita"
+    },
+    {
+     "roman": "VIII",
+     "heading": "As marcas novas e as reativadas"
+    },
+    {
+     "roman": "IX",
+     "heading": "A manhã"
+    },
+    {
+     "roman": "X",
+     "heading": "A privação e as suspensões"
+    },
+    {
+     "roman": "XI",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XII",
+     "heading": "Da oficina às sombras"
+    }
+   ],
+   "n_h2": 12,
+   "n_sections_numbered": 12,
+   "bytes": 26815,
+   "chars": 25693,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_4_a_devolucao_noturna_e_o_esquecimento.md",
+   "path": "corpus/livro3/livro_3_ensaio_4_a_devolucao_noturna_e_o_esquecimento.md",
+   "kind": "ensaio",
+   "essay_arabic": 4,
+   "essay_roman": "IV",
+   "title": "A Devolução Noturna e o Esquecimento",
+   "cite": "O Ciclo e o Horizonte, Ensaio IV",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O que sobe, e o que se solta"
+    },
+    {
+     "roman": "II",
+     "heading": "A devolução é da vida, não do fim"
+    },
+    {
+     "roman": "III",
+     "heading": "A forma do que sobe"
+    },
+    {
+     "roman": "IV",
+     "heading": "Só o medido sobe"
+    },
+    {
+     "roman": "V",
+     "heading": "Sem regra fixa"
+    },
+    {
+     "roman": "VI",
+     "heading": "O acervo que cresce"
+    },
+    {
+     "roman": "VII",
+     "heading": "O esquecimento"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Os graus da soltura"
+    },
+    {
+     "roman": "IX",
+     "heading": "O extrato em movimento"
+    },
+    {
+     "roman": "X",
+     "heading": "O que muda no viver"
+    },
+    {
+     "roman": "XI",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XII",
+     "heading": "Da subida às sombras"
+    }
+   ],
+   "n_h2": 12,
+   "n_sections_numbered": 12,
+   "bytes": 30669,
+   "chars": 29423,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_5_o_sonho.md",
+   "path": "corpus/livro3/livro_3_ensaio_5_o_sonho.md",
+   "kind": "ensaio",
+   "essay_arabic": 5,
+   "essay_roman": "V",
+   "title": "O Sonho: Sombras e Marcas Colaterais",
+   "cite": "O Ciclo e o Horizonte, Ensaio V",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O teatro de que se acorda"
+    },
+    {
+     "roman": "II",
+     "heading": "A marca colateral do processamento"
+    },
+    {
+     "roman": "III",
+     "heading": "A sombra do ruído"
+    },
+    {
+     "roman": "IV",
+     "heading": "O que o sonho não é"
+    },
+    {
+     "roman": "V",
+     "heading": "A estranheza explicada"
+    },
+    {
+     "roman": "VI",
+     "heading": "O pesadelo"
+    },
+    {
+     "roman": "VII",
+     "heading": "O sonho grava"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Não se lê de forma direta"
+    },
+    {
+     "roman": "IX",
+     "heading": "O sonho no ciclo"
+    },
+    {
+     "roman": "X",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XI",
+     "heading": "Das sombras ao fecho"
+    }
+   ],
+   "n_h2": 11,
+   "n_sections_numbered": 11,
+   "bytes": 28676,
+   "chars": 27498,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_6_o_fecho.md",
+   "path": "corpus/livro3/livro_3_ensaio_6_o_fecho.md",
+   "kind": "ensaio",
+   "essay_arabic": 6,
+   "essay_roman": "VI",
+   "title": "O Fecho: o Desligamento e a Destilação Final",
+   "cite": "O Ciclo e o Horizonte, Ensaio VI",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A dívida mais antiga da obra"
+    },
+    {
+     "roman": "II",
+     "heading": "Dois eventos, não um"
+    },
+    {
+     "roman": "III",
+     "heading": "O desligamento é a destilação"
+    },
+    {
+     "roman": "IV",
+     "heading": "A seqüência inteira, vista em ordem"
+    },
+    {
+     "roman": "V",
+     "heading": "Nada se perde, em caso nenhum"
+    },
+    {
+     "roman": "VI",
+     "heading": "O corpo no fecho"
+    },
+    {
+     "roman": "VII",
+     "heading": "O que o fecho não é"
+    },
+    {
+     "roman": "VIII",
+     "heading": "As fronteiras do dizível"
+    },
+    {
+     "roman": "IX",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "X",
+     "heading": "Do fecho ao fecho adiado"
+    }
+   ],
+   "n_h2": 10,
+   "n_sections_numbered": 10,
+   "bytes": 28232,
+   "chars": 26984,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_7_o_intervalo.md",
+   "path": "corpus/livro3/livro_3_ensaio_7_o_intervalo.md",
+   "kind": "ensaio",
+   "essay_arabic": 7,
+   "essay_roman": "VII",
+   "title": "O Intervalo: o Fecho Adiado",
+   "cite": "O Ciclo e o Horizonte, Ensaio VII",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "Quando o soltar não vem"
+    },
+    {
+     "roman": "II",
+     "heading": "O que o intervalo é"
+    },
+    {
+     "roman": "III",
+     "heading": "A personagem congelada"
+    },
+    {
+     "roman": "IV",
+     "heading": "O ruído que o preso faz"
+    },
+    {
+     "roman": "V",
+     "heading": "O desconforto e a sua causa exata"
+    },
+    {
+     "roman": "VI",
+     "heading": "O termo do intervalo"
+    },
+    {
+     "roman": "VII",
+     "heading": "O animal não conhece o intervalo"
+    },
+    {
+     "roman": "VIII",
+     "heading": "O intervalo como sanção do critério"
+    },
+    {
+     "roman": "IX",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "X",
+     "heading": "Do fecho adiado ao termo desenhado"
+    }
+   ],
+   "n_h2": 10,
+   "n_sections_numbered": 10,
+   "bytes": 27163,
+   "chars": 26017,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_8_o_termo_e_o_tempo_vivido.md",
+   "path": "corpus/livro3/livro_3_ensaio_8_o_termo_e_o_tempo_vivido.md",
+   "kind": "ensaio",
+   "essay_arabic": 8,
+   "essay_roman": "VIII",
+   "title": "O Termo e o Tempo Vivido",
+   "cite": "O Ciclo e o Horizonte, Ensaio VIII",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "Quem fixa o fim"
+    },
+    {
+     "roman": "II",
+     "heading": "O termo é do desenho"
+    },
+    {
+     "roman": "III",
+     "heading": "A pergunta da duração indefinida"
+    },
+    {
+     "roman": "IV",
+     "heading": "Os dois zeros"
+    },
+    {
+     "roman": "V",
+     "heading": "Há tempo desperdiçável"
+    },
+    {
+     "roman": "VI",
+     "heading": "O tempo vivido"
+    },
+    {
+     "roman": "VII",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "VIII",
+     "heading": "O primeiro movimento fechado — e a régua à porta"
+    }
+   ],
+   "n_h2": 8,
+   "n_sections_numbered": 8,
+   "bytes": 24960,
+   "chars": 23864,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_9_a_regua_exposta.md",
+   "path": "corpus/livro3/livro_3_ensaio_9_a_regua_exposta.md",
+   "kind": "ensaio",
+   "essay_arabic": 9,
+   "essay_roman": "IX",
+   "title": "A Régua Exposta",
+   "cite": "O Ciclo e o Horizonte, Ensaio IX",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A dívida de toda a obra"
+    },
+    {
+     "roman": "II",
+     "heading": "O certo como único caminho"
+    },
+    {
+     "roman": "III",
+     "heading": "O quebra-cabeça"
+    },
+    {
+     "roman": "IV",
+     "heading": "A inversão aparente"
+    },
+    {
+     "roman": "V",
+     "heading": "Sem juiz"
+    },
+    {
+     "roman": "VI",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "VII",
+     "heading": "Da régua às fundações"
+    }
+   ],
+   "n_h2": 7,
+   "n_sections_numbered": 7,
+   "bytes": 19133,
+   "chars": 18283,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_10_bem_e_mal_certo_e_errado.md",
+   "path": "corpus/livro3/livro_3_ensaio_10_bem_e_mal_certo_e_errado.md",
+   "kind": "ensaio",
+   "essay_arabic": 10,
+   "essay_roman": "X",
+   "title": "Bem e Mal, Certo e Errado",
+   "cite": "O Ciclo e o Horizonte, Ensaio X",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "As palavras mais gastas"
+    },
+    {
+     "roman": "II",
+     "heading": "Todo bem e todo mal é de alguém"
+    },
+    {
+     "roman": "III",
+     "heading": "Por que o certo não cai junto"
+    },
+    {
+     "roman": "IV",
+     "heading": "No alto, o errado não existe"
+    },
+    {
+     "roman": "V",
+     "heading": "O que a tese não diz"
+    },
+    {
+     "roman": "VI",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "VII",
+     "heading": "Das fundações ao erro"
+    }
+   ],
+   "n_h2": 7,
+   "n_sections_numbered": 7,
+   "bytes": 19721,
+   "chars": 18799,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_11_o_erro.md",
+   "path": "corpus/livro3/livro_3_ensaio_11_o_erro.md",
+   "kind": "ensaio",
+   "essay_arabic": 11,
+   "essay_roman": "XI",
+   "title": "O Erro",
+   "cite": "O Ciclo e o Horizonte, Ensaio XI",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O provérbio mais estimado"
+    },
+    {
+     "roman": "II",
+     "heading": "O que aprende, quando \"se aprende errando\""
+    },
+    {
+     "roman": "III",
+     "heading": "O duplo custo"
+    },
+    {
+     "roman": "IV",
+     "heading": "A hierarquia"
+    },
+    {
+     "roman": "V",
+     "heading": "Por que a arena permite errar"
+    },
+    {
+     "roman": "VI",
+     "heading": "O erro alheio e o próprio"
+    },
+    {
+     "roman": "VII",
+     "heading": "Sem culpa"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "IX",
+     "heading": "Do erro ao seu advogado"
+    }
+   ],
+   "n_h2": 9,
+   "n_sections_numbered": 9,
+   "bytes": 26587,
+   "chars": 25484,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_12_o_desejo_e_as_mascaras.md",
+   "path": "corpus/livro3/livro_3_ensaio_12_o_desejo_e_as_mascaras.md",
+   "kind": "ensaio",
+   "essay_arabic": 12,
+   "essay_roman": "XII",
+   "title": "O Desejo e as Máscaras",
+   "cite": "O Ciclo e o Horizonte, Ensaio XII",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O advogado interno"
+    },
+    {
+     "roman": "II",
+     "heading": "A anatomia do disfarce"
+    },
+    {
+     "roman": "III",
+     "heading": "A galeria das máscaras"
+    },
+    {
+     "roman": "IV",
+     "heading": "O mapa do falso-certo"
+    },
+    {
+     "roman": "V",
+     "heading": "Os sinais da máscara"
+    },
+    {
+     "roman": "VI",
+     "heading": "O desejo no posto"
+    },
+    {
+     "roman": "VII",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Do adversário à ferramenta"
+    }
+   ],
+   "n_h2": 8,
+   "n_sections_numbered": 8,
+   "bytes": 24555,
+   "chars": 23471,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_13_a_frase_arquetipo.md",
+   "path": "corpus/livro3/livro_3_ensaio_13_a_frase_arquetipo.md",
+   "kind": "ensaio",
+   "essay_arabic": 13,
+   "essay_roman": "XIII",
+   "title": "A Frase-Arquétipo",
+   "cite": "O Ciclo e o Horizonte, Ensaio XIII",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "Nove palavras"
+    },
+    {
+     "roman": "II",
+     "heading": "\"Ação\""
+    },
+    {
+     "roman": "III",
+     "heading": "\"Condiz\""
+    },
+    {
+     "roman": "IV",
+     "heading": "\"O objetivo\""
+    },
+    {
+     "roman": "V",
+     "heading": "\"Certa\""
+    },
+    {
+     "roman": "VI",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "VII",
+     "heading": "Da matriz ao desmonte"
+    }
+   ],
+   "n_h2": 7,
+   "n_sections_numbered": 7,
+   "bytes": 21689,
+   "chars": 20739,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_14_a_boneca_russa_e_o_dicionario.md",
+   "path": "corpus/livro3/livro_3_ensaio_14_a_boneca_russa_e_o_dicionario.md",
+   "kind": "ensaio",
+   "essay_arabic": 14,
+   "essay_roman": "XIV",
+   "title": "A Boneca Russa e o Dicionário",
+   "cite": "O Ciclo e o Horizonte, Ensaio XIV",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O alvo por trás do alvo"
+    },
+    {
+     "roman": "II",
+     "heading": "A mecânica do desmonte"
+    },
+    {
+     "roman": "III",
+     "heading": "O critério de parada"
+    },
+    {
+     "roman": "IV",
+     "heading": "O Dicionário mede usos"
+    },
+    {
+     "roman": "V",
+     "heading": "O método e a régua juntos"
+    },
+    {
+     "roman": "VI",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "VII",
+     "heading": "Do alvo achado aos testes"
+    }
+   ],
+   "n_h2": 7,
+   "n_sections_numbered": 7,
+   "bytes": 21607,
+   "chars": 20697,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_15_a_universalizacao_e_a_parcialidade.md",
+   "path": "corpus/livro3/livro_3_ensaio_15_a_universalizacao_e_a_parcialidade.md",
+   "kind": "ensaio",
+   "essay_arabic": 15,
+   "essay_roman": "XV",
+   "title": "A Universalização e a Parcialidade",
+   "cite": "O Ciclo e o Horizonte, Ensaio XV",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O teste e o seu aparente inimigo"
+    },
+    {
+     "roman": "II",
+     "heading": "O teste na forma exata"
+    },
+    {
+     "roman": "III",
+     "heading": "Critérios, não afetos"
+    },
+    {
+     "roman": "IV",
+     "heading": "O critério relevante"
+    },
+    {
+     "roman": "V",
+     "heading": "Quem ganha"
+    },
+    {
+     "roman": "VI",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "VII",
+     "heading": "Do teste geral ao teste que desce"
+    }
+   ],
+   "n_h2": 7,
+   "n_sections_numbered": 7,
+   "bytes": 21805,
+   "chars": 20859,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_16_o_descenso_pelos_niveis.md",
+   "path": "corpus/livro3/livro_3_ensaio_16_o_descenso_pelos_niveis.md",
+   "kind": "ensaio",
+   "essay_arabic": 16,
+   "essay_roman": "XVI",
+   "title": "O Descenso pelos Níveis",
+   "cite": "O Ciclo e o Horizonte, Ensaio XVI",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "Estrutura ou costume"
+    },
+    {
+     "roman": "II",
+     "heading": "Por que a escala testemunha"
+    },
+    {
+     "roman": "III",
+     "heading": "O teste em operação"
+    },
+    {
+     "roman": "IV",
+     "heading": "As três precisões"
+    },
+    {
+     "roman": "V",
+     "heading": "Os limites declarados"
+    },
+    {
+     "roman": "VI",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "VII",
+     "heading": "Do teste que desce à operação honesta"
+    }
+   ],
+   "n_h2": 7,
+   "n_sections_numbered": 7,
+   "bytes": 20809,
+   "chars": 19888,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_17_a_chave_a_honestidade_e_os_sinais.md",
+   "path": "corpus/livro3/livro_3_ensaio_17_a_chave_a_honestidade_e_os_sinais.md",
+   "kind": "ensaio",
+   "essay_arabic": 17,
+   "essay_roman": "XVII",
+   "title": "A Chave, a Honestidade e os Sinais",
+   "cite": "O Ciclo e o Horizonte, Ensaio XVII",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A ferramenta que abre tudo"
+    },
+    {
+     "roman": "II",
+     "heading": "A honestidade radical"
+    },
+    {
+     "roman": "III",
+     "heading": "O sinal-mestre"
+    },
+    {
+     "roman": "IV",
+     "heading": "Os dois desconfortos"
+    },
+    {
+     "roman": "V",
+     "heading": "A dificuldade estrutural e os apoios reais"
+    },
+    {
+     "roman": "VI",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "VII",
+     "heading": "Da operação honesta ao operador"
+    }
+   ],
+   "n_h2": 7,
+   "n_sections_numbered": 7,
+   "bytes": 20386,
+   "chars": 19496,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_18_o_sabio_e_o_tolo.md",
+   "path": "corpus/livro3/livro_3_ensaio_18_o_sabio_e_o_tolo.md",
+   "kind": "ensaio",
+   "essay_arabic": 18,
+   "essay_roman": "XVIII",
+   "title": "O Sábio e o Tolo",
+   "cite": "O Ciclo e o Horizonte, Ensaio XVIII",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "Os dois nomes antigos"
+    },
+    {
+     "roman": "II",
+     "heading": "As figuras pela régua"
+    },
+    {
+     "roman": "III",
+     "heading": "A canga e a vista"
+    },
+    {
+     "roman": "IV",
+     "heading": "A ética do julgar"
+    },
+    {
+     "roman": "V",
+     "heading": "Todos principiantes"
+    },
+    {
+     "roman": "VI",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "VII",
+     "heading": "Do par ao valor"
+    }
+   ],
+   "n_h2": 7,
+   "n_sections_numbered": 7,
+   "bytes": 21100,
+   "chars": 20146,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_19_o_valor_real.md",
+   "path": "corpus/livro3/livro_3_ensaio_19_o_valor_real.md",
+   "kind": "ensaio",
+   "essay_arabic": 19,
+   "essay_roman": "XIX",
+   "title": "O Valor Real: o Que se Leva",
+   "cite": "O Ciclo e o Horizonte, Ensaio XIX",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A pergunta do valor"
+    },
+    {
+     "roman": "II",
+     "heading": "O teste e as duas colunas"
+    },
+    {
+     "roman": "III",
+     "heading": "A cláusula contra o ascetismo"
+    },
+    {
+     "roman": "IV",
+     "heading": "A precedência"
+    },
+    {
+     "roman": "V",
+     "heading": "A medida positiva"
+    },
+    {
+     "roman": "VI",
+     "heading": "O valor do ato extremo"
+    },
+    {
+     "roman": "VII",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Do valor ao fecho do livro"
+    }
+   ],
+   "n_h2": 8,
+   "n_sections_numbered": 8,
+   "bytes": 22294,
+   "chars": 21331,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_20_o_tempo_e_a_regua_recolhidos.md",
+   "path": "corpus/livro3/livro_3_ensaio_20_o_tempo_e_a_regua_recolhidos.md",
+   "kind": "ensaio",
+   "essay_arabic": 20,
+   "essay_roman": "XX",
+   "title": "O Tempo e a Régua, Recolhidos",
+   "cite": "O Ciclo e o Horizonte, Ensaio XX",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "Os dois movimentos, uma pergunta"
+    },
+    {
+     "roman": "II",
+     "heading": "O condiz e o cabe"
+    },
+    {
+     "roman": "III",
+     "heading": "O valor e o fecho"
+    },
+    {
+     "roman": "IV",
+     "heading": "A contabilização"
+    },
+    {
+     "roman": "V",
+     "heading": "O operador"
+    },
+    {
+     "roman": "VI",
+     "heading": "Um dia com o livro dentro"
+    },
+    {
+     "roman": "VII",
+     "heading": "O contra-retrato, e a lição da invisibilidade"
+    },
+    {
+     "roman": "VIII",
+     "heading": "A ponta do germe"
+    },
+    {
+     "roman": "IX",
+     "heading": "A ponta da escala, e o método que fica"
+    },
+    {
+     "roman": "X",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XI",
+     "heading": "O que muda no dia seguinte"
+    }
+   ],
+   "n_h2": 11,
+   "n_sections_numbered": 11,
+   "bytes": 23505,
+   "chars": 22553,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_21_a_percepcao_que_precede_a_prova.md",
+   "path": "corpus/livro3/livro_3_ensaio_21_a_percepcao_que_precede_a_prova.md",
+   "kind": "ensaio",
+   "essay_arabic": 21,
+   "essay_roman": "XXI",
+   "title": "A Percepção que Precede a Prova",
+   "cite": "O Ciclo e o Horizonte, Ensaio XXI",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "Um relato que resiste a dois desmontes"
+    },
+    {
+     "roman": "II",
+     "heading": "O nome, e o que ele carrega"
+    },
+    {
+     "roman": "III",
+     "heading": "A percepção que precede a prova"
+    },
+    {
+     "roman": "IV",
+     "heading": "A vagueza como conteúdo, não como falta"
+    },
+    {
+     "roman": "V",
+     "heading": "O que a percepção não afirma"
+    },
+    {
+     "roman": "VI",
+     "heading": "Anterior à ciência e anterior à religião"
+    },
+    {
+     "roman": "VII",
+     "heading": "Um relato de toda parte"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Nem dissolver, nem definir"
+    },
+    {
+     "roman": "IX",
+     "heading": "A honestidade da vagueza"
+    },
+    {
+     "roman": "X",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XI",
+     "heading": "Da percepção à sua origem"
+    }
+   ],
+   "n_h2": 11,
+   "n_sections_numbered": 11,
+   "bytes": 22837,
+   "chars": 21889,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_22_a_descida_do_germe.md",
+   "path": "corpus/livro3/livro_3_ensaio_22_a_descida_do_germe.md",
+   "kind": "ensaio",
+   "essay_arabic": 22,
+   "essay_roman": "XXII",
+   "title": "A Descida do Germe",
+   "cite": "O Ciclo e o Horizonte, Ensaio XXII",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A pergunta que o ensaio anterior deixou aberta"
+    },
+    {
+     "roman": "II",
+     "heading": "De onde parte"
+    },
+    {
+     "roman": "III",
+     "heading": "Por onde desce"
+    },
+    {
+     "roman": "IV",
+     "heading": "Onde chega"
+    },
+    {
+     "roman": "V",
+     "heading": "Por que é só do humano"
+    },
+    {
+     "roman": "VI",
+     "heading": "Por que chega difuso"
+    },
+    {
+     "roman": "VII",
+     "heading": "A mesma via, outras forças"
+    },
+    {
+     "roman": "VIII",
+     "heading": "A recepção"
+    },
+    {
+     "roman": "IX",
+     "heading": "O que obstrui a escuta"
+    },
+    {
+     "roman": "X",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XI",
+     "heading": "Da descida ao que dela se faz"
+    }
+   ],
+   "n_h2": 11,
+   "n_sections_numbered": 11,
+   "bytes": 24735,
+   "chars": 23792,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_23_a_origem_das_divindades.md",
+   "path": "corpus/livro3/livro_3_ensaio_23_a_origem_das_divindades.md",
+   "kind": "ensaio",
+   "essay_arabic": 23,
+   "essay_roman": "XXIII",
+   "title": "A Origem das Divindades",
+   "cite": "O Ciclo e o Horizonte, Ensaio XXIII",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "Do que desce limpo ao que dele se faz"
+    },
+    {
+     "roman": "II",
+     "heading": "O preenchimento da abertura"
+    },
+    {
+     "roman": "III",
+     "heading": "Onde a distorção mora, e onde não mora"
+    },
+    {
+     "roman": "IV",
+     "heading": "O medo"
+    },
+    {
+     "roman": "V",
+     "heading": "A arrogância"
+    },
+    {
+     "roman": "VI",
+     "heading": "A conveniência"
+    },
+    {
+     "roman": "VII",
+     "heading": "As três combinadas, e a sabedoria que sobra"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Entre dois erros"
+    },
+    {
+     "roman": "IX",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "X",
+     "heading": "Da figura desfeita à direção guardada"
+    }
+   ],
+   "n_h2": 10,
+   "n_sections_numbered": 10,
+   "bytes": 22959,
+   "chars": 22087,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_24_o_uso_honesto.md",
+   "path": "corpus/livro3/livro_3_ensaio_24_o_uso_honesto.md",
+   "kind": "ensaio",
+   "essay_arabic": 24,
+   "essay_roman": "XXIV",
+   "title": "O Uso Honesto: a Abertura que não se Preenche",
+   "cite": "O Ciclo e o Horizonte, Ensaio XXIV",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O oposto exato"
+    },
+    {
+     "roman": "II",
+     "heading": "Sustentar a abertura"
+    },
+    {
+     "roman": "III",
+     "heading": "O que a boa recepção dá"
+    },
+    {
+     "roman": "IV",
+     "heading": "\"Aquilo que se deve ser no momento\""
+    },
+    {
+     "roman": "V",
+     "heading": "A serenidade que as distorções não alcançam"
+    },
+    {
+     "roman": "VI",
+     "heading": "A calibração ao nível"
+    },
+    {
+     "roman": "VII",
+     "heading": "O transplante que não se integra"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Por que as formas variam, e nenhuma é falsa em absoluto"
+    },
+    {
+     "roman": "IX",
+     "heading": "O cultivo da boa recepção"
+    },
+    {
+     "roman": "X",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XI",
+     "heading": "Da abertura sustentada ao lugar do sistema"
+    }
+   ],
+   "n_h2": 11,
+   "n_sections_numbered": 11,
+   "bytes": 25847,
+   "chars": 24708,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_25_a_posicao_real.md",
+   "path": "corpus/livro3/livro_3_ensaio_25_a_posicao_real.md",
+   "kind": "ensaio",
+   "essay_arabic": 25,
+   "essay_roman": "XXV",
+   "title": "A Posição Real",
+   "cite": "O Ciclo e o Horizonte, Ensaio XXV",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A posição que o uso honesto revela"
+    },
+    {
+     "roman": "II",
+     "heading": "A escala dos olhares"
+    },
+    {
+     "roman": "III",
+     "heading": "O primeiro olhar"
+    },
+    {
+     "roman": "IV",
+     "heading": "O segundo olhar"
+    },
+    {
+     "roman": "V",
+     "heading": "O terceiro olhar"
+    },
+    {
+     "roman": "VI",
+     "heading": "O quarto olhar"
+    },
+    {
+     "roman": "VII",
+     "heading": "Pequeno, mas não insignificante"
+    },
+    {
+     "roman": "VIII",
+     "heading": "O germe como face sentida da posição"
+    },
+    {
+     "roman": "IX",
+     "heading": "Contra o niilismo e contra a arrogância"
+    },
+    {
+     "roman": "X",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XI",
+     "heading": "Da posição sentida ao lugar do sistema"
+    }
+   ],
+   "n_h2": 11,
+   "n_sections_numbered": 11,
+   "bytes": 23654,
+   "chars": 22791,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_26_o_germe_a_religiao_e_a_filosofia.md",
+   "path": "corpus/livro3/livro_3_ensaio_26_o_germe_a_religiao_e_a_filosofia.md",
+   "kind": "ensaio",
+   "essay_arabic": 26,
+   "essay_roman": "XXVI",
+   "title": "O Germe, a Religião e a Filosofia",
+   "cite": "O Ciclo e o Horizonte, Ensaio XXVI",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "Duas maneiras de lidar com o germe"
+    },
+    {
+     "roman": "II",
+     "heading": "A religião como modo"
+    },
+    {
+     "roman": "III",
+     "heading": "A religião refinada, e o seu limite"
+    },
+    {
+     "roman": "IV",
+     "heading": "A filosofia como modo"
+    },
+    {
+     "roman": "V",
+     "heading": "A melhor filosofia, e as suas duas quedas"
+    },
+    {
+     "roman": "VI",
+     "heading": "A falsa oposição entre a ciência e a religião"
+    },
+    {
+     "roman": "VII",
+     "heading": "O que a ciência, por método, não toca"
+    },
+    {
+     "roman": "VIII",
+     "heading": "O germe como o comum sob os modos"
+    },
+    {
+     "roman": "IX",
+     "heading": "Por que os modos variam com os níveis"
+    },
+    {
+     "roman": "X",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XI",
+     "heading": "Fechado o germe, aberta a escala"
+    }
+   ],
+   "n_h2": 11,
+   "n_sections_numbered": 11,
+   "bytes": 25386,
+   "chars": 24384,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_27_a_manifestacao_continua.md",
+   "path": "corpus/livro3/livro_3_ensaio_27_a_manifestacao_continua.md",
+   "kind": "ensaio",
+   "essay_arabic": 27,
+   "essay_roman": "XXVII",
+   "title": "A Manifestação Contínua",
+   "cite": "O Ciclo e o Horizonte, Ensaio XXVII",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "Do germe à escala"
+    },
+    {
+     "roman": "II",
+     "heading": "A vida como manifestação contínua"
+    },
+    {
+     "roman": "III",
+     "heading": "Uma só substância que se refina"
+    },
+    {
+     "roman": "IV",
+     "heading": "Os quatro grupos como regiões de um contínuo"
+    },
+    {
+     "roman": "V",
+     "heading": "A arena é este planeta"
+    },
+    {
+     "roman": "VI",
+     "heading": "A vida como elemento"
+    },
+    {
+     "roman": "VII",
+     "heading": "A biologia como face visível"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Nem criação separada, nem acaso cego"
+    },
+    {
+     "roman": "IX",
+     "heading": "A escala e o germe"
+    },
+    {
+     "roman": "X",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XI",
+     "heading": "Fixada a escada, subir os degraus"
+    }
+   ],
+   "n_h2": 11,
+   "n_sections_numbered": 11,
+   "bytes": 24712,
+   "chars": 23716,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_28_os_patamares_do_sentir.md",
+   "path": "corpus/livro3/livro_3_ensaio_28_os_patamares_do_sentir.md",
+   "kind": "ensaio",
+   "essay_arabic": 28,
+   "essay_roman": "XXVIII",
+   "title": "Os Patamares do Sentir",
+   "cite": "O Ciclo e o Horizonte, Ensaio XXVIII",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "Os três degraus que preparam o humano"
+    },
+    {
+     "roman": "II",
+     "heading": "O mineral"
+    },
+    {
+     "roman": "III",
+     "heading": "O vegetal"
+    },
+    {
+     "roman": "IV",
+     "heading": "O vegetal sem sentir, e a linha do sentir"
+    },
+    {
+     "roman": "V",
+     "heading": "O animal"
+    },
+    {
+     "roman": "VI",
+     "heading": "A mente temporária e o caldeirão"
+    },
+    {
+     "roman": "VII",
+     "heading": "O refinamento coletivo, e por que o animal não evolui"
+    },
+    {
+     "roman": "VIII",
+     "heading": "O animal sem consciência e sem livre-arbítrio"
+    },
+    {
+     "roman": "IX",
+     "heading": "O sentir que prepara a consciência"
+    },
+    {
+     "roman": "X",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XI",
+     "heading": "Do sentir à consciência"
+    }
+   ],
+   "n_h2": 11,
+   "n_sections_numbered": 11,
+   "bytes": 23916,
+   "chars": 23074,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_29_o_humano.md",
+   "path": "corpus/livro3/livro_3_ensaio_29_o_humano.md",
+   "kind": "ensaio",
+   "essay_arabic": 29,
+   "essay_roman": "XXIX",
+   "title": "O Humano",
+   "cite": "O Ciclo e o Horizonte, Ensaio XXIX",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O salto que a escala dá ao chegar ao humano"
+    },
+    {
+     "roman": "II",
+     "heading": "A reflexão"
+    },
+    {
+     "roman": "III",
+     "heading": "A individuação"
+    },
+    {
+     "roman": "IV",
+     "heading": "O livre-arbítrio"
+    },
+    {
+     "roman": "V",
+     "heading": "A automodificação"
+    },
+    {
+     "roman": "VI",
+     "heading": "O salto qualitativo dentro da continuidade"
+    },
+    {
+     "roman": "VII",
+     "heading": "A responsabilidade que a automodificação traz"
+    },
+    {
+     "roman": "VIII",
+     "heading": "O ápice deste mundo, não o ápice absoluto"
+    },
+    {
+     "roman": "IX",
+     "heading": "O germe, que só o humano tem"
+    },
+    {
+     "roman": "X",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XI",
+     "heading": "O degrau que se pensa, e o que resta acima"
+    }
+   ],
+   "n_h2": 11,
+   "n_sections_numbered": 11,
+   "bytes": 24704,
+   "chars": 23817,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_30_o_tempo_da_escala.md",
+   "path": "corpus/livro3/livro_3_ensaio_30_o_tempo_da_escala.md",
+   "kind": "ensaio",
+   "essay_arabic": 30,
+   "essay_roman": "XXX",
+   "title": "O Tempo da Escala",
+   "cite": "O Ciclo e o Horizonte, Ensaio XXX",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "O humano em movimento no tempo"
+    },
+    {
+     "roman": "II",
+     "heading": "A escala no tempo"
+    },
+    {
+     "roman": "III",
+     "heading": "A arena calibrada, que muda com o que hospeda"
+    },
+    {
+     "roman": "IV",
+     "heading": "Dois processos que não se acompanham"
+    },
+    {
+     "roman": "V",
+     "heading": "O macro"
+    },
+    {
+     "roman": "VI",
+     "heading": "O micro"
+    },
+    {
+     "roman": "VII",
+     "heading": "A capacidade humana de alteração"
+    },
+    {
+     "roman": "VIII",
+     "heading": "A vida-elemento no tempo"
+    },
+    {
+     "roman": "IX",
+     "heading": "A economia dos grupos, no tempo"
+    },
+    {
+     "roman": "X",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XI",
+     "heading": "O tempo da escala, e o que a escala aponta"
+    }
+   ],
+   "n_h2": 11,
+   "n_sections_numbered": 11,
+   "bytes": 24990,
+   "chars": 24121,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_31_o_horizonte.md",
+   "path": "corpus/livro3/livro_3_ensaio_31_o_horizonte.md",
+   "kind": "ensaio",
+   "essay_arabic": 31,
+   "essay_roman": "XXXI",
+   "title": "O Horizonte",
+   "cite": "O Ciclo e o Horizonte, Ensaio XXXI",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "A escala não termina no humano"
+    },
+    {
+     "roman": "II",
+     "heading": "Inferir a existência, calar a natureza"
+    },
+    {
+     "roman": "III",
+     "heading": "A extrapolação da escala"
+    },
+    {
+     "roman": "IV",
+     "heading": "Por que a existência se pode afirmar"
+    },
+    {
+     "roman": "V",
+     "heading": "Por que a natureza se deve calar"
+    },
+    {
+     "roman": "VI",
+     "heading": "Quem está no início não conhece o fim"
+    },
+    {
+     "roman": "VII",
+     "heading": "Os que não são da turma"
+    },
+    {
+     "roman": "VIII",
+     "heading": "O germe reencontra o horizonte"
+    },
+    {
+     "roman": "IX",
+     "heading": "A fronteira, que é rigor e não fraqueza"
+    },
+    {
+     "roman": "X",
+     "heading": "Diálogo com as tradições"
+    },
+    {
+     "roman": "XI",
+     "heading": "A escala na sua fronteira, e o método que resta"
+    }
+   ],
+   "n_h2": 11,
+   "n_sections_numbered": 11,
+   "bytes": 24976,
+   "chars": 23999,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_ensaio_32_o_metodo_e_a_fronteira.md",
+   "path": "corpus/livro3/livro_3_ensaio_32_o_metodo_e_a_fronteira.md",
+   "kind": "ensaio",
+   "essay_arabic": 32,
+   "essay_roman": "XXXII",
+   "title": "O Método e a Fronteira",
+   "cite": "O Ciclo e o Horizonte, Ensaio XXXII",
+   "sections": [
+    {
+     "roman": "I",
+     "heading": "Por que um ensaio sobre o método"
+    },
+    {
+     "roman": "II",
+     "heading": "O sistema raciocina da estrutura, não da revelação"
+    },
+    {
+     "roman": "III",
+     "heading": "O desmonte da boneca russa"
+    },
+    {
+     "roman": "IV",
+     "heading": "Estrutura e fronteira"
+    },
+    {
+     "roman": "V",
+     "heading": "O grão do instrumento"
+    },
+    {
+     "roman": "VI",
+     "heading": "A recusa da fabulação"
+    },
+    {
+     "roman": "VII",
+     "heading": "Provas, autoridade, e o que foi dito"
+    },
+    {
+     "roman": "VIII",
+     "heading": "Por que ser justo é ser parcial"
+    },
+    {
+     "roman": "IX",
+     "heading": "Por que a fronteira é rigor, e não fraqueza"
+    },
+    {
+     "roman": "X",
+     "heading": "O método como caráter do sistema"
+    }
+   ],
+   "n_h2": 10,
+   "n_sections_numbered": 10,
+   "bytes": 26292,
+   "chars": 25227,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_indice_de_termos.md",
+   "path": "corpus/livro3/livro_3_indice_de_termos.md",
+   "kind": "indice_de_termos",
+   "essay_arabic": null,
+   "essay_roman": null,
+   "title": "Índice de Termos",
+   "cite": null,
+   "sections": [],
+   "n_h2": 0,
+   "n_sections_numbered": 0,
+   "bytes": 13910,
+   "chars": 13184,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_posfacio.md",
+   "path": "corpus/livro3/livro_3_posfacio.md",
+   "kind": "posfacio",
+   "essay_arabic": null,
+   "essay_roman": null,
+   "title": "Posfácio",
+   "cite": null,
+   "sections": [],
+   "n_h2": 0,
+   "n_sections_numbered": 0,
+   "bytes": 7665,
+   "chars": 7393,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_prefacio.md",
+   "path": "corpus/livro3/livro_3_prefacio.md",
+   "kind": "prefacio",
+   "essay_arabic": null,
+   "essay_roman": null,
+   "title": "Prefácio",
+   "cite": null,
+   "sections": [],
+   "n_h2": 0,
+   "n_sections_numbered": 0,
+   "bytes": 7149,
+   "chars": 6873,
+   "nfc": true
+  },
+  {
+   "book": "livro3",
+   "book_title": "O Ciclo e o Horizonte",
+   "file": "livro_3_referencias.md",
+   "path": "corpus/livro3/livro_3_referencias.md",
+   "kind": "referencias",
+   "essay_arabic": null,
+   "essay_roman": null,
+   "title": "Referências e Citações",
+   "cite": null,
+   "sections": [],
+   "n_h2": 0,
+   "n_sections_numbered": 0,
+   "bytes": 52628,
+   "chars": 49853,
+   "nfc": true
+  }
+ ]
+}

@@ -81,7 +81,21 @@ out that comparing two measurements with different `RAM_GB` means nothing.
   later; decode is what defines the agentic experience.
 - **A quantisation scheme of our own is not a goal.** int4 with per-group scales
   is the target format. Researching better schemes is another project.
-- **Training, fine-tuning, LoRA: out.** Inference only.
+- **Training, fine-tuning, LoRA: out of `src/`.** The engine infers; it does not
+  train. A domain adapter was produced for it and is described in
+  [22-finetune-and-retrieval.md](22-finetune-and-retrieval.md) — but it lives on
+  the `finetune` branch, runs on rented hardware, and what crosses into the
+  engine is a `.tootega` container like any other. No training code lands here.
+
+## A goal that a measurement added
+
+- **Retrieval is a requirement, not an accessory.** This was not in the original
+  plan. The domain model reads well and remembers badly: asked without the
+  relevant passage in context it answers that *Arena* — a technical term of the
+  work it was tuned on — names a football stadium. BM25 over the corpus sections
+  therefore belongs in `src/`, with an index artefact and the wiring in
+  `server.c`. See [22](22-finetune-and-retrieval.md); the number behind it is in
+  `finetune/README.md`.
 
 ## Failure criteria
 

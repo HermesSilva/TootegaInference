@@ -21,6 +21,7 @@ and the criterion that would settle it.
 | **D12** | **online softmax (single pass)** | **SETTLED** — it exists, but only above L3 |
 | **D13** | **KV in bf16** | **REJECTED** — 29/32 on the oracle; implemented, not the default |
 | **D14** | **chat history: does reasoning stay or go** | open — it stays, and the reason is the cache |
+| **D15** | **retrieval in `src/`** | open, **blocks the domain container** — BM25, see [22](22-finetune-and-retrieval.md) |
 
 The text below preserves the reasoning behind each decision.
 
@@ -257,6 +258,40 @@ serves both. It does not block conversion, but it does block M1.
 
 ## BLOCKS M1
 
+### D15. Retrieval in `src/` — a requirement a measurement created
+
+Not planned. It arrived with the domain container of
+[22](22-finetune-and-retrieval.md), and the number that creates it is stark: of
+answers reviewed by hand, **26 of 29 were doctrinally correct with the source
+passage in context, and 0 of 11 without it**. The trained model reads well and
+remembers badly — asked with no passage, it says a technical term of the work it
+was tuned on names a football stadium.
+
+So the engine cannot serve that container alone. It needs to retrieve.
+
+**Recommendation: BM25, ours, in C11.** The reason is not retrieval quality —
+embeddings would likely retrieve better. It is that BM25 is an inverted index
+and two divisions, which ports without dependencies and stays auditable in one
+reading session; an embedding retriever would put a second neural model inside
+`src/` and end the property this project exists to have. The reference
+implementation is `finetune/scripts/retrieve.py`, already measured against the
+corpus: `k1=1.5`, `b=0.75`, the section as the unit, accents folded — and
+`unicode_tables.h` already folds them.
+
+Three pieces: a `tools/index/` producing a `.ttindex` (the `.ttpack` of
+`tools/finetune` is the precedent for the format), the search in `src/`, and the
+injection into the user turn in `server.c` in the exact shape the model was
+trained on.
+
+**What would settle it:** the domain container answering correctly through
+`tootega serve`, with no passages pasted by hand. Today that is done from Python
+and it is an experiment with scaffolding, not a chat.
+
+**One trap, recorded because it was nearly built in:** the index must contain
+**all** sections. Six essays were held out of training, correctly — that is what
+proved generalisation. Holding them out of the *index* would make the chat
+answer "the work does not treat that" about subjects it treats in whole essays.
+
 ### D3. Container format specification
 
 The converter **has already defined** the format de facto: magic `TOOTEGA\x01`,
@@ -316,6 +351,17 @@ hybrid CPU has to happen before `main` ([09](09-resource-limits.md)).
 **Recommendation:** our own pool with a per-layer barrier. OpenMP would work, but
 it drags in `libgomp` and the promise in [10](10-implementation.md) is static
 linking with minimal runtime.
+
+**Measured elsewhere, and worth recording:** on a two-socket EPYC 9535 (128
+physical cores) the pool does not scale past **~12 effective cores** —
+`--threads 128` is *slower* than `--threads 16`, holding 954–1346% CPU out of
+12800% available while three quarters of the machine sits idle
+([22](22-finetune-and-retrieval.md)). This does not reopen D6: the target
+machine is an 8 P-core desktop, where the per-layer barrier is the right shape
+and this cannot appear. It is recorded so that whoever measures on a server
+does not mistake it for a regression — and because if the engine is ever aimed
+at many-core NUMA hardware, the barrier-per-layer partitioning is the first
+thing to revisit.
 
 ---
 

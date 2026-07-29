@@ -40,15 +40,23 @@ forward). `tools/` has `convert`, `agent` (the agentic client), `finetune`,
 `ucd` (generates `src/unicode_tables.h`) and `fixture` (generates
 `src/fixture_kernels.h`).
 
-**Only two Python files are left, and both are outside the engine's path:**
+**Two Python files remain in the engine's own path**, both outside it:
 `ForDummies/build.py`, which builds documents and not artefacts the engine
 consumes, and `download_model.py`, which needs HTTPS to fetch the checkpoint
 from HuggingFace. Everything else was rewritten in C.
 
+**`finetune/` is the third case, and it is a different kind.** It is the RAFT
+pipeline that produced the domain container — 24 Python scripts that require
+PyTorch, run on a rented GPU box, and never execute on the machine the engine
+runs on. They are not tools of the engine; they are a project that *feeds* it,
+the way `download_model.py` does, and what crosses the boundary is an artefact:
+a `.tootega` container. See `finetune/README.md` and `docs/22`.
+
 **Master is pure CPU.** The CUDA backend, VRAM placement and the M2 gate exist
 and live on the `GPU` branch — they were measured and the conclusion was that the
 granularity is wrong (`docs/18` on that branch). No GPU code lands here until
-`run_layer` shows a gain in the complete decode.
+`run_layer` shows a gain in the complete decode. The fine-tuning pipeline lives
+on the `finetune` branch, by the same rule and for the same reason.
 
 ### What separates Tests from tools
 

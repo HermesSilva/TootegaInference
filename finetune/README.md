@@ -115,3 +115,31 @@ transformers 5.14.1, peft 0.20.0. `env.sh` has the variables that matter: the
 container root is a 20 GB overlay, so `HF_HOME` must not fall back to
 `~/.cache`, and `expandable_segments` keeps the allocator from fragmenting
 around 56 GB of resident weights.
+
+## What is here, and what is not
+
+Everything that cost GPU time or human judgement is in this directory:
+
+| | |
+|---|---|
+| `data/raft_raw.audit.jsonl` | the 1,210 generated candidates with their context — **two hours of GPU**; regenerating is the expensive step, filtering and judging are not |
+| `data/raft_raw.jsonl` | the same, after the generator's own filters |
+| `data/candidates*.jsonl` | the filtering stages, so a filter bug costs seconds instead of a run |
+| `data/sft_final.jsonl` | the 868 pairs actually trained on |
+| `data/cosmologia-87.ttpack` | the corpus pack, round-trip verified |
+| `data/manifest.json` | 87 documents with citations extracted from the numbered sections |
+| `review/` | the review pages and the 40 verdicts judged by hand |
+| `logs/` | every measurement of the session, verbatim |
+| `train_result.json` · `cpt_result.json` | the SFT run and the failed continued-pretraining run |
+| `eval_sft.json` · `eval_gen.json` · `engine_eval.json` | the generative evaluations, bf16 and int4 |
+
+Deliberately absent, with the reason:
+
+- **the merged bf16 checkpoint (59 GB)** — reconstructible in 2.3 minutes from
+  the base checkpoint plus the adapter, via `merge_lora.py`. Storing it would be
+  storing a derivation.
+- **the base checkpoint (59 GB)** — public, `zai-org/GLM-4.7-Flash`.
+- **the int4 container (19.32 GB)** — on the Hub, private, together with the
+  adapter and the tokenizer the engine needs.
+
+The rule: keep what a measurement produced, drop what a command reproduces.

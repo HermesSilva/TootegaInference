@@ -81,7 +81,11 @@ int tt_forward(tt_state *s, int32_t token, float **logits_out);
 
 /* Matches the longest common prefix with the cache and truncates at the
  * divergence.  Returns how many tokens remain valid -- the prefill only has to
- * run over the rest. */
+ * run over the rest.
+ *
+ * At most `n - 1`, never `n`: the caller samples from the logits of the last
+ * position, and those are produced by the forward pass, not stored in the
+ * cache.  See the comment on the implementation. */
 int64_t tt_state_match_prefix(tt_state *s, const int32_t *ids, int64_t n);
 
 #endif /* TOOTEGA_FORWARD_H */

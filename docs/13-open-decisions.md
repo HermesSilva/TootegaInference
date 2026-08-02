@@ -21,7 +21,9 @@ and the criterion that would settle it.
 | **D12** | **online softmax (single pass)** | **SETTLED** — it exists, but only above L3 |
 | **D13** | **KV in bf16** | **REJECTED** — 29/32 on the oracle; implemented, not the default |
 | **D14** | **chat history: does reasoning stay or go** | open — it stays, and the reason is the cache |
-| **D15** | **retrieval in `src/`** | open, **blocks the domain container** — BM25, see [22](22-finetune-and-retrieval.md) |
+| **D15** | **retrieval in `src/`** | **SETTLED** — built and verified; **off by default**, see D17 |
+| **D16** | **batched prefill** | open — the kernel exists and nothing calls it; 3–4× measured |
+| **D17** | **the content belongs in the weights** | open — the prompt goes unmodified; the fine-tune has to carry the doctrine |
 
 The text below preserves the reasoning behind each decision.
 
@@ -256,41 +258,167 @@ serves both. It does not block conversion, but it does block M1.
 
 ---
 
-## BLOCKS M1
+## OPEN — where the doctrine has to live
 
-### D15. Retrieval in `src/` — a requirement a measurement created
+### D17. The prompt goes unmodified; the weights have to carry the work
 
-Not planned. It arrived with the domain container of
-[22](22-finetune-and-retrieval.md), and the number that creates it is stark: of
-answers reviewed by hand, **26 of 29 were doctrinally correct with the source
-passage in context, and 0 of 11 without it**. The trained model reads well and
-remembers badly — asked with no passage, it says a technical term of the work it
-was tuned on names a football stadium.
+D15 built retrieval and it works: the passages go in, the answers come out right,
+and the numbers are in [22](22-finetune-and-retrieval.md). **It is off by
+default anyway**, and the reason is not performance.
 
-So the engine cannot serve that container alone. It needs to retrieve.
+Editing a user's question before the model sees it adulterates the prompt. What
+arrives at the model is no longer what the person wrote, the reply is partly a
+function of a ranking they never saw, and a chat that silently rewrites its own
+input is a different product from an engine that answers. That is the call, and
+it is a product call rather than a measurement — so the measurement does not
+override it.
 
-**Recommendation: BM25, ours, in C11.** The reason is not retrieval quality —
-embeddings would likely retrieve better. It is that BM25 is an inverted index
-and two divisions, which ports without dependencies and stays auditable in one
-reading session; an embedding retriever would put a second neural model inside
-`src/` and end the property this project exists to have. The reference
-implementation is `finetune/scripts/retrieve.py`, already measured against the
-corpus: `k1=1.5`, `b=0.75`, the section as the unit, accents folded — and
-`unicode_tables.h` already folds them.
+**What it costs, stated once and not softened.** The v5 container was trained
+with RAFT, which trades memorisation for reading on purpose. Served with an
+unmodified prompt it scores **0 of 11** on the hand-reviewed closed-book set,
+against 26 of 29 with a passage. It says *Arena* names a football stadium.
 
-Three pieces: a `tools/index/` producing a `.ttindex` (the `.ttpack` of
-`tools/finetune` is the precedent for the format), the search in `src/`, and the
-injection into the user turn in `server.c` in the exact shape the model was
-trained on.
+So the container has to change. Retrieval stays in the engine — built, tested,
+reachable with `--index` — and stops being the answer.
 
-**What would settle it:** the domain container answering correctly through
-`tootega serve`, with no passages pasted by hand. Today that is done from Python
-and it is an experiment with scaffolding, not a chat.
+**What failed, and what it does not rule out.** Continued pre-training on the raw
+text failed: holdout perplexity fell 45%, t = −40.8, 61 of 61 windows improved,
+and the model asserted a creator the first essay spends sections denying. That is
+`train_lora.py`, kept for the record.
 
-**One trap, recorded because it was nearly built in:** the index must contain
-**all** sections. Six essays were held out of training, correctly — that is what
-proved generalisation. Holding them out of the *index* would make the chat
-answer "the work does not treat that" about subjects it treats in whole essays.
+It is tempting to read that as "memorisation does not work at this corpus size".
+It does not say that. CPT fits the *distribution of the text* — it teaches how
+the work sounds — and the run measured exactly that: register acquired, content
+not. **Closed-book question-answer training is a different objective**, mapping a
+question onto a fact, and it was never tried here.
+
+**And the dataset is already shaped for it.** `finetune/data/sft_final.jsonl`
+holds 868 pairs with `question`, `answer` and `context` as *separate fields* —
+none of them carries a passage baked into a prompt string. Training closed-book
+is building the prompt from `question` alone. The answers were written with the
+passage present, so they are grounded; what changes is only whether the model
+sees the passage while learning to produce them.
+
+**The open risk, which is real.** 868 pairs over 726 sections is 1.2 questions
+per section. A RAFT model generalises to unasked questions because it reads; a
+closed-book model generalises only as far as its training questions cover the
+space. Thin coverage will show up as confident answers on the questions it saw
+and drift on the ones it did not — which is the failure mode that looks most like
+success. If the first run is thin, the fix is more questions per section from the
+pipeline that already generates them, not a bigger adapter.
+
+**What would settle it:** the same closed-book set that scored 0 of 11, scored
+again on the retrained container, with the prompt unmodified.
+
+## OPEN — the fast kernel nothing calls
+
+### D16. Batched prefill
+
+`tt_forward` takes **one token per call**, and the prefill loop in `server.c` and
+in `cmd_chat` runs it over the prompt. Prefill therefore *is* the decode loop: on
+this machine it measures **13.9 tok/s against decode's 11.9**, which is the same
+number, because both pay a full read of the active weights for every single
+token.
+
+That was invisible while prompts were short. Retrieval made them long — 1,300
+tokens for three passages, of which ~1,150 are the retrieved text — and the cost
+became the dominant term:
+
+| prompt | prefill |
+|---|---|
+| bare question, no index | < 1 s |
+| question + 1 passage | 29–36 s |
+| question + 3 passages | 93–97 s |
+| the shape training used (4 × 2000 chars) | ~215 s |
+
+**The batched matmul already exists**, in `kernels.c`, checked bit-for-bit
+against the loop of singles by `Tests/mmbatch.exe` — which is the condition for
+using it, since a batched prefill that changes bits changes tokens and takes the
+32/32 criterion of [15](15-kernels-and-numerics.md) with it. Measured on the v5
+container:
+
+| batch | speed-up | GFLOP/s |
+|---|---|---|
+| 1 | 1.00× | 138 |
+| 4 | 3.2–3.7× | 438–455 |
+| 32 | 2.9–4.1× | 392–414 |
+
+Nothing on the prefill path calls it.
+
+**Recommendation: a `tt_forward_batch` taking a block of tokens**, with attention
+over the block and the MoE grouping tokens by expert. The ceiling is not the
+matmul — at ~410 GFLOP/s and ~9.5 GFLOP per token, 1,300 tokens of prompt is
+~30 s of compute, so ~3× is what there is to win with this kernel. Going below
+that is a different problem, and it is worth noting that **prefill is the regime
+the GPU branch was rejected for not helping**: docs/18 measured `run_layer` at
+decode granularity, where the transfer never amortises. A compute-bound batch of
+a thousand tokens is the opposite case and was never measured.
+
+**What would settle it:** 32/32 against `ref32.json` with the batched path on,
+and the prefill of a three-passage prompt under 35 s.
+
+## SETTLED — a measurement that added a subsystem
+
+### D15. Retrieval in `src/`
+
+It arrived with the domain container of [22](22-finetune-and-retrieval.md), and
+the number that created it is stark: of answers reviewed by hand, **26 of 29 were
+doctrinally correct with the source passage in context, and 0 of 11 without it**.
+The trained model reads well and remembers badly — asked with no passage, it said
+a technical term of the work it was tuned on names a football stadium.
+
+So the engine could not serve that container alone. It had to retrieve.
+
+**BM25, ours, in C11.** The reason is not retrieval quality — embeddings would
+likely retrieve better. It is that BM25 is an inverted index and two divisions,
+which ports without dependencies and stays auditable in one reading session; an
+embedding retriever would put a second neural model inside `src/` and end the
+property this project exists to have.
+
+Three pieces, all landed:
+
+| piece | what |
+|---|---|
+| `tools/index` | the corpus becomes a `.ttindex`; the `.ttpack` of `tools/finetune` was the precedent for the format |
+| `src/retrieve.c` | the tokeniser, the mmapped reader and the search |
+| `src/server.c` | `--index`, and every user turn rewritten in the shape the model was trained on |
+
+**The exit criterion was that the container answer correctly through `tootega
+serve`, with no passages pasted by hand.** It does. The two questions that
+produced the complaint, before and after, same container:
+
+| question | without the index | with it |
+|---|---|---|
+| *o que significa arena* | "material fino, resultante da decomposição de rochas" | "o plano da vida vivida, o campo de ação" |
+| *o que é Mente Universal* | "a consciência primordial que permeia o universo" | "a Totalidade — não possui vontade nem deliberação" |
+
+The reference is `finetune/scripts/retrieve.py`, the code that chose the passages
+every training pair was written against, and the C reproduces it exactly: same
+726 sections, same 13,465 terms, same 157,638 tokens, and on twelve queries the
+**same top five with the same scores**. That equality is the point and not a
+nicety — a retriever that ranks differently shows the model something other than
+what it was taught to expect.
+
+**Three things this cost, each recorded because none announced itself:**
+
+*The index must contain **all** sections.* Six essays were held out of training,
+correctly — that is what proved generalisation. Holding them out of the *index*
+would make the chat answer "the work does not treat that" about subjects it
+treats in whole essays. 726 sections, not the 666 the curation used.
+
+*The fold could not be hand-written.* The first version covered Latin-1 and Latin
+Extended-A, which is everything Portuguese needs, and silently cut every
+transliterated citation the books make in half: `puruṣa` indexed as `puru`,
+`upaniṣad` as `upani`. Four terms of vocabulary apart from the reference, and the
+only symptom would have been that asking about the Upanishads retrieved nothing.
+The fold is now generated by `tools/ucd` from the Unicode database — lowercase,
+canonical decomposition, marks dropped — and `--check` verifies it.
+
+*Reasoning had to default off when an index is loaded.* Every RAFT training pair
+closed `</think>` immediately. Opening it puts the model in a state the fine-tune
+never covered, and the first request through the HTTP endpoint came back as an
+English scratchpad deliberating about a Portuguese question. D14 had already
+measured that reasoning costs the prefix cache; here it also costs the answer.
 
 ### D3. Container format specification
 

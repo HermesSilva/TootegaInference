@@ -33,8 +33,18 @@ reviewed by hand, **0** were doctrinally correct; of 29 with the passage
 present, **26** were. The trained model, asked without context, says a technical
 term of the work names a football stadium. This is not a defect to fix — it is
 the division of labour RAFT produces on purpose, and it makes **BM25 retrieval a
-requirement of the engine**, not an accessory. `retrieve.py` is the reference
-implementation to port to C.
+requirement of the engine**, not an accessory.
+
+`retrieve.py` was the reference implementation to port, and the port landed:
+`src/retrieve.c` and `tools/index`, with the engine retrieving on its own
+(`docs/13` D15). The two rank identically — same 726 sections, same 13,465 terms,
+same top five with the same scores — which is the condition for the model to see
+at inference what it saw in training.
+
+```powershell
+tools\index.exe build "models\Versão Completa" --out models\v5-sft\cosmologia.ttindex
+.\serve-book.cmd
+```
 
 **The LoRA delta survives int4.** 1.25% of the weight norm against group-64
 quantisation error; the quantised container gives the same doctrinal answers as
@@ -45,7 +55,10 @@ bf16. This was the risk that could have invalidated everything downstream.
 ```
 manifest.py     corpus manifest: 87 docs, citations extracted from the numbered
                 sections the books already carry (never invented)
-retrieve.py     BM25 over 725 sections -- oracle + confusable distractors
+retrieve.py     BM25 over the sections -- oracle + confusable distractors.
+                666 here, excluding the holdout; the PRODUCT index carries all
+                726, because holding an essay out of the index would make the
+                chat deny a subject the work treats in full
 gen_raft.py     4 stages: questions -> grounded answers -> judge -> refine
 refilter.py     re-applies the mechanical filters to the audit file, no GPU
 suspect.py      flags definitions that describe a neighbouring term
@@ -99,9 +112,6 @@ per question, so the `chat` prefix cache does not help.
 
 ## What is not done
 
-- BM25 in C inside `src/`, plus an index artefact and the wiring in `server.c`.
-  The index must be built with **all 725 sections** — holdout exclusion was
-  correct for curation and is wrong for the product.
 - Regression on general capability was never measured.
 - ~10% residual doctrinal noise in the dataset; 60 pairs were read by hand.
 - The model yields to loaded premises: asked whether the individual Mind is a

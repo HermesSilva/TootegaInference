@@ -185,6 +185,15 @@ double tt_rss_gb(void)
 #endif
 }
 
+/* ------------------------------------------------------------- console */
+
+void tt_console_utf8(void)
+{
+#if defined(TT_WINDOWS)
+    SetConsoleOutputCP(CP_UTF8);
+#endif
+}
+
 /* --------------------------------------------------------------- tempo */
 
 double tt_now(void)

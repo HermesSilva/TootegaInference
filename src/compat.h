@@ -51,6 +51,15 @@ double tt_ram_total_gb(void);
 double tt_ram_avail_gb(void);
 double tt_rss_gb(void);            /* this process's resident set */
 
+/* ------------------------------------------------------------- console */
+
+/* Puts the console in UTF-8, once, at start-up.  Everything this program
+ * prints is UTF-8 -- the model's text, and now the citations the retriever
+ * logs -- and a Windows console defaults to the OEM page, which turns
+ * "Existência" into "Exist├¬ncia" in the operator's terminal.  A no-op
+ * everywhere else. */
+void tt_console_utf8(void);
+
 /* ---------------------------------------------------------------- time */
 
 double tt_now(void);               /* seconds, monotonic */

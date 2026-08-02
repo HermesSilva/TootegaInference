@@ -72,6 +72,8 @@ static void usage(void)
 
 int main(int argc, char **argv)
 {
+    tt_console_utf8();
+
     /* Global options come before the verb, so that `-v` works with any. */
     int i = 1;
     while (i < argc && argv[i][0] == '-') {

@@ -189,6 +189,7 @@ The fix is the one already on the outstanding list: **a prose corpus**.
 | tokenizer against HF `tokenizers` | **36/36** cases, exact round-trip | `tootega tokenize <tokenizer.json> --check tokfixture.json` |
 | kernels against the reference quantisation | **bit for bit** | `tootega selftest`; the fixture from `tools\fixture.exe --check` |
 | Unicode tables against the database | **byte for byte** | `tools\ucd.exe UnicodeData.txt --version 13.0.0 --check src\unicode_tables.h` |
+| BM25 against `finetune/scripts/retrieve.py` | **same top 5 and the same scores** on 12 queries; 726 sections, 13,465 terms, 157,638 tokens on both sides | `tools\index.exe query <file.ttindex> "..." -k 5` |
 
 Once a reference exists, checking a logits dump against it does not need the
 oracle to run again: `Tests\oracle.exe --check-ref ref32.json --logits <file>`
@@ -226,6 +227,7 @@ to `--attn int4`; `int8` costs 0.3 GB for nothing.
 | greedy/temp/top-k/top-p sampling | `src/sample.c` |
 | budgets and `--plan` | `src/budget.c` |
 | HTTP server, SSE, embedded web UI | `src/server.c`, `webui.h` |
+| BM25 retrieval and the `.ttindex` reader | `src/retrieve.c`, `tools/index/`, [22](22-finetune-and-retrieval.md) |
 | tools in the OpenAI protocol (`tools`, `tool_calls`, `role:tool`) | `src/server.c`, [20](20-agent.md) |
 | agent speaking the Claude Code CLI contract | `tools/agent/` |
 | local tools with sandbox and approval | `tools/agent/`, [20](20-agent.md) |

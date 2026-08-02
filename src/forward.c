@@ -181,6 +181,21 @@ int64_t tt_state_match_prefix(tt_state *s, const int32_t *ids, int64_t n)
 {
     int64_t i = 0;
     while (i < n && i < s->len && s->tokens[i] == ids[i]) i++;
+
+    /* Never the WHOLE prompt, even when the whole prompt matches.
+     *
+     * Sampling reads the logits of the LAST position, and those live in the
+     * scratch, not in the cache -- the cache holds K and V.  Reusing every
+     * token skips the prefill entirely and leaves the scratch holding whatever
+     * the previous request ended on, so the answer is sampled from the tail of
+     * a different conversation.  In practice that means an empty reply: the
+     * previous pass ended at EOS, so EOS is what the stale logits predict.
+     *
+     * It went unnoticed while an identical request twice in a row was a curiosity.
+     * Retrieval made it ordinary -- the same question retrieves the same
+     * passages, so pressing send again reproduces the prompt byte for byte. */
+    if (n > 0 && i == n) i = n - 1;
+
     s->len = i;                      /* trunca no divergente */
     return i;
 }

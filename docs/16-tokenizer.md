@@ -43,6 +43,14 @@ it a number?* (`\p{N}`), *is it whitespace?* (`\s`). Compressed ranges, binary
 search. That is `src/unicode_tables.h`: 622 ranges for `\p{L}`, 133 for `\p{N}`
 and 10 for `\s`, on Unicode 13.0.0.
 
+The same header carries two more tables, which the tokenizer does not use and the
+retriever of [13](13-open-decisions.md) D15 does: 327 ranges for `Mn`, and the
+**accent fold** — 490 code points that reduce to a single ASCII letter or digit
+under *lowercase, then canonical decomposition, then marks dropped*. It is
+generated for the reason everything here is generated: the hand-written version
+covered Latin-1 and Latin Extended-A, which is all Portuguese needs, and quietly
+truncated every Sanskrit and Arabic transliteration in the corpus.
+
 The table is committed, and `tools/ucd` is what rebuilds and — more usefully —
 **checks** it, straight from the Consortium's `UnicodeData.txt`:
 

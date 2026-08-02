@@ -121,7 +121,13 @@ static const char TT_WEBUI_HTML[] =
 "<span class='ver' id='ver'></span>\n"
 "<span class='dim' id='meta'>connecting...</span>\n"
 "<label class='dim' style='cursor:pointer;user-select:none'>\n"
-"<input type='checkbox' id='think' checked> reason</label>\n"
+/* Unchecked by default.  docs/13 D14 measured that reasoning costs the prefix
+ * cache, and a458371 measured that this model answers WORSE with it on for
+ * these prompts.  A domain-tuned container makes it plainly wrong: every
+ * training pair was written after `</think>` closed, so an open `<think>`
+ * makes the model emit an English scratchpad where the answer belongs.
+ * Whoever wants the draft ticks the box. */
+"<input type='checkbox' id='think'> reason</label>\n"
 "<button class='ghost' id='clear'>clear</button></header>\n"
 "<div id='dbg'>server statistics...</div>\n"
 "<div id='log'><div class='wrap' id='wrap'></div></div>\n"

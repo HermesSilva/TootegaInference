@@ -8,6 +8,7 @@
 #include "kernels.h"
 #include "model.h"
 #include "pool.h"
+#include "retrieve.h"
 #include "sample.h"
 #include "tokenizer.h"
 #include "webui.h"
@@ -148,6 +149,15 @@ typedef struct {
 
     int32_t   eos[8];
     int       n_eos;
+
+    /* Retrieval.  NULL unless `--index` was given, and then every user turn is
+     * rewritten with the passages the question retrieves (docs/13, D15). */
+    tt_index *index;
+    int       n_passages;
+    int       passage_chars;
+
+    /* What `think` defaults to when the request does not say.  See handle_chat. */
+    int       think_default;
 
     const char *key;         /* NULL when loopback only */
     uint64_t    served;
@@ -413,6 +423,108 @@ static int append_tool_calls(server *s, const tt_json *calls, tt_arena *dom)
     return 0;
 }
 
+/* --------------------------------------------------------- recuperacao */
+
+#define MAX_PASSAGES 8
+
+/* Appends with a clamp, so a passage longer than the buffer truncates instead
+ * of running off the end.  `snprintf` returns what it WOULD have written, and
+ * accumulating that return value is the classic way to walk past the end of a
+ * buffer while believing you were being careful. */
+static size_t cat_fmt(char *dst, size_t cap, size_t w, const char *fmt, ...)
+{
+    if (w + 1 >= cap) return w;
+    va_list ap;
+    va_start(ap, fmt);
+    const int n = vsnprintf(dst + w, cap - w, fmt, ap);
+    va_end(ap);
+    if (n < 0) return w;
+    return (w + (size_t)n < cap) ? w + (size_t)n : cap - 1;
+}
+
+/* Byte length of the first `max_chars` CHARACTERS.  The reference truncates a
+ * passage with a Python slice, which counts characters; cutting at 1400 bytes
+ * would drop a fifth of an accented Portuguese passage, and cutting mid-sequence
+ * would put a broken code point into the prompt. */
+static size_t char_prefix(const char *s, size_t n, int max_chars)
+{
+    size_t i = 0;
+    for (int c = 0; i < n && c < max_chars; c++) {
+        i++;
+        while (i < n && ((unsigned char)s[i] & 0xC0) == 0x80) i++;
+    }
+    return i;
+}
+
+/* The user's turn, rewritten with the passages the question retrieves.
+ *
+ * The shape is not decorative -- it is the shape every training pair had, down
+ * to the numbering and the em dash (docs/22).  A container fine-tuned with RAFT
+ * answers from the passage in front of it; hand it the bare question and it
+ * answers from what survived in the weights, which for this model is 0 of 11
+ * answers doctrinally correct against 26 of 29 with the passage.
+ *
+ * Every user turn is rewritten, not only the last.  Retrieval is deterministic,
+ * so turn 1 retrieves the same passages when the conversation is replayed on
+ * turn 3 -- which keeps the prefix identical and lets the KV cache survive the
+ * round.  Rewriting only the last turn would change the prefix at the first
+ * message every single time and re-prefill the whole conversation.
+ */
+static int append_retrieved(server *s, const char *question)
+{
+    tt_hit hits[MAX_PASSAGES];
+    int want = s->n_passages;
+    if (want > MAX_PASSAGES) want = MAX_PASSAGES;
+
+    const int n = tt_index_search(s->index, question, hits, want);
+
+    /* Nothing retrieved means the question shares no term with the corpus --
+     * "and why is that?" after an answer, or a subject the books do not treat.
+     * Inventing three unrelated passages would be worse than none: the model
+     * was also trained on distractor-only cases, where the honest answer is
+     * that the work does not treat it. */
+    if (n <= 0) {
+        tt_log("  retrieval: nothing matched");
+        return append_text(s, question) < 0 ? -1 : 0;
+    }
+
+    size_t cap = strlen(question) + 256;
+    for (int i = 0; i < n; i++)
+        cap += (size_t)s->passage_chars * 4 + 256
+             + strlen(tt_index_title(s->index, hits[i].doc))
+             + strlen(tt_index_section(s->index, hits[i].doc));
+
+    char *buf = (char *)malloc(cap);
+    if (!buf) return tt_fail("out of memory for the retrieved passages");
+
+    size_t w = cat_fmt(buf, cap, 0, "Trechos da obra:\n\n");
+    for (int i = 0; i < n; i++) {
+        const char *title = tt_index_title(s->index, hits[i].doc);
+        const char *sect  = tt_index_section(s->index, hits[i].doc);
+        uint32_t tlen = 0;
+        const char *text = tt_index_text(s->index, hits[i].doc, &tlen);
+        const size_t cut = char_prefix(text, tlen, s->passage_chars);
+
+        w = cat_fmt(buf, cap, w, "%s[%d] %s", i ? "\n\n" : "", i + 1, title);
+        if (*sect) w = cat_fmt(buf, cap, w, " \xe2\x80\x94 %s", sect);
+        w = cat_fmt(buf, cap, w, "\n%.*s", (int)cut, text);
+    }
+    cat_fmt(buf, cap, w, "\n\n---\nPergunta: %s", question);
+
+    /* The citations are logged and the question is not.  They are the engine's
+     * own corpus, and seeing which sections answered is the difference between
+     * "the model is wrong" and "the search missed" -- the two failures look
+     * identical from the chat window.  The user's text stays out, for the reason
+     * at the top of this file. */
+    for (int i = 0; i < n; i++)
+        tt_log("  retrieval %d/%d  %6.2f  %s", i + 1, n, (double)hits[i].score,
+               tt_index_cite(s->index, hits[i].doc));
+
+    const int64_t got = append_text(s, buf);
+    free(buf);
+    return got < 0 ? -1 : 0;
+}
+
 /* Monta o prefixo da conversa a partir das mensagens do pedido.
  *
  * The UI sends the whole conversation every turn (that is what an OpenAI
@@ -453,9 +565,16 @@ static int build_conversation(server *s, const tt_json *messages, int think,
         const tt_json *calls = assistant ? tt_json_get(m, "tool_calls") : NULL;
         if (!ctext && !calls) continue;
 
+        /* `user` is a flag and not a comparison of `marker` against the literal:
+         * comparing two string constants by address happens to work here and is
+         * a warning everywhere, because nothing guarantees the compiler pools
+         * them. */
+        const int system_role = tt_json_str_eq(role, "system");
+        const int user = !system_role && !assistant;
+
         const char *marker = CHAT_USER;
-        if (tt_json_str_eq(role, "system")) marker = CHAT_SYSTEM;
-        else if (assistant)                 marker = CHAT_ASSIST;
+        if (system_role)    marker = CHAT_SYSTEM;
+        else if (assistant) marker = CHAT_ASSIST;
 
         if (append_text(s, marker) < 0) return -1;
 
@@ -488,7 +607,13 @@ static int build_conversation(server *s, const tt_json *messages, int think,
             if (append_text(s, "</think>") < 0) { free(tmp); return -1; }
         }
 
-        const int64_t got = append_text(s, body);
+        /* A user turn with an index behind it becomes the question PLUS the
+         * passages it retrieves.  System and assistant turns are left alone:
+         * the system prompt is the caller's, and rewriting the model's own past
+         * answers would put words in its mouth. */
+        int64_t got;
+        if (s->index && user) got = append_retrieved(s, tmp);
+        else                  got = append_text(s, body);
         free(tmp);
         if (got < 0) return -1;
 
@@ -684,11 +809,27 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
     if (tt_json_str_eq(tt_json_get(root, "tool_choice"), "none")) tools = NULL;
 
     const int stream = tt_json_bool(tt_json_get(root, "stream"), 1);
-    /* `think` is ours; `chat_template_kwargs.enable_thinking` is what vLLM and
-     * SGLang popularised and what a third-party client sends. */
+
+    /* Reasoning is on by default, and `--think off` turns it off for a
+     * container that cannot use it.
+     *
+     * A container fine-tuned with RAFT saw `</think>` closed immediately in
+     * every single training pair -- that is the shape `gen_raft.py` wrote.
+     * Opening the block instead puts the model in a state the fine-tune never
+     * covered, and what comes out is an English scratchpad deliberating about
+     * a Portuguese question.  That is not a guess: it is what the first request
+     * through this endpoint produced, and docs/13 D14 had already measured that
+     * reasoning costs the prefix cache while `a458371` measured that this model
+     * answers WORSE with it on.
+     *
+     * It is a property of the CONTAINER, not of the retrieval, so it is its own
+     * flag.  Loading an index still flips the default, because giving one is
+     * also how the operator says which kind of container this is -- but a RAFT
+     * container served without an index needs `--think off` said out loud.
+     * An explicit `think` in the request wins over both. */
     const int think = tt_json_bool(tt_json_get(root, "think"),
         tt_json_bool(tt_json_get(tt_json_get(root, "chat_template_kwargs"),
-                                 "enable_thinking"), 1));
+                                 "enable_thinking"), s->think_default));
     const float temp = (float)tt_json_real(tt_json_get(root, "temperature"), 0.8);
     const float top_p = (float)tt_json_real(tt_json_get(root, "top_p"), 0.95);
     const int   top_k = (int)tt_json_int(tt_json_get(root, "top_k"), 40);
@@ -1110,6 +1251,10 @@ static void handle(server *s, const tt_socket *c, const char *peer)
 int tt_cmd_serve(int argc, char **argv)
 {
     const char *path = NULL, *tok_path = NULL, *host = NULL, *key = NULL;
+    const char *index_path = NULL;
+    int n_passages = 3, passage_chars = 1400;
+    /* -1 = decide from the index; 0 and 1 = the operator said so. */
+    int think_default = -1;
     int port = 8080, threads = 20, no_warm = 0;
     int64_t ctx = 8192;
     double ram_gb = 0;
@@ -1129,6 +1274,15 @@ int tt_cmd_serve(int argc, char **argv)
         else if (!strcmp(a, "--threads") && has)   threads = atoi(argv[++i]);
         else if (!strcmp(a, "--ram-gb") && has)    ram_gb = atof(argv[++i]);
         else if (!strcmp(a, "--no-warm"))          no_warm = 1;
+        else if (!strcmp(a, "--index") && has)     index_path = argv[++i];
+        else if (!strcmp(a, "--passages") && has)  n_passages = atoi(argv[++i]);
+        else if (!strcmp(a, "--passage-chars") && has) passage_chars = atoi(argv[++i]);
+        else if (!strcmp(a, "--think") && has) {
+            const char *v = argv[++i];
+            if      (!strcmp(v, "on")  || !strcmp(v, "1")) think_default = 1;
+            else if (!strcmp(v, "off") || !strcmp(v, "0")) think_default = 0;
+            else return tt_fail("--think '%s' desconhecido (on | off)", v);
+        }
         else if (!strcmp(a, "--verbose") || !strcmp(a, "-v")) g_verbose = 1;
         else if ((!strcmp(a, "--kv-prec") || !strcmp(a, "--kv")) && has) {
             if (tt_kv_prec_parse(argv[++i], &kv_prec) != 0) return -1;
@@ -1141,7 +1295,14 @@ int tt_cmd_serve(int argc, char **argv)
     if (!path || !tok_path)
         return tt_fail("uso: tootega serve <modelo.tootega> --tokenizer "
                        "<tokenizer.json> [--port 8080] [--ctx 8192] "
-                       "[--kv-prec f32|bf16|int8] [--verbose] [--no-warm]");
+                       "[--kv-prec f32|bf16|int8] [--index <file.ttindex>] "
+                       "[--passages 3] [--think on|off] [--verbose] [--no-warm]");
+
+    if (n_passages < 1 || n_passages > MAX_PASSAGES)
+        return tt_fail("--passages %d is outside 1..%d", n_passages, MAX_PASSAGES);
+    if (passage_chars < 100)
+        return tt_fail("--passage-chars %d is too small to carry an argument",
+                       passage_chars);
 
     /* Expor na rede exige as duas coisas.  Um servidor de inferencia aberto e
      * remote access to the model and to this machine's disk; refusing here
@@ -1151,6 +1312,13 @@ int tt_cmd_serve(int argc, char **argv)
     if (public_bind && !key)
         return tt_fail("--host %s exposes the server on the network. Pass "
                        "--key <key> as well; without it I do not start", host);
+
+    /* The index opens before anything else.  It costs milliseconds and it is
+     * the one input that can be stale: a mistyped path or an index built by an
+     * older tool has to say so now, not after eighteen gigabytes have been
+     * pulled off the disk. */
+    tt_index index;
+    if (index_path && tt_index_open(&index, index_path) != 0) return -1;
 
     tt_tokenizer tok;
     if (tt_tokenizer_load(&tok, tok_path, 154880) != 0) return -1;
@@ -1200,6 +1368,10 @@ int tt_cmd_serve(int argc, char **argv)
     s.plan = &plan;
     s.ctx = ctx;
     s.key = key;
+    s.index = index_path ? &index : NULL;
+    s.n_passages = n_passages;
+    s.passage_chars = passage_chars;
+    s.think_default = think_default >= 0 ? think_default : (index_path ? 0 : 1);
     s.started = tt_now();
     s.conv = (int32_t *)malloc((size_t)ctx * sizeof(int32_t));
 
@@ -1230,6 +1402,14 @@ int tt_cmd_serve(int argc, char **argv)
            (long long)ctx, tt_pool_threads(pool), tt_kernels_impl_name());
     tt_log("  network  %s%s", public_bind ? "EXPOSED on the network" : "loopback only",
            key ? ", with a key" : "");
+    if (s.index)
+        tt_log("  search   %u sections, %u terms, %d passages of %d characters "
+               "into every question", s.index->n_docs, s.index->n_terms,
+               n_passages, passage_chars);
+    else
+        tt_log("  search   none -- a container tuned for retrieval will answer "
+               "from memory (docs/13, D15)");
+    tt_log("  reason   %s by default", s.think_default ? "on" : "off");
     tt_log("  one request at a time; the conversation does not survive the process");
     tt_log("");
 

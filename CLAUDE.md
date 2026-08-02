@@ -37,8 +37,8 @@ its own path — which is why the same script serves both trees.
 Today: `Tests/` has `ablate` (perplexity and ablation), `gentest` (generation
 quality), `bench` (time, memory, roofline) and `oracle` (the independent
 forward). `tools/` has `convert`, `agent` (the agentic client), `finetune`,
-`ucd` (generates `src/unicode_tables.h`) and `fixture` (generates
-`src/fixture_kernels.h`).
+`index` (corpus → `.ttindex`, the retrieval of `docs/13` D15), `ucd` (generates
+`src/unicode_tables.h`) and `fixture` (generates `src/fixture_kernels.h`).
 
 **Two Python files remain in the engine's own path**, both outside it:
 `ForDummies/build.py`, which builds documents and not artefacts the engine

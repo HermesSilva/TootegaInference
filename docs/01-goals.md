@@ -93,9 +93,15 @@ out that comparing two measurements with different `RAM_GB` means nothing.
   plan. The domain model reads well and remembers badly: asked without the
   relevant passage in context it answers that *Arena* — a technical term of the
   work it was tuned on — names a football stadium. BM25 over the corpus sections
-  therefore belongs in `src/`, with an index artefact and the wiring in
-  `server.c`. See [22](22-finetune-and-retrieval.md); the number behind it is in
+  therefore belongs in `src/`, and it is there: `src/retrieve.c`, the index
+  artefact from `tools/index`, and `--index` on `tootega serve`. See
+  [22](22-finetune-and-retrieval.md); the number behind it is in
   `finetune/README.md`.
+
+  It is worth being precise about what this does *not* open. The engine gained a
+  BM25 index, which is two divisions over an inverted list; it did not gain an
+  embedding model, a vector store or a chunking strategy. Everything a retriever
+  usually drags in stayed out, for the reason in [13](13-open-decisions.md) D15.
 
 ## Failure criteria
 

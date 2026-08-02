@@ -97,11 +97,25 @@ static int ends_with(const char *s, size_t n, const char *suffix)
     return n >= m && memcmp(s + n - m, suffix, m) == 0;
 }
 
-/* `cat[cp]` is the FIRST letter of the General_Category -- 'L', 'N', 'C'...
+/* Everything the generator reads out of the database.
+ *
+ * `cat[cp]` is the FIRST letter of the General_Category -- 'L', 'N', 'C'...
  * That is all the three predicates need, and it keeps the table at one byte per
- * code point. */
-static int load_ucd(const char *path, unsigned char *cat)
+ * code point.  `mn` is the full `Mn` and not just the letter, because folding
+ * has to drop non-spacing marks and keep the spacing ones.  `dec0`/`dec1` are
+ * the CANONICAL decomposition, which is one or two code points and never more;
+ * a compatibility mapping is deliberately not loaded, since the reference folds
+ * with NFD and NFD does not apply them. */
+typedef struct {
+    unsigned char *cat;
+    unsigned char *mn;
+    uint32_t      *lower;
+    uint32_t      *dec0, *dec1;
+} ucd_db;
+
+static int load_ucd(const char *path, ucd_db *db)
 {
+    unsigned char *cat = db->cat;
     FILE *f = fopen(path, "rb");
     if (!f) { fprintf(stderr, "nao consegui abrir '%s'\n", path); return -1; }
 
@@ -122,6 +136,22 @@ static int load_ucd(const char *path, unsigned char *cat)
         const char *name = field(line, 1, &name_len);
         const char *c    = field(line, 2, &cat_len);
         if (!name || !c || !cat_len) continue;
+
+        if (cat_len == 2 && c[0] == 'M' && c[1] == 'n') db->mn[cp] = 'M';
+
+        size_t dl = 0;
+        const char *d = field(line, 5, &dl);
+        if (d && dl && d[0] != '<') {          /* canonical only */
+            char *endp = NULL;
+            const uint32_t a = (uint32_t)strtoul(d, &endp, 16);
+            db->dec0[cp] = a;
+            if (endp && *endp == ' ')
+                db->dec1[cp] = (uint32_t)strtoul(endp + 1, NULL, 16);
+        }
+
+        size_t ll = 0;
+        const char *l = field(line, 13, &ll);
+        if (l && ll) db->lower[cp] = (uint32_t)strtoul(l, NULL, 16);
 
         /* Big blocks (CJK, Hangul, planes 15-16) do not get one line per code
          * point: they come as a `<..., First>` / `<..., Last>` pair, and
@@ -197,6 +227,97 @@ static void emit_fixed(obuf *b, const char *name,
     ob_put(b, "};\n\n");
 }
 
+/* ----------------------------------------------------------------- fold */
+
+/* Canonical decomposition, applied until nothing decomposes further.  It has to
+ * recurse: U+1E17 gives U+0113 plus an acute, and U+0113 gives an `e` plus a
+ * macron.  Stopping at the first level would leave a composed letter behind and
+ * the fold would silently return "nothing". */
+static void decompose(const ucd_db *db, uint32_t cp, uint32_t *out, int *n, int max)
+{
+    if (*n >= max) return;
+    if (cp < MAX_CP && db->dec0[cp]) {
+        decompose(db, db->dec0[cp], out, n, max);
+        if (db->dec1[cp]) decompose(db, db->dec1[cp], out, n, max);
+        return;
+    }
+    out[(*n)++] = cp;
+}
+
+/* The ASCII letter or digit a code point folds to, or 0 for none.
+ *
+ * The order is the reference's and it is not interchangeable: LOWERCASE first,
+ * then decompose, then drop the non-spacing marks.  Decomposing first would
+ * leave "A" with its accent gone but still uppercase, and an uppercase letter is
+ * not in `[a-z0-9]` -- so every accented capital in the corpus would vanish
+ * instead of folding.  `finetune/scripts/retrieve.py` does `s.lower()` before
+ * `unicodedata.normalize("NFD", ...)`, and this reproduces that exactly.
+ *
+ * A code point that decomposes to more than one surviving character folds to
+ * nothing, on purpose: the reference keeps it as two characters and the class
+ * `[a-z0-9]` then decides, which for every such case in Latin means it is a
+ * ligature and is dropped. */
+static int fold_of(const ucd_db *db, uint32_t cp)
+{
+    const uint32_t lo = db->lower[cp] ? db->lower[cp] : cp;
+
+    uint32_t buf[8];
+    int n = 0;
+    decompose(db, lo, buf, &n, 8);
+
+    uint32_t only = 0;
+    int kept = 0;
+    for (int i = 0; i < n; i++) {
+        if (buf[i] < MAX_CP && db->mn[buf[i]]) continue;
+        only = buf[i];
+        kept++;
+    }
+    if (kept != 1) return 0;
+    if ((only >= 'a' && only <= 'z') || (only >= '0' && only <= '9')) return (int)only;
+    return 0;
+}
+
+/* Two parallel arrays and not an array of pairs: the code points are searched
+ * and the bytes are only read once a match is found, so keeping them apart puts
+ * four times as many candidates in each cache line of the binary search. */
+static size_t emit_fold(obuf *b, const ucd_db *db)
+{
+    uint32_t *from = (uint32_t *)malloc(sizeof(uint32_t) * 4096);
+    char     *to   = (char *)malloc(4096);
+    size_t n = 0;
+
+    /* ASCII is handled by three comparisons in the inline function; putting it
+     * in the table would only make the search longer for every other letter. */
+    for (uint32_t cp = 128; cp < MAX_CP; cp++) {
+        const int f = fold_of(db, cp);
+        if (!f) continue;
+        if (n >= 4096) { fprintf(stderr, "tabela de dobra estourou\n"); exit(1); }
+        from[n] = cp;
+        to[n] = (char)f;
+        n++;
+    }
+
+    ob_printf(b, "static const uint32_t tt_fold_from[] = {\n");
+    for (size_t i = 0; i < n; i += 8) {
+        ob_put(b, "    ");
+        for (size_t k = i; k < i + 8 && k < n; k++)
+            ob_printf(b, "%s0x%05X", k > i ? "," : "", from[k]);
+        ob_put(b, ",\n");
+    }
+    ob_put(b, "};\n\n");
+
+    ob_printf(b, "static const char tt_fold_to[] =\n");
+    for (size_t i = 0; i < n; i += 64) {
+        ob_put(b, "    \"");
+        for (size_t k = i; k < i + 64 && k < n; k++) ob_printf(b, "%c", to[k]);
+        ob_put(b, i + 64 < n ? "\"\n" : "\";\n\n");
+    }
+
+    free(from);
+    free(to);
+    return n;
+}
+
 /* ----------------------------------------------------------------- main */
 
 int main(int argc, char **argv)
@@ -222,9 +343,17 @@ int main(int argc, char **argv)
         return 2;
     }
 
-    unsigned char *cat = (unsigned char *)malloc(MAX_CP);
-    if (!cat) { fprintf(stderr, "sem memoria\n"); return 1; }
-    if (load_ucd(ucd, cat) != 0) return 1;
+    ucd_db db;
+    db.cat   = (unsigned char *)malloc(MAX_CP);
+    db.mn    = (unsigned char *)calloc(MAX_CP, 1);
+    db.lower = (uint32_t *)calloc(MAX_CP, sizeof(uint32_t));
+    db.dec0  = (uint32_t *)calloc(MAX_CP, sizeof(uint32_t));
+    db.dec1  = (uint32_t *)calloc(MAX_CP, sizeof(uint32_t));
+    if (!db.cat || !db.mn || !db.lower || !db.dec0 || !db.dec1) {
+        fprintf(stderr, "sem memoria\n"); return 1;
+    }
+    unsigned char *cat = db.cat;
+    if (load_ucd(ucd, &db) != 0) return 1;
 
     obuf b;
     ob_init(&b);
@@ -232,7 +361,8 @@ int main(int argc, char **argv)
         "/* unicode_tables.h -- GENERATED by tools/ucd.exe.  Do not edit.\n"
         " *\n"
         " * Unicode %s.  Sorted ranges, binary search.\n"
-        " * Only the three predicates the cl100k pattern uses (docs/16).\n"
+        " * The three predicates the cl100k pattern uses (docs/16), and the\n"
+        " * accent fold the retriever tokenises with (docs/13, D15).\n"
         " */\n"
         "#ifndef TOOTEGA_UNICODE_TABLES_H\n"
         "#define TOOTEGA_UNICODE_TABLES_H\n"
@@ -246,6 +376,8 @@ int main(int argc, char **argv)
     const size_t n_number = emit_ranges(&b, "tt_range_number", cat, 'N');
     const size_t n_space  = sizeof(whitespace) / sizeof(whitespace[0]);
     emit_fixed(&b, "tt_range_space", whitespace, n_space);
+    const size_t n_mark = emit_ranges(&b, "tt_range_mark", db.mn, 'M');
+    const size_t n_fold = emit_fold(&b, &db);
 
     ob_put(&b,
         "static int tt_cp_in(const tt_cp_range *r, size_t n, uint32_t cp)\n"
@@ -282,6 +414,36 @@ int main(int argc, char **argv)
         "    return tt_cp_in(tt_range_space, TT_N(tt_range_space), cp);\n"
         "}\n"
         "\n"
+        "/* A non-spacing mark contributes NOTHING and does not end a word: on\n"
+        " * decomposed input \"cafe\" + U+0301 has to tokenise exactly like the\n"
+        " * composed \"café\", which is what NFD makes true in the reference. */\n"
+        "static inline int tt_is_mark(uint32_t cp)\n"
+        "{\n"
+        "    if (cp < 128) return 0;\n"
+        "    return tt_cp_in(tt_range_mark, TT_N(tt_range_mark), cp);\n"
+        "}\n"
+        "\n"
+        "/* The ASCII letter or digit `cp` folds to, 0 for none.  Lowercase, then\n"
+        " * canonical decomposition, then the marks dropped -- so U+1E63 (s with a\n"
+        " * dot below, which the corpus uses for Sanskrit) folds to 's' and\n"
+        " * \"puruṣa\" indexes as one term instead of two fragments. */\n"
+        "static inline int tt_fold_ascii(uint32_t cp)\n"
+        "{\n"
+        "    if (cp < 128) {\n"
+        "        if (cp >= 'A' && cp <= 'Z') return (int)cp + 32;\n"
+        "        if ((cp >= 'a' && cp <= 'z') || (cp >= '0' && cp <= '9')) return (int)cp;\n"
+        "        return 0;\n"
+        "    }\n"
+        "    size_t lo = 0, hi = TT_N(tt_fold_from);\n"
+        "    while (lo < hi) {\n"
+        "        size_t mid = lo + (hi - lo) / 2;\n"
+        "        if (cp < tt_fold_from[mid])      hi = mid;\n"
+        "        else if (cp > tt_fold_from[mid]) lo = mid + 1;\n"
+        "        else return (unsigned char)tt_fold_to[mid];\n"
+        "    }\n"
+        "    return 0;\n"
+        "}\n"
+        "\n"
         "#undef TT_N\n"
         "\n"
         "#endif /* TOOTEGA_UNICODE_TABLES_H */\n");
@@ -290,6 +452,8 @@ int main(int argc, char **argv)
     printf("  \\p{L}  %zu intervalos\n", n_letter);
     printf("  \\p{N}  %zu intervalos\n", n_number);
     printf("  \\s     %zu intervalos\n", n_space);
+    printf("  Mn     %zu intervalos\n", n_mark);
+    printf("  dobra  %zu pontos de codigo -> ASCII\n", n_fold);
 
     int rc = 0;
 

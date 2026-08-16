@@ -30,6 +30,15 @@ static const char TT_WEBUI_HTML[] =
 "header b{font-weight:600}\n"
 "header .dim{color:var(--dim);font-size:12px}\n"
 "header button{margin-left:auto}\n"
+/* Temperature lives in the header, next to `reason`: both are settings that
+ * can change mid-conversation, unlike the name and directives, which sit in
+ * the prefix cache and are asked for before the first message. */
+".temp{display:flex;align-items:center;gap:6px;color:var(--dim);\n"
+"font-size:12px;user-select:none}\n"
+".temp input[type=range]{width:90px;accent-color:var(--accent);cursor:pointer}\n"
+/* Wide enough for `greedy`, so the slider does not shift when it appears. */
+".temp b{font-weight:600;color:var(--fg);font-variant-numeric:tabular-nums;\n"
+"min-width:44px;text-align:right}\n"
 "#log{flex:1;overflow-y:auto;padding:20px 16px}\n"
 ".wrap{max-width:820px;margin:0 auto}\n"
 ".msg{margin:0 0 16px;padding:12px 14px;border-radius:10px;\n"
@@ -128,6 +137,14 @@ static const char TT_WEBUI_HTML[] =
  * makes the model emit an English scratchpad where the answer belongs.
  * Whoever wants the draft ticks the box. */
 "<input type='checkbox' id='think'> reason</label>\n"
+/* 0 to 1.4 in steps of 0.05.  Above ~1.4 this model stops being coherent, and
+ * a slider that reaches somewhere useless invites going there; 0 is kept
+ * because it is greedy -- the only setting that answers the same thing twice
+ * (`sample.c` returns the argmax before touching the RNG). */
+"<label class='temp' title='0 = greedy, always the most likely token and the "
+"same answer every time. Higher = more variety, and past ~1.2 it wanders.'>\n"
+"temp <input type='range' id='temp' min='0' max='1.4' step='0.05' value='0.8'>\n"
+"<b id='tempv'>0.8</b></label>\n"
 "<button class='ghost' id='clear'>clear</button></header>\n"
 "<div id='dbg'>server statistics...</div>\n"
 "<div id='log'><div class='wrap' id='wrap'></div></div>\n"
@@ -182,7 +199,8 @@ static const char TT_WEBUI_HTML[] =
 "function post(th){\n"
 "  return fetch('/v1/chat/completions',{method:'POST',headers:headers(),\n"
 "    signal:ctrl.signal,\n"
-"    body:JSON.stringify({messages:msgs,stream:true,temperature:0.8,\n"
+"    body:JSON.stringify({messages:msgs,stream:true,\n"
+"      temperature:parseFloat(document.getElementById('temp').value),\n"
 "      think:th})});\n"
 "}\n"
 "\n"
@@ -368,6 +386,13 @@ static const char TT_WEBUI_HTML[] =
 "  msgs=[]; wrap.innerHTML=''; gate.style.display='';\n"
 "  fetch('/reset',{method:'POST',headers:headers()}); q.focus();\n"
 "});\n"
+// The label follows the slider. `greedy` rather than `0.00` at zero, because
+// what changes there is the KIND of sampling, not one more notch of it: the
+// server returns the most likely token and the same answer every time.
+"const temp=document.getElementById('temp'),tempv=document.getElementById('tempv');\n"
+"function showTemp(){ const v=parseFloat(temp.value);\n"
+"  tempv.textContent=v?v.toFixed(2):'greedy'; }\n"
+"temp.addEventListener('input',showTemp); showTemp();\n"
 "q.addEventListener('input',()=>{ q.style.height='auto';\n"
 "  q.style.height=Math.min(q.scrollHeight,180)+'px'; });\n"
 "q.addEventListener('keydown',e=>{\n"

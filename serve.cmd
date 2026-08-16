@@ -44,12 +44,21 @@ if not exist "%EXE%" (
 rem --- container -----------------------------------------------------------
 rem Procura na ordem em que foram convertidos, do mais recente para o mais
 rem antigo. TOOTEGA_MODEL tem precedencia sobre tudo.
+rem
+rem v4 vem primeiro, e nao e so por ser o mais novo: ele tem 9.165 tensores em
+rem int4 contra os 8.973 do v3 -- 192 pesos que o v3 guarda em int8 e le com o
+rem DOBRO de bytes. O decode e limitado por banda de memoria (docs/23), entao
+rem isso e velocidade, nao so espaco: o v3 tambem ocupa 0,46 GB a mais.
+rem
+rem v4 e tambem o container a que `ref32.json` se refere -- medir ou comparar
+rem saida com outro nao bate com a referencia.
 
 if defined TOOTEGA_MODEL (
     set "MODEL=%TOOTEGA_MODEL%"
 ) else (
     set "MODEL="
     for %%M in (
+        "models\glm47flash-v4\model.tootega"
         "models\glm47flash-v3\model.tootega"
         "models\glm47flash-v2\model.tootega"
         "models\glm47flash-int4\model.tootega"
@@ -112,7 +121,11 @@ echo   Aquecendo os pesos; leva ~25 s antes do primeiro pedido.
 echo   Ctrl-C encerra. A conversa nao sobrevive ao processo.
 echo.
 
-"%EXE%" serve "%MODEL%"  --threads 24 --tokenizer "%TOK%" --port %PORT% --ctx %CTX% %VERBOSE% %*
+rem --threads 20 e medido, nao chutado (docs/23): 21,55 tok/s contra 15,84 com
+rem 24 (+36%) e 20,43 com 22. Com 24 o pool da a volta em `cpus[(i+1) % 22]` e
+rem dois nucleos ficam com DUAS threads fixadas cada, com a barreira esperando
+rem por eles. Qualquer opcao passada a este script vem depois e sobrescreve.
+"%EXE%" serve "%MODEL%"  --threads 20 --tokenizer "%TOK%" --port %PORT% --ctx %CTX% %VERBOSE% %*
 exit /b %errorlevel%
 
 :help

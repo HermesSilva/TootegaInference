@@ -253,3 +253,80 @@ cost is the P/E imbalance, which change 1 makes cheap but does not shorten.
 Compare medians with the spread in view. `docs/04` records why: the first
 perplexity measurement in this project had the sign inverted because a global
 mean swallowed the effect in the variance between windows.
+
+## Forced inlining: tried, measured, reverted
+
+Worth writing down so nobody spends the afternoon again.
+
+The setup looked promising. There is no `/GL` in `build.ps1`, so each `.c` is its
+own translation unit and the compiler cannot inline **across** them — and the
+hot loop lives in `forward.c` while the kernels live in `kernels.c`.
+Disassembling `build/forward.obj` confirms it: `attn_head_absorbed` makes **41
+external calls**, 9 of them to `tt_dot` and 5 to `tt_axpy`. Even within
+`kernels.c`, `/O2` declines to inline `mm_int4_simd` — it stays a real call at
+all 5 of its sites, while the small `hsum8` inlines.
+
+### First attempt, and why it proved nothing
+
+`__forceinline` was put on the 12 `mm_*` kernels in `kernels.c`, plus a `/GL
+/LTCG` build, four binaries measured back to back:
+
+| variant | median | mean | sd | vs base |
+|---|---|---|---|---|
+| `__forceinline` on the `mm_*` kernels | 20,75 | 20,56 | 0,37 | +1,9% |
+| `__forceinline` + `/GL /LTCG` | 20,60 | 20,60 | 0,06 | +1,2% |
+| base | 20,36 | 19,93 | 0,97 | — |
+| `/GL /LTCG` alone | 20,33 | 20,35 | 0,07 | −0,1% |
+
+**That test was aimed at the wrong functions.** The `mm_*` kernels are `static`
+inside `kernels.c` and are called only by the dispatcher in the same file. The
+decode hot loop calls the *exported* ones — `tt_dot`, `tt_axpy`,
+`tt_dot_int4g`, `tt_dequant_row` — and `__forceinline` does nothing for those,
+because it cannot cross a translation unit. Disassembly after the change
+confirmed it: `attn_head_absorbed` still made all 41 external calls. The binary
+barely moved, 462 KB → 474 KB, which was the visible symptom that nothing had
+been inlined where it counted.
+
+### Second attempt, done properly
+
+The hot kernels were moved into a header (`kernels_inline.h`) as
+`static __forceinline`, with `g_impl` exported so the branch could be read
+without a call, and `forward.c`'s hot loop switched to them. This time it took:
+
+| | before | after |
+|---|---|---|
+| external calls in `attn_head_absorbed` | 41 | **12** |
+| instructions in that function | 717 | 1.294 |
+| `forward.obj` | 26.780 B | 38.311 B (+43%) |
+
+Every `tt_dot`, `tt_axpy` and quantised variant was gone from the loop; what
+remained was `expf`, `memset`, `rope_apply`, `tt_softmax` and the two
+`tt_dequant_row` of the non-int4 fallback path.
+
+Measured against base in one sitting:
+
+| variant | median | mean | sd | samples |
+|---|---|---|---|---|
+| genuinely inlined | 20,84 | 20,70 | 0,33 | 20,33 · 20,84 · 20,94 |
+| base | 20,67 | 20,75 | 0,18 | 20,62 · 20,67 · 20,95 |
+
+**+0,8% on the median, and the mean went the other way.** The samples overlap
+completely. There is no effect here.
+
+### Why
+
+Already in docs/15: decode is **memory-bound**, ~33 ms of memory against 4-7 ms
+of compute per token. Call overhead lives inside the 4-7 ms; removing all of it
+cannot move the 33 ms. The constant folding that inlining unlocks — `n` = 512,
+`group` = 64, the `g_impl` branch — is real, and it optimises the part that was
+never the bottleneck.
+
+All variants produced **bit-identical logits** (`23F8AB0F…`), including the
+`/GL` ones, so whole-program optimisation does not cost the reproducibility
+`/fp:precise` buys. That is the one durable finding here, and it is worth
+knowing before anyone reaches for `/GL` for some other reason.
+
+Reverted, all of it. If it is ever revisited, the one argument with evidence is
+**variance, not throughput**: the two LTCG builds had sd 0,06-0,07 against the
+base's 0,18-0,97. That matters only if run-to-run stability ever matters more
+than the median.

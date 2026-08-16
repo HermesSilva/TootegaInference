@@ -330,3 +330,50 @@ Reverted, all of it. If it is ever revisited, the one argument with evidence is
 **variance, not throughput**: the two LTCG builds had sd 0,06-0,07 against the
 base's 0,18-0,97. That matters only if run-to-run stability ever matters more
 than the median.
+
+## Software prefetch: tried, measured, reverted
+
+The hypothesis was better founded than the inlining one. Decode reads 2,27 GB of
+int4 weight per token and reuses none of it — every byte enters cache, is used
+once, and leaves. At 20 tok/s that is **45 GB/s**, against the ~60-80 GB/s a
+dual-channel DDR5 delivers. The profile puts 35% of CPU inside `mm_int4_simd`,
+and that time is spent *stalled on the load*, not executing `vfmadd`.
+
+`_mm_prefetch(..., _MM_HINT_T0)` was added to `mm_int4_simd`, `mm_int8_simd` and
+`mm_f32_simd`, pulling the **next row** while the current one is computed. One
+row ahead, deliberately: a 5.120-column row is ~206 ns of arithmetic against
+~80-100 ns of DRAM latency, so one row covers it without the data arriving so
+early it gets evicted.
+
+**Version 1, in a burst — 6,6% SLOWER**: 19,55 against 20,93, sd 1,55 against
+0,14. Issuing every cache line of the next row at once means up to 40 prefetches
+back to back, and the core has ~10-16 line fill buffers. They filled up and
+**blocked the loads of the row being computed right then**. The prefetch was
+competing with the real work instead of anticipating it.
+
+**Version 2, distributed** — one prefetch per group, inside the loop that
+consumes the data — removed the harm and produced nothing:
+
+| variant | n | median | mean | sd |
+|---|---|---|---|---|
+| base | 10 | 20,85 | 20,56 | 1,06 |
+| distributed prefetch | 9 | 20,33 | 20,61 | 0,94 |
+
+Median 2,5% worse, mean 0,2% better: the signs disagree and the distributions
+overlap entirely.
+
+Two reasons it cannot work here. The access pattern is **sequential and
+predictable** — `wr + o * stride`, row after row — which is precisely what the
+hardware stream prefetcher already detects; the explicit hint asks for what was
+already on its way. And more fundamentally, **prefetch hides latency, it does not
+create bandwidth**. At 45 GB/s of demand against a ~60-80 GB/s ceiling, the
+constraint is how many bytes must cross the bus, and asking earlier does not
+change that number.
+
+### On the method
+
+This one needed interleaved A/B/A/B: base, prefetch, base gave **21,53 and
+20,90** for the *same binary*, a 3% spread. Measuring prefetch once against one
+base would have supported whatever conclusion the order happened to produce. Two
+samples near 11,9 tok/s (external load on the machine) were discarded explicitly
+rather than quietly averaged in.

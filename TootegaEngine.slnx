@@ -1,0 +1,9 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+    <BuildType Name="Release-AVX512" />
+  </Configurations>
+  <Project Path="tootega.vcxproj" Id="5e645f50-7340-490b-bad4-136e37158e48" />
+</Solution>

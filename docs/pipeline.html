@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TootegaEngine &mdash; da pergunta ao texto, passo a passo</title>
+<style>
+  :root {
+    --bg:      #0d1117;
+    --panel:   #161b22;
+    --panel2:  #1c2330;
+    --ink:     #e6edf3;
+    --muted:   #8b949e;
+    --line:    #30363d;
+    --accent:  #58a6ff;   /* recepcao / IO   */
+    --warm:    #f0883e;    /* retrieval        */
+    --green:   #56d364;    /* tokenizador      */
+    --violet:  #bc8cff;    /* forward / camadas*/
+    --pink:    #f778ba;    /* MoE              */
+    --cyan:    #39c5cf;     /* sampling         */
+    --yellow:  #e3b341;
+    --code:    #d2a8ff;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.65 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  a { color: var(--accent); }
+  code, .mono {
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: .9em; color: var(--code);
+  }
+  header {
+    padding: 48px 24px 32px; text-align: center;
+    border-bottom: 1px solid var(--line);
+    background: radial-gradient(1200px 400px at 50% -140px, #1b2942 0%, transparent 70%);
+  }
+  header h1 { margin: 0 0 8px; font-size: 30px; letter-spacing: -.5px; }
+  header p  { margin: 4px auto; max-width: 720px; color: var(--muted); }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 20px 80px; }
+
+  .toc {
+    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+    margin: 24px 0 8px;
+  }
+  .toc a {
+    text-decoration: none; color: var(--ink);
+    border: 1px solid var(--line); border-radius: 999px;
+    padding: 5px 13px; font-size: 13.5px; background: var(--panel);
+  }
+  .toc a:hover { border-color: var(--accent); }
+
+  section { margin: 56px 0; scroll-margin-top: 16px; }
+  h2 {
+    font-size: 22px; display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid var(--line); padding-bottom: 10px;
+  }
+  h2 .n {
+    flex: none; width: 34px; height: 34px; border-radius: 9px;
+    display: grid; place-items: center; font-size: 15px; font-weight: 700;
+    color: #0d1117;
+  }
+  h3 { font-size: 16.5px; margin: 26px 0 8px; color: var(--ink); }
+  p.lead { color: var(--muted); margin-top: 4px; }
+
+  figure { margin: 22px 0; }
+  .svg-card {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; padding: 14px; overflow-x: auto;
+  }
+  figcaption { color: var(--muted); font-size: 13.5px; margin-top: 8px; text-align: center; }
+  svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+
+  .note {
+    background: var(--panel2); border-left: 3px solid var(--warm);
+    padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0;
+    font-size: 14.5px; color: #c9d1d9;
+  }
+  .note b { color: var(--yellow); }
+  .facts {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px; margin: 18px 0;
+  }
+  .fact {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 12px 14px;
+  }
+  .fact .v { font-size: 22px; font-weight: 700; color: var(--violet); }
+  .fact .k { font-size: 12.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+
+  pre {
+    background: #0b0f16; border: 1px solid var(--line); border-radius: 10px;
+    padding: 14px 16px; overflow-x: auto; font-size: 13px; line-height: 1.55;
+  }
+  pre code { color: #adbac7; }
+  .kw { color: #ff7b72; } .fn { color: #d2a8ff; } .str { color: #a5d6ff; }
+  .cm { color: #768390; font-style: italic; }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th, td { border: 1px solid var(--line); padding: 8px 11px; text-align: left; }
+  th { background: var(--panel2); color: var(--ink); }
+  td.mono { color: var(--code); white-space: nowrap; }
+
+  footer { border-top: 1px solid var(--line); padding: 28px 20px; text-align: center; color: var(--muted); font-size: 13px; }
+  .legend { display:flex; flex-wrap:wrap; gap:14px; justify-content:center; margin:10px 0 0; font-size:13px; color:var(--muted); }
+  .legend span { display:inline-flex; align-items:center; gap:6px; }
+  .dot { width:11px; height:11px; border-radius:3px; display:inline-block; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Da pergunta ao texto &mdash; o caminho de um token no TootegaEngine</h1>
+  <p>Como o motor recebe uma pergunta, a transforma e devolve a resposta &mdash; cada fase
+     tal como o código em <code>src/</code> a executa, do socket HTTP (<i>HyperText Transfer Protocol</i>)
+     à última letra impressa.</p>
+  <p style="font-size:13px">Modelo de referência: <b>GLM-4.7-Flash</b> &middot; 47 camadas &middot; 64 experts &middot; atenção MLA (<i>Multi-head Latent Attention</i>) &middot; container int4 <code>.tootega</code></p>
+  <div class="toc">
+    <a href="#glossario">Siglas</a>
+    <a href="#visao">Visão geral</a>
+    <a href="#f1">1 · Recepção</a>
+    <a href="#f2">2 · Prompt &amp; template</a>
+    <a href="#f3">3 · Retrieval BM25</a>
+    <a href="#f4">4 · Tokenização</a>
+    <a href="#f5">5 · Prefill &amp; cache</a>
+    <a href="#f6">6 · Uma camada</a>
+    <a href="#f7">7 · Atenção MLA</a>
+    <a href="#f8">8 · MoE</a>
+    <a href="#f9">9 · Amostragem</a>
+    <a href="#f10">10 · Decode &amp; saída</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- ============================================================ GLOSSÁRIO -->
+<section id="glossario">
+  <h2><span class="n" style="background:var(--muted)">§</span> Siglas, de uma vez</h2>
+  <p class="lead">Cada sigla também é expandida no seu primeiro uso ao longo do texto; esta tabela
+     as reúne para consulta rápida, na ordem em que aparecem.</p>
+  <table>
+    <tr><th>Sigla</th><th>Nome por extenso</th><th>O que é</th></tr>
+    <tr><td class="mono">HTTP</td><td><i>HyperText Transfer Protocol</i></td><td>protocolo web sobre o qual o cliente fala com o motor</td></tr>
+    <tr><td class="mono">TCP</td><td><i>Transmission Control Protocol</i></td><td>transporte confiável do socket</td></tr>
+    <tr><td class="mono">API</td><td><i>Application Programming Interface</i></td><td>interface de chamada compatível com a de chat</td></tr>
+    <tr><td class="mono">JSON</td><td><i>JavaScript Object Notation</i></td><td>formato do corpo da requisição</td></tr>
+    <tr><td class="mono">BM25</td><td><i>Best Matching 25</i></td><td>função clássica de ranqueamento na recuperação de texto</td></tr>
+    <tr><td class="mono">idf</td><td><i>inverse document frequency</i></td><td>peso pela raridade do termo no corpus</td></tr>
+    <tr><td class="mono">tf</td><td><i>term frequency</i></td><td>frequência do termo no documento (saturada)</td></tr>
+    <tr><td class="mono">RAFT</td><td><i>Retrieval-Augmented Fine-Tuning</i></td><td>ajuste fino em que o modelo aprende a ler o trecho, não a decorá-lo</td></tr>
+    <tr><td class="mono">KV</td><td><i>Key/Value</i> (chave/valor)</td><td>o que o cache de atenção guarda por posição</td></tr>
+    <tr><td class="mono">MLA</td><td><i>Multi-head Latent Attention</i></td><td>atenção latente multi-cabeça, comprime o cache KV</td></tr>
+    <tr><td class="mono">MHA</td><td><i>Multi-Head Attention</i></td><td>atenção multi-cabeça convencional, que a MLA comprime</td></tr>
+    <tr><td class="mono">LoRA</td><td><i>Low-Rank Adaptation</i></td><td>adaptação de posto baixo (na projeção da query e no fine-tune)</td></tr>
+    <tr><td class="mono">RoPE</td><td><i>Rotary Position Embedding</i></td><td>codificação rotativa de posição</td></tr>
+    <tr><td class="mono">RMSNorm</td><td><i>Root Mean Square Normalization</i></td><td>normalização pela raiz do valor quadrático médio</td></tr>
+    <tr><td class="mono">MLP</td><td><i>Multi-Layer Perceptron</i></td><td>a rede densa da camada</td></tr>
+    <tr><td class="mono">MoE</td><td><i>Mixture of Experts</i></td><td>mistura de especialistas (top-4 de 64)</td></tr>
+    <tr><td class="mono">MTP</td><td><i>Multi-Token Prediction</i></td><td>cabeça de especulação do próximo token adiante</td></tr>
+    <tr><td class="mono">EOS</td><td><i>End Of Sequence</i></td><td>token de parada da geração</td></tr>
+    <tr><td class="mono">SSE</td><td><i>Server-Sent Events</i></td><td>canal por onde os tokens são transmitidos</td></tr>
+    <tr><td class="mono">UTF-8</td><td><i>Unicode Transformation Format, 8-bit</i></td><td>codificação dos bytes de texto de saída</td></tr>
+  </table>
+</section>
+
+<!-- ============================================================ VISÃO -->
+<section id="visao">
+  <h2><span class="n" style="background:var(--accent)">0</span> Visão geral do pipeline</h2>
+  <p class="lead">Dez fases. As três primeiras acontecem uma vez por pergunta; as fases 5&ndash;9
+     formam o laço que roda uma vez por <em>token</em> gerado.</p>
+
+  <figure>
+   <div class="svg-card">
+    <svg viewBox="0 0 960 300" role="img" aria-label="Visão geral das dez fases">
+      <defs>
+        <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+          <path d="M0,0 L9,4.5 L0,9 z" fill="#8b949e"/>
+        </marker>
+        <linearGradient id="loopg" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#bc8cff" stop-opacity=".15"/>
+          <stop offset="1" stop-color="#39c5cf" stop-opacity=".15"/>
+        </linearGradient>
+      </defs>
+
+      <!-- fase única -->
+      <g font-family="Segoe UI, sans-serif" font-size="12.5" text-anchor="middle">
+        <g>
+          <rect x="14"  y="30" width="120" height="46" rx="9" fill="#132033" stroke="#58a6ff"/>
+          <text x="74"  y="49" fill="#e6edf3">1 · Recepção</text>
+          <text x="74"  y="65" fill="#8b949e" font-size="10.5">HTTP / JSON</text>
+        </g>
+        <g>
+          <rect x="150" y="30" width="120" height="46" rx="9" fill="#132033" stroke="#58a6ff"/>
+          <text x="210" y="49" fill="#e6edf3">2 · Template</text>
+          <text x="210" y="65" fill="#8b949e" font-size="10.5">papéis do chat</text>
+        </g>
+        <g>
+          <rect x="286" y="30" width="120" height="46" rx="9" fill="#221a10" stroke="#f0883e"/>
+          <text x="346" y="49" fill="#e6edf3">3 · Retrieval</text>
+          <text x="346" y="65" fill="#8b949e" font-size="10.5">BM25</text>
+        </g>
+        <g>
+          <rect x="422" y="30" width="120" height="46" rx="9" fill="#0f2417" stroke="#56d364"/>
+          <text x="482" y="49" fill="#e6edf3">4 · Tokenizar</text>
+          <text x="482" y="65" fill="#8b949e" font-size="10.5">texto → ids</text>
+        </g>
+        <g>
+          <rect x="558" y="30" width="120" height="46" rx="9" fill="#1b1430" stroke="#bc8cff"/>
+          <text x="618" y="49" fill="#e6edf3">5 · Prefill</text>
+          <text x="618" y="65" fill="#8b949e" font-size="10.5">preenche KV</text>
+        </g>
+      </g>
+
+      <!-- setas linha 1 -->
+      <g stroke="#8b949e" stroke-width="1.5" marker-end="url(#ar)">
+        <line x1="134" y1="53" x2="148" y2="53"/>
+        <line x1="270" y1="53" x2="284" y2="53"/>
+        <line x1="406" y1="53" x2="420" y2="53"/>
+        <line x1="542" y1="53" x2="556" y2="53"/>
+      </g>
+      <!-- desce para o laço -->
+      <path d="M678,53 h150 v50" fill="none" stroke="#8b949e" stroke-width="1.5" marker-end="url(#ar)"/>
+
+      <!-- caixa do laço -->
+      <rect x="120" y="118" width="770" height="150" rx="14" fill="url(#loopg)" stroke="#30363d" stroke-dasharray="5 4"/>
+      <text x="505" y="112" text-anchor="middle" font-family="Segoe UI" font-size="12" fill="#8b949e">
+        laço de decode &mdash; repete por token até &lt;EOS&gt; ou n_max
+      </text>
+
+      <g font-family="Segoe UI, sans-serif" font-size="12.5" text-anchor="middle">
+        <g>
+          <rect x="700" y="130" width="170" height="50" rx="9" fill="#1b1430" stroke="#bc8cff"/>
+          <text x="785" y="150" fill="#e6edf3">6·7 Forward (47×)</text>
+          <text x="785" y="167" fill="#8b949e" font-size="10.5">MLA + MoE por camada</text>
+        </g>
+        <g>
+          <rect x="700" y="200" width="170" height="50" rx="9" fill="#2a1420" stroke="#f778ba"/>
+          <text x="785" y="220" fill="#e6edf3">8 · MoE (top-4/64)</text>
+          <text x="785" y="237" fill="#8b949e" font-size="10.5">roteia experts</text>
+        </g>
+        <g>
+          <rect x="430" y="200" width="170" height="50" rx="9" fill="#12262a" stroke="#39c5cf"/>
+          <text x="515" y="220" fill="#e6edf3">9 · Amostragem</text>
+          <text x="515" y="237" fill="#8b949e" font-size="10.5">logits → 1 token</text>
+        </g>
+        <g>
+          <rect x="140" y="200" width="170" height="50" rx="9" fill="#132033" stroke="#58a6ff"/>
+          <text x="225" y="220" fill="#e6edf3">10 · Detokenizar</text>
+          <text x="225" y="237" fill="#8b949e" font-size="10.5">id → texto → stream</text>
+        </g>
+      </g>
+
+      <!-- setas do laço -->
+      <g stroke="#8b949e" stroke-width="1.5" marker-end="url(#ar)">
+        <line x1="785" y1="180" x2="785" y2="198"/>
+        <line x1="700" y1="225" x2="602" y2="225"/>
+        <line x1="430" y1="225" x2="312" y2="225"/>
+      </g>
+      <!-- volta o laço: detokenizar → forward (novo token vira entrada) -->
+      <path d="M225,200 v-32 h475" fill="none" stroke="#39c5cf" stroke-width="1.5"
+            stroke-dasharray="5 4" marker-end="url(#ar)"/>
+      <text x="440" y="160" text-anchor="middle" font-size="10.5" fill="#39c5cf">token gerado realimenta o forward</text>
+    </svg>
+   </div>
+   <figcaption>As fases 1&ndash;4 rodam uma vez por pergunta. As fases 6&ndash;10 formam o laço autoregressivo.</figcaption>
+  </figure>
+
+  <div class="facts">
+    <div class="fact"><div class="v">47</div><div class="k">camadas</div></div>
+    <div class="fact"><div class="v">64</div><div class="k">experts (roteados)</div></div>
+    <div class="fact"><div class="v">4</div><div class="k">experts por token</div></div>
+    <div class="fact"><div class="v">20</div><div class="k">cabeças de atenção</div></div>
+    <div class="fact"><div class="v">154 880</div><div class="k">vocabulário</div></div>
+    <div class="fact"><div class="v">2048</div><div class="k">hidden_size</div></div>
+  </div>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--accent)"></i> IO / recepção</span>
+    <span><i class="dot" style="background:var(--warm)"></i> retrieval</span>
+    <span><i class="dot" style="background:var(--green)"></i> tokenizador</span>
+    <span><i class="dot" style="background:var(--violet)"></i> forward</span>
+    <span><i class="dot" style="background:var(--pink)"></i> MoE</span>
+    <span><i class="dot" style="background:var(--cyan)"></i> amostragem</span>
+  </div>
+</section>
+
+<!-- ============================================================ FASE 1 -->
+<section id="f1">
+  <h2><span class="n" style="background:var(--accent)">1</span> Recepção &mdash; o socket e o JSON</h2>
+  <p class="lead">O motor sobe em modo <code>serve</code> (<code>src/server.c</code>), escuta TCP
+     (<i>Transmission Control Protocol</i>) na porta e fala o protocolo compatível com a API
+     (<i>Application Programming Interface</i>) de chat. Um POST chega, o corpo é lido e o parser
+     JSON (<i>JavaScript Object Notation</i>) próprio (<code>src/json.c</code>, zero dependências)
+     o transforma em árvore.</p>
+
+  <figure>
+   <div class="svg-card">
+    <svg viewBox="0 0 900 190" role="img" aria-label="Recepção HTTP e parsing">
+      <defs>
+        <marker id="ar2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+          <path d="M0,0 L9,4.5 L0,9 z" fill="#8b949e"/></marker>
+      </defs>
+      <g font-family="Segoe UI" font-size="12.5" text-anchor="middle">
+        <rect x="20"  y="60" width="150" height="66" rx="10" fill="#132033" stroke="#58a6ff"/>
+        <text x="95" y="88" fill="#e6edf3">Cliente</text>
+        <text x="95" y="106" fill="#8b949e" font-size="10.5">Cockpit / UI web</text>
+
+        <rect x="230" y="60" width="170" height="66" rx="10" fill="#161b22" stroke="#30363d"/>
+        <text x="315" y="82" fill="#e6edf3">POST /v1/chat</text>
+        <text x="315" y="100" fill="#8b949e" font-size="10.5">Content-Type: json</text>
+        <text x="315" y="116" fill="#8b949e" font-size="10.5">socket TCP :8080</text>
+
+        <rect x="460" y="60" width="170" height="66" rx="10" fill="#161b22" stroke="#58a6ff"/>
+        <text x="545" y="88" fill="#e6edf3">tt_json_parse</text>
+        <text x="545" y="106" fill="#8b949e" font-size="10.5">src/json.c</text>
+
+        <rect x="690" y="60" width="190" height="66" rx="10" fill="#161b22" stroke="#30363d"/>
+        <text x="785" y="80" fill="#e6edf3">messages[ ]</text>
+        <text x="785" y="98" fill="#8b949e" font-size="10.5">role: system/user/</text>
+        <text x="785" y="113" fill="#8b949e" font-size="10.5">assistant · content</text>
+      </g>
+      <g stroke="#8b949e" stroke-width="1.5" marker-end="url(#ar2)">
+        <line x1="170" y1="93" x2="228" y2="93"/>
+        <line x1="400" y1="93" x2="458" y2="93"/>
+        <line x1="630" y1="93" x2="688" y2="93"/>
+      </g>
+      <text x="315" y="150" text-anchor="middle" font-size="11" fill="#8b949e" font-family="Segoe UI">
+        parâmetros de amostragem também chegam aqui: temperature, top_p, top_k, n_max
+      </text>
+    </svg>
+   </div>
+   <figcaption>O corpo JSON vira uma lista de mensagens com papel e conteúdo, mais os parâmetros de geração.</figcaption>
+  </figure>
+
+  <pre><code><span class="cm">// o que o cliente envia</span>
+{
+  <span class="str">"messages"</span>: [
+    { <span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"O que é a Arena na Cosmologia Composicional?"</span> }
+  ],
+  <span class="str">"temperature"</span>: 0.8, <span class="str">"top_p"</span>: 0.95, <span class="str">"top_k"</span>: 40
+}</code></pre>
+</section>
+
+<!-- ============================================================ FASE 2 -->
+<section id="f2">
+  <h2><span class="n" style="background:var(--accent)">2</span> Prompt &amp; template de chat</h2>
+  <p class="lead">O motor reconstrói os <em>ids</em> do zero a cada pedido e monta o prefixo da conversa,
+     byte a byte como o <code>chat_template.jinja</code> do modelo. Os marcadores de papel
+     (<code>&lt;|user|&gt;</code>, <code>&lt;|assistant|&gt;</code>) delimitam os turnos.</p>
+
+  <div class="note">
+    <b>Por que reconstruir tudo?</b> O casamento de prefixo (<code>tt_state_match_prefix</code>) decide
+    o que reaproveitar do cache. Reconstruir garante que uma conversa reproduzida no turno 3 gere
+    exatamente os mesmos ids do turno 1 &mdash; condição para o KV cache sobreviver à rodada
+    (<code>server.c</code>).
+  </div>
+
+  <figure>
+   <div class="svg-card">
+    <svg viewBox="0 0 860 210" role="img" aria-label="Montagem do prefixo de chat">
+      <g font-family="Cascadia Code, monospace" font-size="12">
+        <rect x="20" y="24" width="820" height="34" rx="7" fill="#132033" stroke="#58a6ff"/>
+        <text x="34" y="46" fill="#a5d6ff">&lt;|system|&gt;</text>
+        <text x="150" y="46" fill="#8b949e">bloco de sistema + ferramentas (parte estável do prefixo)</text>
+
+        <rect x="20" y="66" width="820" height="34" rx="7" fill="#221a10" stroke="#f0883e"/>
+        <text x="34" y="88" fill="#ffcf9e">&lt;|user|&gt;</text>
+        <text x="150" y="88" fill="#8b949e">pergunta do usuário  +  ← trechos recuperados (fase 3) entram AQUI</text>
+
+        <rect x="20" y="108" width="820" height="34" rx="7" fill="#1b1430" stroke="#bc8cff"/>
+        <text x="34" y="130" fill="#d2a8ff">&lt;|assistant|&gt;</text>
+        <text x="180" y="130" fill="#8b949e">marcador de virada &mdash; o modelo gera a partir daqui</text>
+      </g>
+      <text x="430" y="176" text-anchor="middle" font-family="Segoe UI" font-size="11.5" fill="#8b949e">
+        o bloco de sistema fica no início de propósito: é a parte que NÃO muda entre pedidos,
+      </text>
+      <text x="430" y="194" text-anchor="middle" font-family="Segoe UI" font-size="11.5" fill="#8b949e">
+        então o prefixo cacheado vale numa sessão de agente
+      </text>
+    </svg>
+   </div>
+   <figcaption>A conversa vira uma sequência linear de texto com marcadores de papel, pronta para tokenizar.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ FASE 3 -->
+<section id="f3">
+  <h2><span class="n" style="background:var(--warm)">3</span> Retrieval BM25 &mdash; buscar o trecho certo</h2>
+  <p class="lead">A busca usa o BM25 (<i>Best Matching 25</i>, a função de ranqueamento clássica de recuperação
+     de texto). O modelo foi treinado com RAFT (<i>Retrieval-Augmented Fine-Tuning</i>, ajuste fino
+     com recuperação aumentada): <b>lê, não decora</b>. Sem o trecho no contexto, ele erra
+     a doutrina (0 de 11 respostas corretas sem trecho; 26 de 29 com trecho, <code>docs/22</code>).
+     Por isso a recuperação é <em>requisito</em>, não acessório &mdash; e roda no próprio motor
+     (<code>src/retrieve.c</code>), não num serviço externo.</p>
+
+  <figure>
+   <div class="svg-card">
+    <svg viewBox="0 0 900 260" role="img" aria-label="Pipeline BM25">
+      <defs>
+        <marker id="ar3" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+          <path d="M0,0 L9,4.5 L0,9 z" fill="#8b949e"/></marker>
+      </defs>
+      <g font-family="Segoe UI" font-size="12.5" text-anchor="middle">
+        <rect x="20"  y="30" width="150" height="54" rx="10" fill="#221a10" stroke="#f0883e"/>
+        <text x="95" y="52" fill="#e6edf3">Pergunta</text>
+        <text x="95" y="70" fill="#8b949e" font-size="10.5">"…a Arena…"</text>
+
+        <rect x="20"  y="110" width="150" height="54" rx="10" fill="#161b22" stroke="#30363d"/>
+        <text x="95" y="132" fill="#e6edf3">Termos</text>
+        <text x="95" y="150" fill="#8b949e" font-size="10.5">tokeniza + normaliza</text>
+
+        <rect x="230" y="70" width="180" height="120" rx="10" fill="#12100a" stroke="#f0883e"/>
+        <text x="320" y="96" fill="#e6edf3">Índice .ttindex</text>
+        <text x="320" y="118" fill="#8b949e" font-size="10.5">726 seções</text>
+        <text x="320" y="135" fill="#8b949e" font-size="10.5">13 465 termos</text>
+        <text x="320" y="155" fill="#8b949e" font-size="10.5">freq. invertida (df, tf)</text>
+
+        <rect x="470" y="70" width="180" height="120" rx="10" fill="#161b22" stroke="#30363d"/>
+        <text x="560" y="92" fill="#e6edf3">Pontuação BM25</text>
+        <text x="560" y="116" fill="#8b949e" font-size="10.5">idf · tf saturado</text>
+        <text x="560" y="133" fill="#8b949e" font-size="10.5">(k1, b) por termo</text>
+        <text x="560" y="153" fill="#8b949e" font-size="10.5">soma por seção</text>
+
+        <rect x="710" y="70" width="170" height="120" rx="10" fill="#221a10" stroke="#f0883e"/>
+        <text x="795" y="92" fill="#e6edf3">Top-5 trechos</text>
+        <text x="795" y="116" fill="#8b949e" font-size="10.5">maior score primeiro</text>
+        <text x="795" y="136" fill="#8b949e" font-size="10.5">recortados por</text>
+        <text x="795" y="152" fill="#8b949e" font-size="10.5">passage_chars</text>
+      </g>
+      <g stroke="#8b949e" stroke-width="1.5" marker-end="url(#ar3)">
+        <line x1="95" y1="84"  x2="95"  y2="108"/>
+        <line x1="170" y1="137" x2="228" y2="137"/>
+        <line x1="410" y1="130" x2="468" y2="130"/>
+        <line x1="650" y1="130" x2="708" y2="130"/>
+      </g>
+      <text x="450" y="225" text-anchor="middle" font-family="Segoe UI" font-size="11" fill="#8b949e">
+        os trechos vencedores são inseridos no turno &lt;|user|&gt; da fase 2, antes da tokenização
+      </text>
+    </svg>
+   </div>
+   <figcaption>BM25 clássico: idf (<i>inverse document frequency</i>, frequência inversa nos documentos) pela raridade do termo, tf (<i>term frequency</i>, frequência do termo) saturado, soma por seção. O port em C ranqueia idêntico ao <code>retrieve.py</code> do treino.</figcaption>
+  </figure>
+
+  <div class="note">
+    O trecho entra no <b>último turno do usuário e é reproduzido no replay</b>, não só na última mensagem:
+    reescrever apenas a última mudaria o prefixo a cada envio e forçaria re-prefill da conversa inteira.
+    Se a pergunta não compartilha termo algum com o corpus, nada é recuperado &mdash; e o prompt segue limpo.
+  </div>
+</section>
+
+<!-- ============================================================ FASE 4 -->
+<section id="f4">
+  <h2><span class="n" style="background:var(--green)">4</span> Tokenização &mdash; texto vira ids</h2>
+  <p class="lead">O tokenizador próprio (<code>src/tokenizer.c</code> + <code>unicode_tables.h</code> gerado por
+     <code>tools/ucd</code>) parte o texto em subpalavras e devolve inteiros. Cada id é um índice no
+     vocabulário de 154 880 entradas.</p>
+
+  <figure>
+   <div class="svg-card">
+    <svg viewBox="0 0 880 180" role="img" aria-label="Tokenização">
+      <g font-family="Cascadia Code, monospace" font-size="13" text-anchor="middle">
+        <text x="440" y="34" fill="#8b949e" font-family="Segoe UI">"O que é a Arena?"</text>
+        <!-- pedaços -->
+        <g>
+          <rect x="70"  y="54" width="90" height="40" rx="7" fill="#0f2417" stroke="#56d364"/><text x="115" y="80" fill="#d2ffdb">"O"</text>
+          <rect x="175" y="54" width="110" height="40" rx="7" fill="#0f2417" stroke="#56d364"/><text x="230" y="80" fill="#d2ffdb">" que"</text>
+          <rect x="300" y="54" width="90"  height="40" rx="7" fill="#0f2417" stroke="#56d364"/><text x="345" y="80" fill="#d2ffdb">" é"</text>
+          <rect x="405" y="54" width="80"  height="40" rx="7" fill="#0f2417" stroke="#56d364"/><text x="445" y="80" fill="#d2ffdb">" a"</text>
+          <rect x="500" y="54" width="120" height="40" rx="7" fill="#0f2417" stroke="#56d364"/><text x="560" y="80" fill="#d2ffdb">" Aren"</text>
+          <rect x="635" y="54" width="90"  height="40" rx="7" fill="#0f2417" stroke="#56d364"/><text x="680" y="80" fill="#d2ffdb">"a"</text>
+          <rect x="740" y="54" width="80"  height="40" rx="7" fill="#0f2417" stroke="#56d364"/><text x="780" y="80" fill="#d2ffdb">"?"</text>
+        </g>
+        <!-- ids -->
+        <g fill="#8b949e" font-size="12">
+          <text x="115" y="126">435</text>
+          <text x="230" y="126">1027</text>
+          <text x="345" y="126">309</text>
+          <text x="445" y="126">64</text>
+          <text x="560" y="126">28190</text>
+          <text x="680" y="126">64</text>
+          <text x="780" y="126">33</text>
+        </g>
+      </g>
+      <text x="440" y="158" text-anchor="middle" font-family="Segoe UI" font-size="11" fill="#8b949e">
+        subpalavras → ids (valores ilustrativos). "Arena" pode partir em várias peças.
+      </text>
+    </svg>
+   </div>
+   <figcaption>A sequência de ids é a entrada real do transformer. Detokenizar (fase 10) é o caminho inverso.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ FASE 5 -->
+<section id="f5">
+  <h2><span class="n" style="background:var(--violet)">5</span> Prefill &mdash; preencher o cache KV</h2>
+  <p class="lead">Antes de gerar, o motor passa <em>todos</em> os ids do prompt pelo modelo para popular o
+     cache de chave/valor (KV) das 47 camadas. É a fase mais cara &mdash; e, sob RAFT, a que domina o
+     tempo, porque os trechos recuperados mudam por pergunta e o cache de prefixo não ajuda.</p>
+
+  <figure>
+   <div class="svg-card">
+    <svg viewBox="0 0 900 220" role="img" aria-label="Prefill e casamento de prefixo">
+      <defs>
+        <marker id="ar5" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+          <path d="M0,0 L9,4.5 L0,9 z" fill="#8b949e"/></marker>
+      </defs>
+      <!-- tokens do prompt -->
+      <g font-family="Cascadia Code" font-size="11" text-anchor="middle">
+        <text x="60" y="30" fill="#8b949e" font-family="Segoe UI" font-size="12">ids do prompt</text>
+        <g fill="#d2a8ff">
+          <rect x="20" y="42" width="34" height="26" rx="4" fill="#1b1430" stroke="#56d364"/><text x="37" y="60">t₀</text>
+          <rect x="58" y="42" width="34" height="26" rx="4" fill="#1b1430" stroke="#56d364"/><text x="75" y="60">t₁</text>
+          <rect x="96" y="42" width="34" height="26" rx="4" fill="#1b1430" stroke="#56d364"/><text x="113" y="60">t₂</text>
+          <rect x="134" y="42" width="34" height="26" rx="4" fill="#1b1430" stroke="#bc8cff"/><text x="151" y="60">t₃</text>
+          <rect x="172" y="42" width="34" height="26" rx="4" fill="#1b1430" stroke="#bc8cff"/><text x="189" y="60">…</text>
+        </g>
+        <text x="75" y="86" fill="#56d364" font-family="Segoe UI" font-size="10">prefixo já no cache</text>
+        <text x="175" y="86" fill="#bc8cff" font-family="Segoe UI" font-size="10">novo: precisa rodar</text>
+      </g>
+
+      <!-- cache KV: 47 camadas -->
+      <g font-family="Segoe UI" font-size="12">
+        <rect x="300" y="30" width="230" height="160" rx="12" fill="#161b22" stroke="#bc8cff"/>
+        <text x="415" y="52" text-anchor="middle" fill="#e6edf3">Cache KV &mdash; 47 camadas</text>
+        <g fill="#8b949e" font-size="10.5" text-anchor="middle">
+          <rect x="318" y="66" width="194" height="15" rx="3" fill="#1b1430"/><text x="415" y="78">camada 0 · K,V por posição</text>
+          <rect x="318" y="86" width="194" height="15" rx="3" fill="#1b1430"/><text x="415" y="98">camada 1 …</text>
+          <rect x="318" y="106" width="194" height="15" rx="3" fill="#1b1430"/><text x="415" y="118">⋮</text>
+          <rect x="318" y="126" width="194" height="15" rx="3" fill="#1b1430"/><text x="415" y="138">camada 46</text>
+        </g>
+        <text x="415" y="166" text-anchor="middle" fill="#8b949e" font-size="10.5">MLA comprime: 576 valores/token/camada</text>
+        <text x="415" y="181" text-anchor="middle" fill="#8b949e" font-size="10.5">contra 10 240 do MHA equivalente</text>
+      </g>
+
+      <!-- saída -->
+      <g font-family="Segoe UI" font-size="12" text-anchor="middle">
+        <rect x="640" y="76" width="230" height="68" rx="12" fill="#12262a" stroke="#39c5cf"/>
+        <text x="755" y="102" fill="#e6edf3">logits da última posição</text>
+        <text x="755" y="122" fill="#8b949e" font-size="10.5">154 880 valores → fase 9</text>
+      </g>
+
+      <g stroke="#8b949e" stroke-width="1.5" marker-end="url(#ar5)">
+        <line x1="210" y1="110" x2="298" y2="110"/>
+        <line x1="530" y1="110" x2="638" y2="110"/>
+      </g>
+    </svg>
+   </div>
+   <figcaption><code>tt_state_match_prefix</code> reaproveita o maior prefixo comum já no cache; só o resto do prompt roda. Nunca reaproveita o <em>último</em> token &mdash; os logits dele vêm do forward, não do cache. (No diagrama, MHA = <i>Multi-Head Attention</i>, a atenção multi-cabeça convencional que a MLA comprime.)</figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ FASE 6 -->
+<section id="f6">
+  <h2><span class="n" style="background:var(--violet)">6</span> Uma camada por dentro (<code>tt_forward</code>)</h2>
+  <p class="lead">Cada uma das 47 camadas repete a mesma estrutura: normaliza, atende (MLA), soma o residual,
+     normaliza de novo e passa pela MLP (<i>Multi-Layer Perceptron</i>, a rede densa de retropropagação)
+     &mdash; densa na 1ª camada, MoE (<i>Mixture of Experts</i>, mistura de especialistas) nas outras 46
+     (<code>first_k_dense_replace = 1</code>).</p>
+
+  <figure>
+   <div class="svg-card">
+    <svg viewBox="0 0 560 470" role="img" aria-label="Fluxo de uma camada">
+      <defs>
+        <marker id="ar6" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+          <path d="M0,0 L9,4.5 L0,9 z" fill="#8b949e"/></marker>
+      </defs>
+      <g font-family="Segoe UI" font-size="12.5" text-anchor="middle">
+        <rect x="200" y="14"  width="160" height="34" rx="8" fill="#161b22" stroke="#30363d"/><text x="280" y="36" fill="#e6edf3">hidden entra (h)</text>
+        <rect x="200" y="70"  width="160" height="34" rx="8" fill="#161b22" stroke="#bc8cff"/><text x="280" y="92" fill="#e6edf3">RMSNorm (input)</text>
+        <rect x="180" y="126" width="200" height="42" rx="8" fill="#1b1430" stroke="#bc8cff"/>
+          <text x="280" y="145" fill="#e6edf3">Atenção MLA</text>
+          <text x="280" y="161" fill="#8b949e" font-size="10">q-LoRA · RoPE · 20 cabeças</text>
+        <rect x="200" y="188" width="160" height="34" rx="8" fill="#101922" stroke="#56d364"/><text x="280" y="210" fill="#e6edf3">+ residual</text>
+        <rect x="200" y="244" width="160" height="34" rx="8" fill="#161b22" stroke="#bc8cff"/><text x="280" y="266" fill="#e6edf3">RMSNorm (post-attn)</text>
+        <rect x="170" y="300" width="220" height="46" rx="8" fill="#2a1420" stroke="#f778ba"/>
+          <text x="280" y="320" fill="#e6edf3">MLP</text>
+          <text x="280" y="336" fill="#8b949e" font-size="10">densa (cam. 0) · MoE top-4/64 (1–46)</text>
+        <rect x="200" y="366" width="160" height="34" rx="8" fill="#101922" stroke="#56d364"/><text x="280" y="388" fill="#e6edf3">+ residual</text>
+        <rect x="200" y="422" width="160" height="34" rx="8" fill="#161b22" stroke="#30363d"/><text x="280" y="444" fill="#e6edf3">hidden sai → próxima</text>
+      </g>
+      <g stroke="#8b949e" stroke-width="1.5" marker-end="url(#ar6)">
+        <line x1="280" y1="48"  x2="280" y2="68"/>
+        <line x1="280" y1="104" x2="280" y2="124"/>
+        <line x1="280" y1="168" x2="280" y2="186"/>
+        <line x1="280" y1="222" x2="280" y2="242"/>
+        <line x1="280" y1="278" x2="280" y2="298"/>
+        <line x1="280" y1="346" x2="280" y2="364"/>
+        <line x1="280" y1="400" x2="280" y2="420"/>
+      </g>
+      <!-- residual arcs -->
+      <path d="M200,31 h-40 v170 h40" fill="none" stroke="#56d364" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#ar6)"/>
+      <path d="M200,261 h-40 v122 h40" fill="none" stroke="#56d364" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#ar6)"/>
+      <text x="120" y="120" fill="#56d364" font-size="10" font-family="Segoe UI" transform="rotate(-90 120 120)">residual</text>
+    </svg>
+   </div>
+   <figcaption>Cada <em>RMSNorm</em> (<i>Root Mean Square Normalization</i>, normalização pela raiz do valor quadrático médio) reescala a hidden antes da atenção e da MLP. A ordem das operações segue o <code>Glm4MoeLite</code> de referência deliberadamente &mdash; onde há duas formas equivalentes, usa-se a do oráculo (<code>docs/15</code>).</figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ FASE 7 -->
+<section id="f7">
+  <h2><span class="n" style="background:var(--violet)">7</span> Atenção MLA &mdash; olhar o passado, comprimido</h2>
+  <p class="lead">A atenção latente multi-cabeça (MLA) projeta query e chave/valor por um posto baixo,
+     via LoRA (<i>Low-Rank Adaptation</i>, adaptação de posto baixo) na query, e aplica RoPE
+     (<i>Rotary Position Embedding</i>, codificação rotativa de posição) nas dimensões rotativas.
+     Em vez de expandir cada posição do cache, projeta-se a <em>query</em> uma vez para o espaço
+     comprimido &mdash; custo fixo, independente do comprimento do contexto (<code>docs/13</code>, D11).</p>
+
+  <figure>
+   <div class="svg-card">
+    <svg viewBox="0 0 900 330" role="img" aria-label="Atenção MLA">
+      <defs>
+        <marker id="ar7" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+          <path d="M0,0 L9,4.5 L0,9 z" fill="#8b949e"/></marker>
+      </defs>
+      <g font-family="Segoe UI" font-size="12" text-anchor="middle">
+        <!-- query path -->
+        <rect x="20" y="30" width="150" height="40" rx="8" fill="#1b1430" stroke="#bc8cff"/><text x="95" y="55" fill="#e6edf3">h normalizado</text>
+        <rect x="20" y="100" width="150" height="46" rx="8" fill="#161b22" stroke="#bc8cff"/>
+          <text x="95" y="120" fill="#e6edf3">q_a → q_b</text><text x="95" y="136" fill="#8b949e" font-size="10">q-LoRA rank 768</text>
+        <rect x="20" y="176" width="150" height="46" rx="8" fill="#161b22" stroke="#e3b341"/>
+          <text x="95" y="196" fill="#e6edf3">RoPE (intercalado)</text><text x="95" y="212" fill="#8b949e" font-size="10">64 dims rotativas</text>
+
+        <!-- kv compressed -->
+        <rect x="360" y="30" width="180" height="46" rx="8" fill="#161b22" stroke="#bc8cff"/>
+          <text x="450" y="50" fill="#e6edf3">kv_a → c[t]</text><text x="450" y="66" fill="#8b949e" font-size="10">latente: 512 + 64</text>
+        <rect x="360" y="96" width="180" height="40" rx="8" fill="#12100a" stroke="#f0883e"/>
+          <text x="450" y="121" fill="#e6edf3">cache KV (comprimido)</text>
+
+        <!-- scores -->
+        <rect x="360" y="176" width="180" height="46" rx="8" fill="#161b22" stroke="#39c5cf"/>
+          <text x="450" y="196" fill="#e6edf3">q·c[t] · escala</text><text x="450" y="212" fill="#8b949e" font-size="10">produto interno 576-d</text>
+        <rect x="360" y="248" width="180" height="40" rx="8" fill="#12262a" stroke="#39c5cf"/>
+          <text x="450" y="273" fill="#e6edf3">softmax → pesos</text>
+
+        <!-- output -->
+        <rect x="700" y="176" width="180" height="46" rx="8" fill="#161b22" stroke="#bc8cff"/>
+          <text x="790" y="196" fill="#e6edf3">Σ pesoₜ · c[t]</text><text x="790" y="212" fill="#8b949e" font-size="10">acumula no latente</text>
+        <rect x="700" y="248" width="180" height="46" rx="8" fill="#1b1430" stroke="#bc8cff"/>
+          <text x="790" y="268" fill="#e6edf3">W_v · o_proj</text><text x="790" y="284" fill="#8b949e" font-size="10">volta a 2048-d</text>
+      </g>
+      <g stroke="#8b949e" stroke-width="1.5" marker-end="url(#ar7)">
+        <line x1="95" y1="70" x2="95" y2="98"/>
+        <line x1="95" y1="146" x2="95" y2="174"/>
+        <line x1="170" y1="199" x2="358" y2="199"/>
+        <line x1="450" y1="76" x2="450" y2="94"/>
+        <line x1="450" y1="136" x2="450" y2="174"/>
+        <line x1="450" y1="222" x2="450" y2="246"/>
+        <line x1="540" y1="199" x2="698" y2="199"/>
+        <line x1="790" y1="222" x2="790" y2="246"/>
+      </g>
+      <text x="450" y="315" text-anchor="middle" font-size="11" fill="#8b949e" font-family="Segoe UI">
+        20 cabeças rodam em paralelo (thread pool), cada uma com sua faixa de scores
+      </text>
+    </svg>
+   </div>
+   <figcaption>A identidade que faz funcionar: <span class="mono">q·(W_k·c) = (W_kᵀ·q)·c</span>. Projeta-se a query, não cada posição do cache. RoPE errado não estoura nada &mdash; o texto começa bem e desanda.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ FASE 8 -->
+<section id="f8">
+  <h2><span class="n" style="background:var(--pink)">8</span> MoE &mdash; escolher 4 experts entre 64</h2>
+  <p class="lead">Nas 46 camadas MoE, um <em>roteador</em> pontua os 64 experts para o token atual e escolhe os
+     4 melhores. Só esses 4 (mais 1 expert compartilhado, sempre ativo) processam o token &mdash; é o que
+     mantém ~1,1 GB ativos por token num modelo de 31 B.</p>
+
+  <figure>
+   <div class="svg-card">
+    <svg viewBox="0 0 900 320" role="img" aria-label="Roteamento MoE">
+      <defs>
+        <marker id="ar8" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+          <path d="M0,0 L9,4.5 L0,9 z" fill="#8b949e"/></marker>
+      </defs>
+      <g font-family="Segoe UI" font-size="12" text-anchor="middle">
+        <rect x="20" y="130" width="140" height="48" rx="9" fill="#1b1430" stroke="#bc8cff"/>
+          <text x="90" y="150" fill="#e6edf3">h normalizado</text><text x="90" y="166" fill="#8b949e" font-size="10">2048-d</text>
+        <rect x="200" y="126" width="150" height="56" rx="9" fill="#161b22" stroke="#f778ba"/>
+          <text x="275" y="146" fill="#e6edf3">Roteador (f32)</text>
+          <text x="275" y="162" fill="#8b949e" font-size="10">64 logits</text>
+          <text x="275" y="176" fill="#8b949e" font-size="10">sigmoid + bias</text>
+      </g>
+
+      <g stroke="#8b949e" stroke-width="1.5" marker-end="url(#ar8)">
+        <line x1="160" y1="154" x2="198" y2="154"/>
+        <line x1="350" y1="154" x2="410" y2="154"/>
+      </g>
+
+      <!-- 64 experts: grade 8x8 a partir de x=418, y=40, passo 28x26; 4 destacados -->
+      <text x="530" y="30" text-anchor="middle" font-family="Segoe UI" font-size="11.5" fill="#8b949e">64 experts &mdash; 4 escolhidos (rosa)</text>
+      <g id="expert-grid">
+        <!-- linha 0 -->
+        <rect x="418" y="40" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="446" y="40" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="474" y="40" width="24" height="22" rx="4" fill="#2a1420" stroke="#f778ba" stroke-width="2"/>
+        <rect x="502" y="40" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="530" y="40" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="558" y="40" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="586" y="40" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="614" y="40" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <!-- linha 1 -->
+        <rect x="418" y="66" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="446" y="66" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="474" y="66" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="502" y="66" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="530" y="66" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="558" y="66" width="24" height="22" rx="4" fill="#2a1420" stroke="#f778ba" stroke-width="2"/>
+        <rect x="586" y="66" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="614" y="66" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <!-- linha 2 -->
+        <rect x="418" y="92" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="446" y="92" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="474" y="92" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="502" y="92" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="530" y="92" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="558" y="92" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="586" y="92" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="614" y="92" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <!-- linha 3 -->
+        <rect x="418" y="118" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="446" y="118" width="24" height="22" rx="4" fill="#2a1420" stroke="#f778ba" stroke-width="2"/>
+        <rect x="474" y="118" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="502" y="118" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="530" y="118" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="558" y="118" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="586" y="118" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="614" y="118" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <!-- linhas 4-7 (compactadas) -->
+        <rect x="418" y="144" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="446" y="144" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="474" y="144" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="502" y="144" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="530" y="144" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="558" y="144" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="586" y="144" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="614" y="144" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="418" y="170" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="446" y="170" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="474" y="170" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="502" y="170" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="530" y="170" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="558" y="170" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="586" y="170" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="614" y="170" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="418" y="196" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="446" y="196" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="474" y="196" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="502" y="196" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="530" y="196" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="558" y="196" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="586" y="196" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="614" y="196" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="418" y="222" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="446" y="222" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="474" y="222" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="502" y="222" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="530" y="222" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="558" y="222" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="586" y="222" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+        <rect x="614" y="222" width="24" height="22" rx="4" fill="#161b22" stroke="#30363d"/>
+      </g>
+
+      <!-- setas dos 4 destacados para a combinação -->
+      <g stroke="#f778ba" stroke-width="1.3" stroke-dasharray="3 3" marker-end="url(#ar8)" opacity=".8">
+        <line x1="638" y1="51"  x2="700" y2="256"/>
+        <line x1="638" y1="129" x2="700" y2="266"/>
+      </g>
+
+      <!-- combinação -->
+      <g font-family="Segoe UI" font-size="12" text-anchor="middle">
+        <rect x="700" y="250" width="180" height="52" rx="9" fill="#2a1420" stroke="#f778ba"/>
+          <text x="790" y="270" fill="#e6edf3">Σ pesoᵢ · expertᵢ(h)</text>
+          <text x="790" y="286" fill="#8b949e" font-size="10">+ expert compartilhado</text>
+      </g>
+    </svg>
+   </div>
+   <figcaption>Roteador em f32, ativação <span class="mono">sigmoid</span> (não softmax); soma dos top-k normalizada e escalada por <span class="mono">routed_scaling_factor = 1.8</span>. A ordem de acumulação é fixa (índice crescente) para reprodutibilidade bit-a-bit.</figcaption>
+  </figure>
+
+  <table>
+    <tr><th>Passo no código (<code>forward.c</code>)</th><th>O que faz</th></tr>
+    <tr><td class="mono">router_logits = W_router · hn</td><td>pontua os 64 experts</td></tr>
+    <tr><td class="mono">score = sigmoid(logit)</td><td>ativação por expert (não softmax)</td></tr>
+    <tr><td class="mono">choice = score + bias</td><td>viés só na escolha; o peso usa o score puro</td></tr>
+    <tr><td class="mono">tt_topk(choice, 64, 4)</td><td>seleciona os 4 maiores</td></tr>
+    <tr><td class="mono">w /= Σw · 1.8</td><td>normaliza e escala os pesos</td></tr>
+    <tr><td class="mono">Σ wᵢ · downᵢ(silu(gateᵢ)·upᵢ)</td><td>combina os 4 experts + o compartilhado</td></tr>
+  </table>
+</section>
+
+<!-- ============================================================ FASE 9 -->
+<section id="f9">
+  <h2><span class="n" style="background:var(--cyan)">9</span> Amostragem &mdash; dos logits a um token</h2>
+  <p class="lead">Depois da última camada, uma projeção final dá um <em>logit</em> por entrada do vocabulário
+     (154 880 valores). O amostrador (<code>src/sample.c</code>) escolhe o próximo id.</p>
+
+  <figure>
+   <div class="svg-card">
+    <svg viewBox="0 0 900 300" role="img" aria-label="Amostragem">
+      <defs>
+        <marker id="ar9" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+          <path d="M0,0 L9,4.5 L0,9 z" fill="#8b949e"/></marker>
+      </defs>
+      <g font-family="Segoe UI" font-size="12" text-anchor="middle">
+        <rect x="20" y="120" width="150" height="56" rx="9" fill="#1b1430" stroke="#bc8cff"/>
+          <text x="95" y="142" fill="#e6edf3">logits</text><text x="95" y="160" fill="#8b949e" font-size="10">154 880 valores</text>
+
+        <rect x="210" y="30" width="180" height="52" rx="9" fill="#161b22" stroke="#e3b341"/>
+          <text x="300" y="50" fill="#e6edf3">temp ≤ 0 ?</text>
+          <text x="300" y="68" fill="#8b949e" font-size="10">caminho determinístico</text>
+        <rect x="470" y="30" width="180" height="52" rx="9" fill="#12262a" stroke="#39c5cf"/>
+          <text x="560" y="50" fill="#e6edf3">argmax</text><text x="560" y="68" fill="#8b949e" font-size="10">o maior logit vence</text>
+
+        <rect x="210" y="150" width="180" height="46" rx="9" fill="#161b22" stroke="#39c5cf"/>
+          <text x="300" y="170" fill="#e6edf3">top-k = 40</text><text x="300" y="186" fill="#8b949e" font-size="10">mantém 40 candidatos</text>
+        <rect x="440" y="150" width="180" height="46" rx="9" fill="#161b22" stroke="#39c5cf"/>
+          <text x="530" y="170" fill="#e6edf3">softmax(logit / temp)</text><text x="530" y="186" fill="#8b949e" font-size="10">temp = 0.8</text>
+        <rect x="670" y="150" width="180" height="46" rx="9" fill="#161b22" stroke="#39c5cf"/>
+          <text x="760" y="170" fill="#e6edf3">top-p = 0.95</text><text x="760" y="186" fill="#8b949e" font-size="10">núcleo cumulativo</text>
+
+        <rect x="440" y="228" width="180" height="52" rx="9" fill="#12262a" stroke="#39c5cf"/>
+          <text x="530" y="248" fill="#e6edf3">sorteio ponderado</text><text x="530" y="266" fill="#8b949e" font-size="10">→ id do próximo token</text>
+      </g>
+      <g stroke="#8b949e" stroke-width="1.5" marker-end="url(#ar9)">
+        <line x1="170" y1="140" x2="208" y2="56"/>
+        <line x1="390" y1="56" x2="468" y2="56"/>
+        <line x1="170" y1="158" x2="208" y2="172"/>
+        <line x1="390" y1="173" x2="438" y2="173"/>
+        <line x1="620" y1="173" x2="668" y2="173"/>
+        <line x1="760" y1="196" x2="600" y2="226"/>
+      </g>
+      <text x="300" y="110" font-size="10.5" fill="#e3b341" font-family="Segoe UI">temp = 0 → determinístico</text>
+      <text x="300" y="215" font-size="10.5" fill="#39c5cf" font-family="Segoe UI">temp &gt; 0 → estocástico</text>
+    </svg>
+   </div>
+   <figcaption>Com <span class="mono">temperature = 0</span> o amostrador retorna o argmax antes de qualquer softmax (determinístico). Com temperatura &gt; 0: top-k, softmax com temperatura, corte top-p (núcleo) e sorteio.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ FASE 10 -->
+<section id="f10">
+  <h2><span class="n" style="background:var(--accent)">10</span> Decode, detokenização e streaming</h2>
+  <p class="lead">O id escolhido vira texto pelo caminho inverso da fase 4 e é enviado ao cliente na hora.
+     Então ele <em>realimenta</em> o forward como próximo token de entrada &mdash; o laço se repete até sair
+     um token de parada (&lt;EOS&gt;, <i>End Of Sequence</i>, fim de sequência) ou atingir o limite
+     <code>n_max</code>.</p>
+
+  <figure>
+   <div class="svg-card">
+    <svg viewBox="0 0 900 230" role="img" aria-label="Laço de decode e streaming">
+      <defs>
+        <marker id="ar10" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+          <path d="M0,0 L9,4.5 L0,9 z" fill="#8b949e"/></marker>
+      </defs>
+      <g font-family="Segoe UI" font-size="12" text-anchor="middle">
+        <rect x="30"  y="90" width="150" height="50" rx="9" fill="#12262a" stroke="#39c5cf"/>
+          <text x="105" y="112" fill="#e6edf3">id do token</text><text x="105" y="128" fill="#8b949e" font-size="10">da fase 9</text>
+        <rect x="230" y="90" width="150" height="50" rx="9" fill="#0f2417" stroke="#56d364"/>
+          <text x="305" y="112" fill="#e6edf3">detokeniza</text><text x="305" y="128" fill="#8b949e" font-size="10">id → bytes UTF-8</text>
+        <rect x="430" y="90" width="150" height="50" rx="9" fill="#132033" stroke="#58a6ff"/>
+          <text x="505" y="112" fill="#e6edf3">envia ao cliente</text><text x="505" y="128" fill="#8b949e" font-size="10">stream (SSE)</text>
+        <rect x="630" y="90" width="150" height="50" rx="9" fill="#161b22" stroke="#e3b341"/>
+          <text x="705" y="108" fill="#e6edf3">&lt;EOS&gt; ou n_max?</text>
+          <text x="705" y="128" fill="#8b949e" font-size="10">condição de parada</text>
+      </g>
+      <g stroke="#8b949e" stroke-width="1.5" marker-end="url(#ar10)">
+        <line x1="180" y1="115" x2="228" y2="115"/>
+        <line x1="380" y1="115" x2="428" y2="115"/>
+        <line x1="580" y1="115" x2="628" y2="115"/>
+      </g>
+      <!-- não → realimenta forward -->
+      <path d="M705,90 v-50 h-600 v50" fill="none" stroke="#39c5cf" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ar10)"/>
+      <text x="405" y="30" text-anchor="middle" font-size="11" fill="#39c5cf" font-family="Segoe UI">não → token vira entrada do próximo forward (fase 6)</text>
+      <!-- sim → fim -->
+      <rect x="630" y="170" width="150" height="44" rx="9" fill="#161b22" stroke="#30363d"/>
+      <text x="705" y="192" text-anchor="middle" fill="#e6edf3" font-family="Segoe UI" font-size="12">sim → resposta pronta</text>
+      <text x="705" y="207" text-anchor="middle" fill="#8b949e" font-family="Segoe UI" font-size="10">fecha o stream</text>
+      <line x1="705" y1="140" x2="705" y2="168" stroke="#8b949e" stroke-width="1.5" marker-end="url(#ar10)"/>
+    </svg>
+   </div>
+   <figcaption>Cada token é impresso assim que sai &mdash; o usuário vê a resposta se formar. O id vira bytes UTF-8 (<i>Unicode Transformation Format, 8-bit</i>) e é empurrado por SSE (<i>Server-Sent Events</i>, eventos enviados pelo servidor). O motor não faz malloc nem lê variável de ambiente dentro do laço (critério de saída M1, <code>docs/05</code>).</figcaption>
+  </figure>
+
+  <div class="note">
+    <b>Números medidos</b> (EPYC 9535, container int4, ~1,1k tokens de contexto): prefill ~70 s,
+    decode 10&ndash;14 tok/s, 16,8 GB residentes. O prefill domina, e é estrutural para RAFT &mdash;
+    os trechos recuperados mudam por pergunta, então o cache de prefixo do <code>chat</code> não ajuda.
+  </div>
+</section>
+
+<!-- ============================================================ MTP -->
+<section id="mtp">
+  <h2><span class="n" style="background:var(--violet)">+</span> Nota: a camada MTP &mdash; <i>Multi-Token Prediction</i> (especulação)</h2>
+  <p class="lead">O checkpoint carrega uma cabeça de MTP (<i>multi-token prediction</i>, predição de múltiplos tokens) (<code>mtp_layer = 47</code>,
+     <code>num_nextn_predict_layers = 1</code>). É o caminho para adivinhar o próximo token adiante e
+     acelerar o decode &mdash; preservado byte-a-byte no container, mesmo quando não está no caminho ativo.</p>
+</section>
+
+</div>
+
+<footer>
+  Gerado a partir do código real em <code>src/</code> &mdash; <code>server.c</code>, <code>retrieve.c</code>,
+  <code>tokenizer.c</code>, <code>forward.c</code>, <code>sample.c</code>.
+  Números da config do container GLM-4.7-Flash. &mdash; TootegaEngine
+</footer>
+
+</body>
+</html>

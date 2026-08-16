@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>c</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4B04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h</Extensions>
+    </Filter>
+    <Filter Include="Header Files\Generated">
+      <UniqueIdentifier>{2C4B8D3A-1F6E-4A9C-9B2D-7E8F0A1B3C4D}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ClCompile Include="src\budget.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="src\common.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="src\compat.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="src\container.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="src\forward.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="src\json.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="src\kernels.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="src\main.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="src\model.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="src\pool.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="src\retrieve.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="src\sample.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="src\server.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="src\tokenizer.c"><Filter>Source Files</Filter></ClCompile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ClInclude Include="src\budget.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="src\build_id.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="src\common.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="src\compat.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="src\container.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="src\forward.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="src\json.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="src\kernels.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="src\model.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="src\pool.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="src\retrieve.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="src\sample.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="src\server.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="src\tokenizer.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="src\webui.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="src\fixture_kernels.h"><Filter>Header Files\Generated</Filter></ClInclude>
+    <ClInclude Include="src\unicode_tables.h"><Filter>Header Files\Generated</Filter></ClInclude>
+  </ItemGroup>
+</Project>

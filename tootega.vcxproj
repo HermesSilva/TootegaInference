@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  tootega.vcxproj : projeto MSVC do TootegaEngine para o Visual Studio 2026.
+
+  Este projeto e um espelho de build.ps1: as mesmas flags, os mesmos defines, as
+  mesmas libs de sistema.  build.ps1 continua sendo o build de referencia (e o
+  do CI); este .vcxproj serve para editar, depurar e navegar dentro da IDE.
+
+  Ao mexer numa flag aqui, mexa tambem em build.ps1; os dois nao se sincronizam
+  sozinhos.
+
+  Configuracoes: Debug|Release para as arquiteturas AVX2 (default) e AVX512.
+  A plataforma e sempre x64; o engine e x86-64-v3 no minimo.
+-->
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release-AVX512|x64">
+      <Configuration>Release-AVX512</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>18.0</VCProjectVersion>
+    <ProjectGuid>{5E645F50-7340-490B-BAD4-136E37158E48}</ProjectGuid>
+    <RootNamespace>tootega</RootNamespace>
+    <ProjectName>tootega</ProjectName>
+    <!-- v145 e o toolset do Visual Studio 2026. -->
+    <PlatformToolset>v145</PlatformToolset>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <!-- /MT em todas as configuracoes: CRT estatico, binario sem DLL de runtime. -->
+    <UseDebugLibraries Condition="'$(Configuration)'=='Debug'">true</UseDebugLibraries>
+    <UseDebugLibraries Condition="'$(Configuration)'!='Debug'">false</UseDebugLibraries>
+    <WholeProgramOptimization Condition="'$(Configuration)'!='Debug'">false</WholeProgramOptimization>
+    <!-- Code Analysis (/analyze) desligado: em Debug a IDE roda C6262 e acusa
+         "Function uses N bytes of stack" nos kernels e no forward, que usam
+         buffers grandes de propósito e por isso rodam com stack reserve alto
+         (ver StackReserveSize adiante).  Sao avisos de heuristica, nao defeitos,
+         e o build.ps1 nao passa /analyze.  Ligue a mao quando quiser auditar. -->
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+    <EnableMicrosoftCodeAnalysis>false</EnableMicrosoftCodeAnalysis>
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <!-- ISO C11.  As fontes nao usam extensao alguma da Microsoft. -->
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
+      <CompileAs>CompileAsC</CompileAs>
+      <WarningLevel>Level4</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <!-- /fp:precise: sem contracao a*b+c -> fma, sem reassociacao.  Criterio
+           de saida do M1 (docs/15, D4): 32/32 tokens identicos ao oraculo. -->
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <!-- 4100 parametro nao usado (assinaturas uniformes de kernel);
+           4127 condicional constante (idiomatico em macro). -->
+      <DisableSpecificWarnings>4100;4127</DisableSpecificWarnings>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
+      <ConformanceMode>true</ConformanceMode>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <!-- As mesmas libs de sistema de build.ps1.  Nenhuma biblioteca de AI. -->
+      <AdditionalDependencies>psapi.lib;kernel32.lib;advapi32.lib;ws2_32.lib;Synchronization.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <!-- 8 MB de stack reservada.  Em Debug (sem otimizacao, com /RTC1) os
+           buffers de forward.c/kernels.c ficam todos vivos na stack ao mesmo
+           tempo; o C6262 que a IDE mostra ("98516 bytes") e esse consumo, real
+           em Debug.  8 MB e folga para a profundidade do decode; em Release o
+           otimizador reaproveita os slots e o pico e uma fracao disso. -->
+      <StackReserveSize>8388608</StackReserveSize>
+    </Link>
+  </ItemDefinitionGroup>
+
+  <!-- Debug: /Od, CRT de debug estatico (/MTd), /Zi, TT_DEBUG.
+       Ajustado para profiling de CPU no VS 2026:
+       - OmitFramePointers=false (/Oy desligado): mantem o frame pointer
+         para o sampler reconstruir a call stack.  Em /Od ja e o
+         comportamento, mas fica explicito para nao depender do default.
+       - /DEBUG:FULL no link (FullProgramDatabaseFile), nao FASTLINK: o
+         FASTLINK gera um PDB parcial que espalha info pelos .obj e o
+         profiler as vezes nao resolve todos os simbolos.  FULL e o PDB
+         completo e autocontido que a analise de desempenho precisa. -->
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <OmitFramePointers>false</OmitFramePointers>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PreprocessorDefinitions>TT_DEBUG=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <!-- /Zi, nao /ZI: Edit-and-Continue (/ZI) e incompativel com /guard:cf, e
+           o build.ps1 -Debug tambem usa /Zi.  Mantem o Control Flow Guard ligado. -->
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
+      <!-- Profiling amostra o binario inteiro; sem COMDAT folding as funcoes
+           identicas nao colapsam num simbolo so e o profiler as separa. -->
+      <EnableCOMDATFolding>false</EnableCOMDATFolding>
+    </Link>
+  </ItemDefinitionGroup>
+
+  <!-- Release: /O2, /Oi, /MT, NDEBUG, AVX2 (x86-64-v3, default de build.ps1).
+       Preparada para profiling de CPU no VS 2026 sem abrir mao da otimizacao:
+       - OmitFramePointers=false (/Oy desligado): com /O2 o compilador
+         omitiria o frame pointer; sem ele o sampler nao reconstroi a call
+         stack de forma confiavel.  Custo em desempenho e proximo de zero.
+       - /DEBUG:FULL (nao FASTLINK): PDB completo e autocontido, o profiler
+         resolve todos os simbolos.  Otimizacao NAO remove simbolos; /O2 apenas
+         achata a stack por inlining, e o custo aparece na funcao que absorveu.
+       O binario continua sendo o de producao (/O2, /Ob2 inlining total).
+       EnableCOMDATFolding fica LIGADO aqui: e o binario real, funcoes iguais
+       colapsam de proposito; em Debug foi desligado so para legibilidade. -->
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <OmitFramePointers>false</OmitFramePointers>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+
+  <!-- Release-AVX512: identica a Release, com /arch:AVX512. -->
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release-AVX512'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions512</EnableEnhancedInstructionSet>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+
+  <!-- O .exe sai na raiz do repo, como em build.ps1; os .obj num intermediario
+       por configuracao para nao colidir com build/ do build.ps1. -->
+  <PropertyGroup>
+    <OutDir>$(ProjectDir)</OutDir>
+    <IntDir>$(ProjectDir)build\vs\$(Configuration)\</IntDir>
+    <TargetName>tootega</TargetName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ClCompile Include="src\budget.c" />
+    <ClCompile Include="src\common.c" />
+    <ClCompile Include="src\compat.c" />
+    <ClCompile Include="src\container.c" />
+    <ClCompile Include="src\forward.c" />
+    <ClCompile Include="src\json.c" />
+    <ClCompile Include="src\kernels.c" />
+    <ClCompile Include="src\main.c" />
+    <ClCompile Include="src\model.c" />
+    <ClCompile Include="src\pool.c" />
+    <ClCompile Include="src\retrieve.c" />
+    <ClCompile Include="src\sample.c" />
+    <ClCompile Include="src\server.c" />
+    <ClCompile Include="src\tokenizer.c" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ClInclude Include="src\budget.h" />
+    <ClInclude Include="src\build_id.h" />
+    <ClInclude Include="src\common.h" />
+    <ClInclude Include="src\compat.h" />
+    <ClInclude Include="src\container.h" />
+    <ClInclude Include="src\fixture_kernels.h" />
+    <ClInclude Include="src\forward.h" />
+    <ClInclude Include="src\json.h" />
+    <ClInclude Include="src\kernels.h" />
+    <ClInclude Include="src\model.h" />
+    <ClInclude Include="src\pool.h" />
+    <ClInclude Include="src\retrieve.h" />
+    <ClInclude Include="src\sample.h" />
+    <ClInclude Include="src\server.h" />
+    <ClInclude Include="src\tokenizer.h" />
+    <ClInclude Include="src\unicode_tables.h" />
+    <ClInclude Include="src\webui.h" />
+  </ItemGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

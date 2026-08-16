@@ -38,6 +38,20 @@ ppl*.txt
 serve.log
 serve.out
 
+# Sessoes de profiling do Visual Studio -- 11 MB de ETW por captura, e a
+# leitura delas e que vale (docs/23), nao o arquivo bruto.
+Profile/
+*.diagsession
+
+# Resultados do benchserve: numeros desta maquina, desta hora. O harness e
+# versionado, o CSV nao -- ele so significa algo junto do hardware que o
+# produziu, e cresce a cada execucao.
+Tests/benchserve/results/
+
+# Cache e preferencias locais do Visual Studio.
+.vs/
+*.vcxproj.user
+
 # Saidas de servidor/agente disparados a mao durante o desenvolvimento.
 *.log
 srv.out

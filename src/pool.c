@@ -44,12 +44,41 @@ int tt_affinity_parse(const char *s, tt_affinity *out)
  * que a mesma CPU com uma.
  *
  * Agora quem despacha acorda quem espera. O timeout de 50 ms fica so como rede
- * contra acordar perdido -- nao e o mecanismo, e o seguro dele. */
+ * contra acordar perdido -- nao e o mecanismo, e o seguro dele.
+ *
+ * O DEGRAU DO MEIO ERA CARO DEMAIS. O profile de 2026-08-16 mediu 190 s de 619 s
+ * de CPU (30,7%) dentro da espera, e a maior parte era este `tt_yield`:
+ * `NtYieldExecution` 83,4 s mais os 78,3 s de `KiSystemServiceUser` que a
+ * syscall arrasta atras de si. No butterfly, de 588.347 hits em `worker`,
+ * 193.198 (32,8%) caiam em `SwitchToThread` contra 337.335 (57,3%) em `drain`.
+ *
+ * A causa e a largura da janela: 19.488 iteracoes cedendo o nucleo, cada uma
+ * uma syscall completa (~2000 ciclos) contra os ~40 de um `pause`. E dinheiro
+ * jogado fora dos dois lados -- se o trabalho vem logo, o `pause` bastava; se
+ * demora, o certo e bloquear no futex e parar de queimar CPU.
+ *
+ * A janela agora e estreita e a syscall so aparece no fim dela. Os limites nao
+ * sao gosto, sao medidos neste hardware (i9-14900K, 3,2 GHz): as 4.096
+ * iteracoes do segundo degrau levam 130 us ate o bloqueio, contra os 3.204 us
+ * que as 19.488 chamadas a `SwitchToThread` da versao anterior levavam --
+ * 5,2x menos tempo queimado e ~98% menos syscalls. 130 us e folga de sobra
+ * para um dispatch entre camadas, que vem em microssegundos, e curto o
+ * bastante para nao virar polling quando o proximo pedido HTTP demora. */
 static void wait_for_work(struct tt_pool *p, int32_t last, int *spins)
 {
     const int n = ++(*spins);
-    if (n < 512)   { tt_cpu_relax(); return; }
-    if (n < 20000) { tt_yield();     return; }
+
+    /* Girar sem ceder: o caso comum e o dispatch estar a caminho. */
+    if (n < 512) { tt_cpu_relax(); return; }
+
+    /* Ainda girando, mas cedendo o nucleo de vez em quando em vez de a cada
+     * volta. O `pause` continua sendo o corpo do laco; a syscall entra uma vez
+     * a cada 64 iteracoes, o que corta ~98% delas sem perder a cortesia com
+     * quem divide o nucleo fisico (SMT) ou espera na fila do escalonador. */
+    if (n < 512 + 4096) {
+        if ((n & 63) == 0) tt_yield(); else tt_cpu_relax();
+        return;
+    }
 
     /* Anunciar-se ANTES de conferir de novo: se o dispatch acontecer entre a
      * conferencia e o bloqueio, ele ja vera o contador e acordara. */
@@ -190,8 +219,14 @@ void tt_pool_run(tt_pool *p, tt_task_fn fn, void *arg, int64_t rows, int64_t gra
     int spins = 0;
     while (tt_at32_load(&p->finished) < others) {
         /* A chamadora NAO dorme: o trabalho esta em curso e vai acabar em
-         * microssegundos. Dormir aqui adiaria a barreira. */
-        if (++spins < 512) tt_cpu_relax(); else tt_yield();
+         * microssegundos. Dormir aqui adiaria a barreira.
+         *
+         * Mas ceder a CADA volta depois das primeiras 512 tambem nao serve: e a
+         * mesma syscall de ~2000 ciclos do `wait_for_work`, e aqui ela cai
+         * justamente quando o ultimo bloco ainda esta sendo calculado -- num
+         * hibrido 8P+16E esse ultimo bloco esta quase sempre num E-core, e a
+         * espera e longa por construcao. Cede uma vez a cada 64. */
+        if (++spins < 512 || (spins & 63) != 0) tt_cpu_relax(); else tt_yield();
     }
 }
 

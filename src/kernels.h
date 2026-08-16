@@ -179,6 +179,24 @@ void  tt_axpy_int8g(float *dst, float k, const int8_t *w, const float *scales,
 void  tt_store_int8g(int8_t *dst, float *scales, const float *src,
                      int64_t n, int group);
 
+/* The same against int4, packed half/half per group as docs/14 lays it out.
+ *
+ * These exist for the absorbed attention, which walks `kv_b` ROW BY ROW: the
+ * loop was `tt_dequant_row` into a scratch buffer followed by `tt_axpy`/`tt_dot`
+ * over it.  That writes 512 floats to memory and reads them straight back, once
+ * per row, 421.120 times per token -- 822 MB of f32 stores that nothing else
+ * ever looks at.  Fusing the unpack into the arithmetic keeps the row in
+ * registers and never spills it.
+ *
+ * The arithmetic is the SAME as `mm_int4_simd`'s, in the same order: the scale
+ * multiplies the WEIGHT, `(w - 8) * scale`, and only then the FMA against the
+ * vector.  Written any other way this would be algebraically equal and bitwise
+ * different, and the 32/32 of docs/15 would be gambling. */
+float tt_dot_int4g(const float *a, const uint8_t *w, const float *scales,
+                   int64_t n, int group);
+void  tt_axpy_int4g(float *dst, float k, const uint8_t *w, const float *scales,
+                    int64_t n, int group);
+
 void tt_add(float *dst, const float *src, int64_t n);      /* residual */
 void tt_scale(float *dst, float k, int64_t n);
 void tt_copy(float *dst, const float *src, int64_t n);

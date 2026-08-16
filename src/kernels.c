@@ -968,6 +968,141 @@ void tt_axpy_int8g(float *dst, float k, const int8_t *w, const float *scales,
     }
 }
 
+/* --------------------------------------------------- int4 fundido (linha)
+ *
+ * O desempacotamento e o de `mm_int4_simd`, byte a byte: 8 bytes viram 8 pesos
+ * baixos e 8 altos, e o layout metade/metade de docs/14 e o que faz os dois
+ * vetores sairem contiguos sem permutacao.
+ *
+ * A ORDEM DAS OPERACOES E A DELE TAMBEM, e nao por elegancia: `(w - 8) * s`
+ * primeiro, FMA contra o vetor depois.  Dobrar a escala para o outro lado
+ * (multiplicar o acumulador, ou juntar `k * s` como faz a versao int8) daria o
+ * mesmo numero em algebra exata e bits diferentes em fp32 -- e o criterio de
+ * saida de docs/15 e 32/32 tokens IDENTICOS, nao proximos. */
+
+/* Este substitui `tt_dequant_row` seguido de `tt_dot`, e tem de dar os MESMOS
+ * BITS que os dois davam juntos -- nao um numero proximo.
+ *
+ * Por isso a ordem de acumulacao aqui NAO e a de `mm_int4_simd`.  Aquele laco
+ * varre o grupo em metade/metade (8 pesos baixos, depois os 8 altos, que moram
+ * 32 floats adiante), o que atribui cada produto a uma pista diferente do
+ * acumulador.  `tt_dot` varre a linha em ordem linear -- i, i+8, i+16 -- e a
+ * soma em fp32 nao e associativa: mudar de qual pista sai cada parcela muda o
+ * ultimo bit do resultado.
+ *
+ * Entao desempacotamos meio grupo por vez para um buffer minusculo em pilha, na
+ * ordem NATURAL da linha, e acumulamos dele.  O buffer tem 64 floats, cabe em
+ * registradores/L1 e nunca vai a memoria -- o custo que este kernel veio
+ * eliminar era o dos 512 floats por linha escritos e relidos, nao este. */
+float tt_dot_int4g(const float *a, const uint8_t *w, const float *scales,
+                   int64_t n, int group)
+{
+    const int64_t ngroups = n / group;
+    const int     half    = group / 2;
+
+#if defined(TT_HAVE_AVX2)
+    if (g_impl != TT_IMPL_SCALAR && group % 8 == 0 && group <= 256) {
+        const __m256i lomask = _mm256_set1_epi32(0x0F);
+        const __m256  eight  = _mm256_set1_ps(8.0f);
+
+        float  buf[256];
+        __m256 acc = _mm256_setzero_ps();
+
+        for (int64_t g = 0; g < ngroups; g++) {
+            const __m256   s  = _mm256_set1_ps(scales[g]);
+            const uint8_t *p  = w + g * half;
+            const float   *xv = a + g * group;
+
+            /* Desempacota o grupo inteiro na ordem da linha. */
+            for (int j = 0; j < half; j += 8) {
+                __m128i b   = _mm_loadl_epi64((const __m128i *)(p + j));
+                __m256i u32 = _mm256_cvtepu8_epi32(b);
+
+                __m256 flo = _mm256_cvtepi32_ps(_mm256_and_si256(u32, lomask));
+                __m256 fhi = _mm256_cvtepi32_ps(_mm256_srli_epi32(u32, 4));
+
+                _mm256_storeu_ps(buf + j,
+                                 _mm256_mul_ps(_mm256_sub_ps(flo, eight), s));
+                _mm256_storeu_ps(buf + half + j,
+                                 _mm256_mul_ps(_mm256_sub_ps(fhi, eight), s));
+            }
+
+            /* ... e acumula linearmente, como `tt_dot` faria sobre ele. */
+            for (int j = 0; j < group; j += 8)
+                acc = _mm256_fmadd_ps(_mm256_loadu_ps(buf + j),
+                                      _mm256_loadu_ps(xv + j), acc);
+        }
+        return hsum8(acc);
+    }
+#endif
+    /* Via escalar: soma na ordem da linha, que e a que o `tt_dot` escalar faria
+     * sobre a linha dequantizada. */
+    float sum = 0.0f;
+    for (int64_t g = 0; g < ngroups; g++) {
+        const float    s  = scales[g];
+        const uint8_t *p  = w + g * half;
+        const float   *xv = a + g * group;
+        for (int j = 0; j < half; j++)
+            sum += ((float)((int)(p[j] & 0x0F) - 8) * s) * xv[j];
+        for (int j = 0; j < half; j++)
+            sum += ((float)((int)(p[j] >> 4) - 8) * s) * xv[j + half];
+    }
+    return sum;
+}
+
+void tt_axpy_int4g(float *dst, float k, const uint8_t *w, const float *scales,
+                   int64_t n, int group)
+{
+    const int64_t ngroups = n / group;
+    const int     half    = group / 2;
+
+#if defined(TT_HAVE_AVX2)
+    if (g_impl != TT_IMPL_SCALAR && half % 8 == 0) {
+        const int      chunks = half / 8;
+        const __m256i  lomask = _mm256_set1_epi32(0x0F);
+        const __m256   eight  = _mm256_set1_ps(8.0f);
+        const __m256   kv     = _mm256_set1_ps(k);
+
+        for (int64_t g = 0; g < ngroups; g++) {
+            const __m256   s = _mm256_set1_ps(scales[g]);
+            const uint8_t *p = w + g * half;
+            float         *d = dst + g * group;
+
+            for (int j = 0; j < chunks; j++) {
+                __m128i b   = _mm_loadl_epi64((const __m128i *)(p + j * 8));
+                __m256i u32 = _mm256_cvtepu8_epi32(b);
+
+                __m256 flo = _mm256_cvtepi32_ps(_mm256_and_si256(u32, lomask));
+                __m256 fhi = _mm256_cvtepi32_ps(_mm256_srli_epi32(u32, 4));
+
+                /* Peso primeiro, exatamente como o dequant o entregaria; `k`
+                 * entra depois, no FMA, como faria o `tt_axpy` que vinha em
+                 * seguida. A cadeia de arredondamento e a mesma das duas
+                 * chamadas que isto substitui. */
+                flo = _mm256_mul_ps(_mm256_sub_ps(flo, eight), s);
+                fhi = _mm256_mul_ps(_mm256_sub_ps(fhi, eight), s);
+
+                _mm256_storeu_ps(d + j * 8,
+                    _mm256_fmadd_ps(kv, flo, _mm256_loadu_ps(d + j * 8)));
+                _mm256_storeu_ps(d + half + j * 8,
+                    _mm256_fmadd_ps(kv, fhi,
+                                    _mm256_loadu_ps(d + half + j * 8)));
+            }
+        }
+        return;
+    }
+#endif
+    for (int64_t g = 0; g < ngroups; g++) {
+        const float    s = scales[g];
+        const uint8_t *p = w + g * half;
+        float         *d = dst + g * group;
+        for (int j = 0; j < half; j++) {
+            d[j]        += k * ((float)((int)(p[j] & 0x0F) - 8) * s);
+            d[j + half] += k * ((float)((int)(p[j] >> 4)   - 8) * s);
+        }
+    }
+}
+
 void tt_store_int8g(int8_t *dst, float *scales, const float *src,
                     int64_t n, int group)
 {
@@ -1382,6 +1517,67 @@ int tt_kernels_selftest(void)
                 CHECK(bits_equal(yb, ys, NB * FX_O, &bad),
                       "%s/%s: faixas de linha com lote mudaram y[%lld]",
                       cases[ci].name, iname, (long long)bad);
+            }
+        }
+    }
+
+    /* 12. Os int4 fundidos contra a sequencia que substituem, BIT A BIT.
+     *
+     *     `tt_dot_int4g` e `tt_axpy_int4g` existem para a atencao absorvida,
+     *     onde `tt_dequant_row` para um buffer seguido de `tt_dot`/`tt_axpy`
+     *     escrevia 822 MB de f32 por token que ninguem mais lia.  Fundir e uma
+     *     otimizacao de trafego, e uma otimizacao de trafego que muda o
+     *     resultado nao e uma otimizacao -- e um bug com ganho de desempenho.
+     *
+     *     Sem tolerancia, e nas DUAS implementacoes: o escalar e a referencia,
+     *     e o SIMD tem de bater com o SIMD que ele substitui (nao com o
+     *     escalar -- esse e o teste 10 e tem tolerancia por bons motivos). */
+    {
+        tt_tensor t = {0};
+        t.name = "fixture.int4"; t.name_len = 12;
+        t.kind = TT_KIND_INT4; t.ndim = 2;
+        t.shape[0] = FX_O; t.shape[1] = FX_I;
+        t.rows = FX_O; t.cols = FX_I; t.group = FX_GROUP;
+        t.data = fx_w_int4; t.scales = fx_scales_int4;
+
+        const uint8_t *w4 = (const uint8_t *)fx_w_int4;
+        const tt_impl impls[2] = { TT_IMPL_SCALAR, TT_IMPL_AUTO };
+
+        for (int ii = 0; ii < 2; ii++) {
+            tt_kernels_set_impl(impls[ii]);
+            const char *iname = tt_kernels_impl_name();
+
+            for (int64_t o = 0; o < FX_O; o++) {
+                const uint8_t *wr = w4 + o * (FX_I / 2);
+                const float   *sr = fx_scales_int4 + o * (FX_I / FX_GROUP);
+
+                /* dot: dequant + tt_dot  ==  tt_dot_int4g */
+                float row[FX_I];
+                if (tt_dequant_row(row, &t, o) != 0) {
+                    tt_kernels_set_impl(saved); return -1;
+                }
+                const float want = tt_dot(row, fx_x, FX_I);
+                const float got  = tt_dot_int4g(fx_x, wr, sr, FX_I, FX_GROUP);
+                CHECK(bits_equal(&got, &want, 1, &bad),
+                      "int4/%s dot fundido: linha %lld deu %.9g, dequant+dot da "
+                      "%.9g -- a ordem de acumulacao nao casa",
+                      iname, (long long)o, (double)got, (double)want);
+
+                /* axpy: dequant + tt_axpy  ==  tt_axpy_int4g.  O acumulador
+                 * comeca sujo de proposito: axpy SOMA, e um kernel que
+                 * escrevesse em vez de somar passaria com ele zerado. */
+                const float k = 0.31830987f;
+                float acc_a[FX_I], acc_b[FX_I];
+                for (int64_t i = 0; i < FX_I; i++)
+                    acc_a[i] = acc_b[i] = 0.5f - 0.001f * (float)i;
+
+                tt_axpy(acc_a, k, row, FX_I);
+                tt_axpy_int4g(acc_b, k, wr, sr, FX_I, FX_GROUP);
+                CHECK(bits_equal(acc_b, acc_a, FX_I, &bad),
+                      "int4/%s axpy fundido: linha %lld, elemento %lld deu %.9g, "
+                      "dequant+axpy da %.9g",
+                      iname, (long long)o, (long long)bad,
+                      (double)acc_b[bad], (double)acc_a[bad]);
             }
         }
     }

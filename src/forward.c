@@ -363,16 +363,39 @@ static void attn_head_absorbed(void *raw, int64_t head0, int64_t head1)
          * [nope][R] linha-maior, o produto transposto e uma acumulacao de
          * LINHAS, e linha e exatamente o que o container entrega barato.
          * Materializar custaria 863 MB lidos por token contra os 108 MB do
-         * int4 -- o oposto do que a absorcao veio comprar. */
+         * int4 -- o oposto do que a absorcao veio comprar.
+         *
+         * E nao materializa nem UMA linha por vez, quando da: `tt_axpy_int4g`
+         * desempacota direto no FMA.  A versao anterior escrevia a linha em
+         * `wrow` e a relia no `tt_axpy` da linha seguinte -- 512 floats por
+         * linha, 421.120 linhas por token, 822 MB de f32 que nada mais lia.  O
+         * profile de 2026-08-16 mediu 40 s (6,5%) em `tt_dequant_row` por isto.
+         *
+         * Os kernels fundidos dao os MESMOS BITS que `dequant` + `axpy`/`dot`
+         * davam -- provado sem tolerancia no teste 12 de `tt_kernels_selftest`,
+         * no escalar e no SIMD.  `wrow` continua sendo o caminho de qualquer
+         * outro `kind`, e continua sendo a definicao executavel do layout. */
         const tt_tensor *kvb = j->L->kv_b_proj;
         const int64_t    r0  = tt_kvb_head_row(c, hh);
         float *wrow  = s->wrow + hh * R;
         float *q_abs = s->q_abs + hh * R;
 
+        const int kvb_i4 = (kvb->kind == TT_KIND_INT4);
+        const uint8_t *kvb_w = kvb_i4 ? (const uint8_t *)kvb->data : NULL;
+        const int64_t  kvb_stride = kvb_i4 ? R / 2 : 0;
+        const int64_t  kvb_ngroup = kvb_i4 ? R / kvb->group : 0;
+
         tt_zero(q_abs, R);
-        for (int64_t r = 0; r < nope; r++) {
-            tt_dequant_row(wrow, kvb, r0 + r);
-            tt_axpy(q_abs, qh[r], wrow, R);
+        if (kvb_i4) {
+            for (int64_t r = 0; r < nope; r++)
+                tt_axpy_int4g(q_abs, qh[r], kvb_w + (r0 + r) * kvb_stride,
+                              kvb->scales + (r0 + r) * kvb_ngroup,
+                              R, kvb->group);
+        } else {
+            for (int64_t r = 0; r < nope; r++) {
+                tt_dequant_row(wrow, kvb, r0 + r);
+                tt_axpy(q_abs, qh[r], wrow, R);
+            }
         }
 
         /* Softmax online: UM passe sobre o cache em vez de dois.
@@ -430,11 +453,20 @@ static void attn_head_absorbed(void *raw, int64_t head0, int64_t head1)
                 kv_accum(o_c, sc[t], kvc, kvc16, kvq, kvqs, t, W, R, ng);
         }
 
-        /* out = W_v o_c: uma projecao normal, [vd][R] . [R], linha a linha. */
+        /* out = W_v o_c: uma projecao normal, [vd][R] . [R], linha a linha.
+         * Fundido pelo mesmo motivo e com a mesma garantia do laco de W_k. */
         float *out = s->attn + hh * vd;
-        for (int64_t d = 0; d < vd; d++) {
-            tt_dequant_row(wrow, kvb, r0 + nope + d);
-            out[d] = tt_dot(wrow, o_c, R);
+        if (kvb_i4) {
+            for (int64_t d = 0; d < vd; d++)
+                out[d] = tt_dot_int4g(o_c,
+                                      kvb_w + (r0 + nope + d) * kvb_stride,
+                                      kvb->scales + (r0 + nope + d) * kvb_ngroup,
+                                      R, kvb->group);
+        } else {
+            for (int64_t d = 0; d < vd; d++) {
+                tt_dequant_row(wrow, kvb, r0 + nope + d);
+                out[d] = tt_dot(wrow, o_c, R);
+            }
         }
     }
 }

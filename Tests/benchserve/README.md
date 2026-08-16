@@ -75,15 +75,31 @@ windows. Three runs whose spread overlaps the difference have not shown anything
 
 ## Parameters
 
-Defaults reproduce the profiled configuration (`--threads 24 --ctx 150000`).
-Everything is overridable, and `-Threads` is itself worth an experiment: the
-box is an i9-14900K (8 P-cores + 16 E-cores), and equal-sized blocks handed to
-unequal cores widen the barrier that the profile shows the workers waiting on.
+`-Threads` defaults to **20**, the measured optimum here, not the 24 the
+original profile was taken at. The sweep (docs/23):
+
+| `--threads` | median | sd |
+|---|---|---|
+| 6 | 14,92 | 0,07 |
+| 12 | 18,30 | 0,11 |
+| **20** | **21,55** | 0,15 |
+| 22 | 20,43 | 0,28 |
+| 24 | 15,84 | 1,27 |
+
+24 costs 36%: `cpus[(i+1) % 22]` wraps, two cores end up with two pinned threads
+each, and the barrier waits for them — which also makes it erratic, sd 1,27
+against 0,15. 22 is the physical core count and still loses 5%, because two of
+those CPUs are P-core first logicals whose SMT siblings idle.
+
+`-Ctx` defaults to 150000 to match the profiled configuration.
 
 ```powershell
-.\Tests\benchserve\bench-serve.ps1 -Label threads-8 -Threads 8
+.\Tests\benchserve\sweep-threads.ps1                    # rerun the sweep
+.\Tests\benchserve\sweep-threads.ps1 -Counts 18,20,21   # around the optimum
 ```
 
 Changing `-Threads`, `-Ctx` or `-MaxTokens` produces numbers that are **not**
-comparable with the defaults. They are recorded in every CSV row for exactly
-that reason — compare like with like.
+comparable with rows recorded under different ones. They are in every CSV row
+for exactly that reason — compare like with like. In particular, the six
+`baseline` rows already in `results.csv` were taken at 24 and do **not** compare
+with anything measured now at the default.

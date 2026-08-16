@@ -22,6 +22,9 @@
 #   - max_tokens fixed, so every run decodes the same amount of work.
 #   - the server is restarted for every repetition, so no run inherits the
 #     prefix cache or the warm KV of the one before it.
+#   - --threads 20, the measured optimum on this box (docs/23).  It is a
+#     parameter like any other: changing it produces numbers that do not compare
+#     with the ones already in results.csv, which is why every row records it.
 #
 # The result is one JSON per run plus a summary line in results.csv, appended
 # never overwritten -- the history of the measurements IS the artefact.
@@ -34,7 +37,16 @@ param(
 
     [int]$Repeats    = 3,
     [int]$MaxTokens  = 256,
-    [int]$Threads    = 24,
+
+    # 20, measured, not guessed: the sweep of docs/23 puts it at 21,55 tok/s
+    # against 15,84 at 24 (+36%) and 20,43 at 22.  24 pins two threads onto
+    # cores that already have one -- `cpus[(i+1) % 22]` wraps -- and the barrier
+    # waits for them, which also makes it erratic (sd 1,27 against 0,15).
+    # 22 loses too: it is the physical core count, but two of those CPUs are
+    # P-core first logicals whose SMT siblings idle, so the last two threads buy
+    # contention rather than throughput.
+    [int]$Threads    = 20,
+
     [int]$Ctx        = 150000,
     [int]$Port       = 8080,
 
@@ -91,6 +103,27 @@ if (Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyCon
 }
 
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
+
+# A label that already exists under DIFFERENT parameters is the one way this CSV
+# can quietly lie: two groups of rows, same name, not comparable.  Say so now,
+# while there is still time to pick another label.
+if (Test-Path $Csv) {
+    $clash = @(Import-Csv $Csv | Where-Object {
+        $_.label -eq $Label -and
+        ($_.threads -ne "$Threads" -or $_.ctx -ne "$Ctx" -or
+         $_.max_tokens -ne "$MaxTokens")
+    })
+    if ($clash) {
+        $was = $clash[0]
+        Write-Host ''
+        Write-Host "ATENCAO: ja existem $($clash.Count) linha(s) com o rotulo '$Label'" -ForegroundColor Yellow
+        Write-Host "em OUTRA configuracao (threads=$($was.threads) ctx=$($was.ctx) max_tokens=$($was.max_tokens))." -ForegroundColor Yellow
+        Write-Host "Esta execucao usa threads=$Threads ctx=$Ctx max_tokens=$MaxTokens." -ForegroundColor Yellow
+        Write-Host "Os dois grupos vao dividir o mesmo nome e NAO sao comparaveis." -ForegroundColor Yellow
+        Write-Host "Use outro -Label se quiser distingui-los depois." -ForegroundColor Yellow
+        Write-Host ''
+    }
+}
 
 # The exact binary under test.  A result without this is a result you cannot
 # come back to: `baseline` means nothing if you cannot tell which .exe it was.

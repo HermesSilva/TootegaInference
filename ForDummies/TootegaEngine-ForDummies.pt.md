@@ -627,6 +627,58 @@ Referência rápida. Nada aqui é específico do projeto.
 
 Vamos seguir a pergunta *"Qual é a capital do Brasil?"* até a resposta.
 
+O passeio tem **dez fases**. As três primeiras acontecem **uma vez por pergunta**:
+receber o pedido, montar o texto da conversa e — quando há um corpus — buscar o
+trecho certo. As demais formam o **laço de decode**, que roda **uma vez por token**
+gerado, até sair o sinal de parada. As seções 6.1 a 6.6 detalham cada fase; a 6.7
+mostra a corrida real, e a **6.8 é o teste de bancada** — uma linha por fase, com a
+entrada, o que ela faz e a saída.
+
+### 6.0 Antes do tokenizer: receber, montar e (às vezes) buscar
+
+Três coisas acontecem antes de o primeiro caractere virar número, e nenhuma delas
+está no modelo — todas estão no motor.
+
+**Receber.** No modo servidor, o motor escuta uma porta e fala o protocolo
+compatível com a API de chat. Um `POST` chega com um corpo **JSON**
+(*JavaScript Object Notation*), que o parser próprio (`src/json.c`, zero
+dependências) transforma numa lista de mensagens com papel (`system`, `user`,
+`assistant`) e conteúdo, mais os parâmetros de amostragem. → [`docs/20`](../docs/20-agent.md)
+
+**Montar o texto da conversa.** O motor reconstrói os *ids* do zero a cada pedido,
+byte a byte como o `chat_template.jinja` do modelo, com os marcadores de papel
+delimitando os turnos:
+
+```
+<|system|>…ferramentas…<|user|>…pergunta…<|assistant|>
+```
+
+O bloco de sistema fica no **início de propósito**: é a parte que não muda entre
+pedidos, então o cache de prefixo (§11 e §13) vale numa sessão de agente.
+
+**Buscar o trecho — retrieval BM25.** Este é o passo que o desenho ingênuo esquece.
+O container do livro foi treinado com **RAFT** (*Retrieval-Augmented Fine-Tuning*,
+ajuste fino com recuperação): o modelo aprendeu a **ler o trecho, não a decorá-lo**.
+Sem o trecho no contexto, ele erra a doutrina — medido: **0 de 11** respostas
+corretas sem trecho, contra **26 de 29** com trecho. Por isso a recuperação é
+**requisito**, não acessório, e roda no próprio motor (`src/retrieve.c`), não num
+serviço externo.
+
+O algoritmo é o **BM25** (*Best Matching 25*, o ranqueamento clássico de recuperação
+de texto): tokeniza a pergunta em termos, pontua cada seção do índice por `idf`
+(raridade do termo) vezes `tf` saturado (frequência no trecho), e devolve os
+melhores. Os trechos vencedores são inseridos no turno `<|user|>` **antes** da
+tokenização — e o port em C ranqueia idêntico ao `retrieve.py` do treino (mesmas
+726 seções, mesmos 13.465 termos), condição para o modelo ver em produção o que viu
+no treino. → [`docs/13`](../docs/13-open-decisions.md), D15
+
+> **Por que o trecho entra no último turno e é reproduzido no replay.** Reescrever
+> só a última mensagem mudaria o prefixo a cada envio e forçaria re-prefill da
+> conversa inteira. Inserir o trecho na virada do usuário e reproduzi-lo quando a
+> conversa é reencenada mantém o prefixo idêntico e deixa o cache KV sobreviver à
+> rodada. Se a pergunta não compartilha termo algum com o corpus, nada é recuperado
+> — e o prompt segue limpo.
+
 ### 6.1 Tokenizer — de texto para números
 
 O modelo não vê letras. Vê inteiros. O **tokenizer** faz a conversão, em quatro
@@ -791,6 +843,59 @@ decode    8 tokens em 0.82 s (9.79 tok/s)
 O que aconteceu: 18 tokens de prompt passaram pelas 47 camadas de uma vez
 (prefill), depois 8 tokens foram gerados um a um (decode), cada um relendo
 2,01 GB de peso e todo o KV acumulado.
+
+### 6.8 Teste de bancada — uma pergunta do livro, fase a fase
+
+Este é o passeio com **todas** as fases, inclusive o retrieval, no container do
+livro (RAFT). A pergunta *"O que é a Arena na Cosmologia Composicional?"* entra por
+uma ponta; a resposta sai pela outra. Cada linha é uma fase: o que **entra**, o que
+a fase **faz**, o que **sai**.
+
+```powershell
+.\serve-book.cmd            # sobe o servidor no container v5-sft
+# depois, do cliente:
+POST /v1/chat  { "messages": [ { "role":"user",
+  "content":"O que é a Arena na Cosmologia Composicional?" } ] }
+```
+
+| # | fase | entra | o que faz | sai |
+|---|---|---|---|---|
+| 1 | recepção | bytes do `POST` | parseia o JSON (`src/json.c`) | `messages[]` + parâmetros |
+| 2 | template | `messages[]` | monta `<\|system\|>…<\|user\|>…<\|assistant\|>` | texto da conversa |
+| 3 | retrieval BM25 | termos da pergunta | pontua 726 seções, escolhe as melhores | trecho da *Arena* inserido no turno `user` |
+| 4 | tokenizer | texto + trecho | regex → bytes → BPE → especiais | ~430 ids |
+| 5 | prefill | os ~430 ids | 1 passada pelas 47 camadas, preenche o KV | logits da última posição |
+| 6 | forward (×47) | 1 id + KV | RMSNorm → atenção → residual → MLP/MoE | `hidden` corrigido |
+| 7 | atenção MLA | `hidden` normalizado | Q·K comprimido (576), softmax, média de V | contribuição da atenção |
+| 8 | MoE (46 camadas) | `hidden` normalizado | roteador nota 64, escolhe 4 + 1 compartilhado | contribuição da MLP |
+| 9 | amostragem | 154.880 logits | top-k → temperatura → top-p → sorteio | 1 id de token |
+| 10 | detokenizar + stream | 1 id | id → bytes UTF-8, empurra por SSE | pedaço de texto ao cliente |
+| ↺ | realimenta | id gerado | volta à fase 6 como próxima entrada | até `<EOS>` ou `n_max` |
+
+```
+entrada :  "O que é a Arena na Cosmologia Composicional?"
+             │
+   1 recepção→2 template→3 BM25 (traz o trecho da Arena)
+             │
+   4 tokenizer  ──►  ~430 ids
+             │
+   5 prefill (47 camadas de uma vez)  ──►  logits
+             │
+   ┌───────────── laço de decode ─────────────┐
+   │ 6·7·8 forward → 9 amostra → 10 detokeniza │  ← repete por token
+   └───────────────────┬──────────────────────┘
+                       │  <EOS>
+             ▼
+saída  :  "A Arena é o campo onde as composições…"  (com a doutrina correta,
+          porque o trecho estava no contexto — sem ele, viraria um estádio)
+```
+
+> **O que o teste de bancada torna visível.** Sem a fase 3, as fases 4–10 rodam
+> igual e a resposta sai fluente **e errada** — o modelo diz que a Arena é um
+> estádio de futebol. Com a fase 3, o mesmo laço produz a doutrina certa. A
+> diferença não está no modelo nem na amostragem: está em **o trecho ter entrado
+> antes da tokenização**. É a divisão de trabalho que o RAFT cria de propósito.
+> → [`docs/22`](../docs/22-finetune-and-retrieval.md)
 
 ---
 

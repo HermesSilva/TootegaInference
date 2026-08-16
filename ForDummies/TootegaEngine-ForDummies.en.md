@@ -629,6 +629,59 @@ Quick reference. Nothing here is project-specific.
 
 Let us follow the question *"What is the capital of Brazil?"* to its answer.
 
+The journey has **ten phases**. The first three happen **once per question**:
+receive the request, assemble the conversation text and — when there is a corpus —
+fetch the right passage. The rest form the **decode loop**, which runs **once per
+generated token**, until the stop signal comes out. Sections 6.1 to 6.6 detail each
+phase; 6.7 shows the real run, and **6.8 is the bench test** — one line per phase,
+with the input, what it does and the output.
+
+### 6.0 Before the tokenizer: receive, assemble and (sometimes) fetch
+
+Three things happen before the first character becomes a number, and none of them
+is in the model — all are in the engine.
+
+**Receive.** In server mode the engine listens on a port and speaks the protocol
+compatible with the chat API. A `POST` arrives with a **JSON** (*JavaScript Object
+Notation*) body, which the in-house parser (`src/json.c`, zero dependencies) turns
+into a list of messages with a role (`system`, `user`, `assistant`) and content,
+plus the sampling parameters. → [`docs/20`](../docs/20-agent.md)
+
+**Assemble the conversation text.** The engine rebuilds the *ids* from scratch on
+every request, byte for byte like the model's `chat_template.jinja`, with the role
+markers delimiting the turns:
+
+```
+<|system|>…tools…<|user|>…question…<|assistant|>
+```
+
+The system block sits **at the start on purpose**: it is the part that does not
+change between requests, so the prefix cache (§11 and §13) pays off in an agent
+session.
+
+**Fetch the passage — BM25 retrieval.** This is the step the naive design forgets.
+The book container was trained with **RAFT** (*Retrieval-Augmented Fine-Tuning*): the
+model learned to **read the passage, not memorize it**. Without the passage in
+context it gets the doctrine wrong — measured: **0 of 11** answers correct without
+the passage, against **26 of 29** with it. That is why retrieval is a
+**requirement**, not an accessory, and runs inside the engine itself
+(`src/retrieve.c`), not in an external service.
+
+The algorithm is **BM25** (*Best Matching 25*, the classic text-retrieval ranking):
+it tokenizes the question into terms, scores each index section by `idf` (term
+rarity) times a saturated `tf` (frequency in the passage), and returns the best. The
+winning passages are inserted into the `<|user|>` turn **before** tokenization — and
+the C port ranks identically to the training's `retrieve.py` (same 726 sections,
+same 13,465 terms), the condition for the model to see in production what it saw in
+training. → [`docs/13`](../docs/13-open-decisions.md), D15
+
+> **Why the passage goes into the last turn and is replayed.** Rewriting only the
+> last message would change the prefix on every send and force a re-prefill of the
+> whole conversation. Inserting the passage at the user's turn and replaying it when
+> the conversation is re-enacted keeps the prefix identical and lets the KV cache
+> survive the round. If the question shares no term with the corpus, nothing is
+> retrieved — and the prompt stays clean.
+
 ### 6.1 Tokenizer — from text to numbers
 
 The model does not see letters. It sees integers. The **tokenizer** does the
@@ -795,6 +848,59 @@ decode    8 tokens em 0.82 s (9.79 tok/s)
 What happened: 18 prompt tokens went through the 47 layers at once (prefill),
 then 8 tokens were generated one by one (decode), each rereading 2.01 GB of
 weights and the whole accumulated KV.
+
+### 6.8 Bench test — one book question, phase by phase
+
+This is the journey with **every** phase, retrieval included, on the book container
+(RAFT). The question *"What is the Arena in Compositional Cosmology?"* enters at one
+end; the answer leaves at the other. Each row is a phase: what **enters**, what the
+phase **does**, what **leaves**.
+
+```powershell
+.\serve-book.cmd            # bring the server up on the v5-sft container
+# then, from the client:
+POST /v1/chat  { "messages": [ { "role":"user",
+  "content":"What is the Arena in Compositional Cosmology?" } ] }
+```
+
+| # | phase | in | what it does | out |
+|---|---|---|---|---|
+| 1 | reception | `POST` bytes | parses the JSON (`src/json.c`) | `messages[]` + parameters |
+| 2 | template | `messages[]` | builds `<\|system\|>…<\|user\|>…<\|assistant\|>` | conversation text |
+| 3 | BM25 retrieval | question terms | scores 726 sections, picks the best | *Arena* passage inserted in the `user` turn |
+| 4 | tokenizer | text + passage | regex → bytes → BPE → specials | ~430 ids |
+| 5 | prefill | the ~430 ids | 1 pass through the 47 layers, fills the KV | logits of the last position |
+| 6 | forward (×47) | 1 id + KV | RMSNorm → attention → residual → MLP/MoE | corrected `hidden` |
+| 7 | MLA attention | normalized `hidden` | compressed Q·K (576), softmax, V average | attention contribution |
+| 8 | MoE (46 layers) | normalized `hidden` | router scores 64, picks 4 + 1 shared | MLP contribution |
+| 9 | sampling | 154,880 logits | top-k → temperature → top-p → draw | 1 token id |
+| 10 | detokenize + stream | 1 id | id → UTF-8 bytes, push over SSE | text chunk to the client |
+| ↺ | feed back | generated id | back to phase 6 as the next input | until `<EOS>` or `n_max` |
+
+```
+input  :  "What is the Arena in Compositional Cosmology?"
+             │
+   1 reception→2 template→3 BM25 (brings the Arena passage)
+             │
+   4 tokenizer  ──►  ~430 ids
+             │
+   5 prefill (47 layers at once)  ──►  logits
+             │
+   ┌───────────── decode loop ─────────────┐
+   │ 6·7·8 forward → 9 sample → 10 detokenize │  ← repeats per token
+   └──────────────────┬─────────────────────┘
+                      │  <EOS>
+             ▼
+output :  "The Arena is the field where the compositions…"  (with the correct
+          doctrine, because the passage was in context — without it, a stadium)
+```
+
+> **What the bench test makes visible.** Without phase 3, phases 4–10 run the same
+> and the answer comes out fluent **and wrong** — the model says the Arena is a
+> football stadium. With phase 3, the same loop produces the right doctrine. The
+> difference is neither in the model nor in the sampling: it is in **the passage
+> having entered before tokenization**. It is the division of labour RAFT creates on
+> purpose. → [`docs/22`](../docs/22-finetune-and-retrieval.md)
 
 ---
 

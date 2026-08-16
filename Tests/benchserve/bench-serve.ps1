@@ -241,8 +241,12 @@ for ($i = 1; $i -le $Repeats; $i++) {
 $rows | Export-Csv -Path $Csv -NoTypeInformation -Append -Encoding utf8
 
 $tps    = $rows.tokens_per_second | Sort-Object
-$median = if ($tps.Count % 2) { $tps[[int]($tps.Count / 2)] }
-          else { ($tps[$tps.Count / 2 - 1] + $tps[$tps.Count / 2]) / 2 }
+# [math]::Floor, not [int]: PowerShell's [int] cast rounds half to EVEN, so
+# [int](3/2) is 2 and not 1 -- with three samples the "median" would come out as
+# the largest one.
+$mid    = [int][math]::Floor($tps.Count / 2)
+$median = if ($tps.Count % 2) { $tps[$mid] }
+          else { ($tps[$mid - 1] + $tps[$mid]) / 2 }
 $mean   = ($tps | Measure-Object -Average).Average
 $sd     = if ($tps.Count -gt 1) {
               [math]::Sqrt((($tps | ForEach-Object { [math]::Pow($_ - $mean, 2) }) |

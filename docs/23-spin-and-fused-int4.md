@@ -137,9 +137,46 @@ not barrier cost.
 
 **`--threads 24` on a hybrid part.** The profile's blocks are equal-sized and the
 cores are not, so the barrier waits for whichever E-core drew the last block.
-Change 1 makes that wait cheap, but it does not make it shorter. Whether 8 or 16
-threads beats 24 here is an experiment, not a patch —
-`Tests/benchserve/bench-serve.ps1 -Label threads-8 -Threads 8` runs it.
+Change 1 makes that wait cheap, but it does not make it shorter.
+
+## The affinity, spelled out
+
+Worth writing down, because the topology is not what the marketing number says.
+`GetLogicalProcessorInformationEx` on this i9-14900K reports **22 physical cores
+and 28 logical**:
+
+| class | cores | SMT | first logical |
+|---|---|---|---|
+| 1 (P) | **6** | yes, 2 threads each | 0, 2, 4, 6, 8, 10 |
+| 0 (E) | 16 | no | 12 … 27 |
+
+Six P-cores, not eight. `enum_cores` takes the **first logical of each physical
+core** and never the SMT sibling — the sibling would compete for the same
+execution unit, and these kernels saturate FMA.
+
+`tt_cmd_serve` builds the pool with `TT_AFFINITY_ALL`, so the list is all 22
+cores, and each worker is pinned to exactly one logical CPU with a one-bit mask
+(`tt_thread_pin` → `SetThreadAffinityMask`). Assignment is `cpus[(i + 1) % ncpu]`,
+which gives:
+
+| `--threads` | CPUs used | doubled up | P | E |
+|---|---|---|---|---|
+| 20 (the default) | 20 of 22 | 0 | 6 | 14 |
+| **24 (what was profiled)** | 22 of 22 | **2** | 8 | 16 |
+
+So 24 is not "more parallelism than 20": it is 20 plus two cores carrying two
+pinned threads each, while the barrier waits for them. Whether that costs
+anything is a measurement, not an argument —
+`Tests/benchserve/sweep-threads.ps1` runs 6 / 12 / 20 / 24 under the same
+protocol and prints the comparison.
+
+None of this removes the real asymmetry: a P-core and an E-core get the same
+`grain`, and `tt_pool_run`'s barrier waits for the slower. Choosing the thread
+count picks a point on that trade-off; it does not eliminate it. Fixing it
+properly means unequal blocks or work-stealing, and the constraint that governs
+that is docs/15 — the partition is by output row and the reduction stays inside
+one thread, so **`--threads` must not change a single token**. The sweep script
+checks exactly that and shouts if it ever stops being true.
 
 ## What it bought
 
@@ -149,10 +186,10 @@ replies** (`747DDD26`), which is the harness confirming it compared the same wor
 
 | binary | median | mean | sd | samples |
 |---|---|---|---|---|
-| before (`73CD8878`) | 14,21 | 14,08 | 0,11 | 14,00 · 14,04 · 14,21 |
-| after (`89D0ED33`) | **16,17** | 15,50 | 0,73 | 14,72 · 15,62 · 16,17 |
+| before (`73CD8878`) | 14,04 | 14,08 | 0,11 | 14,00 · 14,04 · 14,21 |
+| after (`89D0ED33`) | **15,62** | 15,50 | 0,73 | 14,72 · 15,62 · 16,17 |
 
-**+13,8% on the median**, +10,1% on the mean, for a change that does not alter a
+**+11,2% on the median**, +10,1% on the mean, for a change that does not alter a
 bit of the output.
 
 Two things to be honest about. The spread after is 6,6× wider (0,73 against

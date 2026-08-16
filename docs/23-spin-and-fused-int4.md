@@ -165,10 +165,54 @@ which gives:
 | **24 (what was profiled)** | 22 of 22 | **2** | 8 | 16 |
 
 So 24 is not "more parallelism than 20": it is 20 plus two cores carrying two
-pinned threads each, while the barrier waits for them. Whether that costs
-anything is a measurement, not an argument —
-`Tests/benchserve/sweep-threads.ps1` runs 6 / 12 / 20 / 24 under the same
-protocol and prints the comparison.
+pinned threads each, while the barrier waits for them.
+
+It costs a great deal. Measured, same binary, same protocol, three runs each:
+
+| `--threads` | median | mean | sd | samples | vs 24 |
+|---|---|---|---|---|---|
+| 6 | 14,92 | 14,89 | 0,07 | 14,81 · 14,92 · 14,94 | −5,8% |
+| 12 | 18,30 | 18,29 | 0,11 | 18,18 · 18,30 · 18,40 | +15,5% |
+| **20** | **21,55** | 21,63 | 0,15 | 21,54 · 21,55 · 21,81 | **+36%** |
+| 22 | 20,43 | 20,35 | 0,28 | 20,03 · 20,43 · 20,58 | +29% |
+| 24 | 15,84 | 15,29 | **1,27** | 12,98 … 16,22 | — |
+
+**The default of 20 is the right one, and 24 costs 36%.** Look at the spread as
+much as the median: 24 has sd 1,27 against 20's 0,15, with samples from 12,98 to
+16,22. That is the signature of the two doubled-up cores — which two threads
+collide, and whether the scheduler runs them back to back, changes run to run.
+
+22 is worth its own line because "22 = the physical core count" is the obvious
+guess and it is **not** the best: it loses 5% to 20. Two of those 22 pinned CPUs
+are P-core *first* logicals whose SMT siblings sit idle, so the last two threads
+add contention at the barrier rather than throughput. The engine already knows
+the difference between a core and a place to run — the count that wins is the
+one that leaves the barrier unblocked, not the one that matches a spec sheet.
+
+Note also that 6 (P-cores only) is the *worst* of all: the 16 E-cores do
+contribute, they just must not be waited on by cores that finished long ago.
+
+`Tests/benchserve/sweep-threads.ps1` reruns this.
+
+### What was NOT changed, and why
+
+`tt_cmd_serve` hard-codes `threads = 20`, and on this box that is the winner —
+but by coincidence, not derivation. The two candidates for a derived default are
+both worse here:
+
+- `tt_pool_create(0, …)` uses `ncpu`, every physical core: **22**, which measures
+  5% below 20.
+- P-cores only would be **6**, the worst of the sweep.
+
+So there is no obvious expression to replace 20 with, and picking one from a
+single machine's numbers would be fitting a constant to one sample. The number
+stays where it is until the sweep has run on hardware that is not this one —
+a uniform many-core server has no doubled-up cores and would likely want
+`ncpu`. What this measurement does establish is narrower and solid: **on this
+box, do not pass `--threads 24`.** The profile in this document was taken at 24,
+which means it was taken in the contended regime; the spin it found is real and
+the fix is real, but part of what looked like barrier wait was two cores running
+two workers each.
 
 None of this removes the real asymmetry: a P-core and an E-core get the same
 `grain`, and `tt_pool_run`'s barrier waits for the slower. Choosing the thread

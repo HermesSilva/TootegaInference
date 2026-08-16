@@ -253,7 +253,9 @@ $sd     = if ($tps.Count -gt 1) {
                             Measure-Object -Sum).Sum / ($tps.Count - 1))
           } else { 0 }
 
-$hashes = $rows.output_sha256_16 | Sort-Object -Unique
+# @() so that a single distinct hash still indexes as an array: without it
+# `$hashes[0]` hands the whole string to -f and prints one character.
+$hashes = @($rows.output_sha256_16 | Sort-Object -Unique)
 
 Write-Host ''
 Write-Host "resumo  $Label" -ForegroundColor Cyan

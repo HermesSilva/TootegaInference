@@ -71,3 +71,6 @@ corpus_rep.txt
 #                            significa alguma coisa com ESTE texto
 #   ids32.txt, ref32.json    referencia do oraculo, presa ao container v3
 #   tokfixture.json          ids de referencia da HuggingFace
+
+# Cockpit: estado local da ferramenta, não versionar
+.cockpit/

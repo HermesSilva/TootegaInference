@@ -681,7 +681,14 @@ static int mlp_moe(tt_state *s, const tt_layer *L, float *out)
 
 /* ------------------------------------------------------------ forward */
 
-int tt_forward(tt_state *s, int32_t token, float **logits_out)
+/* One token through the 47 layers.  `want_logits` decides whether the pass ends
+ * in the vocabulary projection.
+ *
+ * It is a flag and not a second function because the two passes must be THE
+ * SAME pass up to the last layer: everything the cache keeps -- K, V, the id --
+ * is written before `lm_head` runs, and `lm_head` writes nothing but
+ * `s->logits`.  Skipping it cannot change a bit of what a later token reads. */
+static int forward_pass(tt_state *s, int32_t token, int want_logits)
 {
     const tt_model  *m = s->m;
     const tt_config *c = &m->cfg;
@@ -725,19 +732,68 @@ int tt_forward(tt_state *s, int32_t token, float **logits_out)
         }
         tt_add(s->h, s->mlp_out, c->hidden_size);
 
+        if (s->route) {
+            const int64_t K = c->num_experts_per_tok;
+            for (int64_t i = 0; i < K; i++) {
+                s->route[li * K + i] = L->is_moe ? s->topk_idx[i] : -1;
+                if (s->route_w)
+                    s->route_w[li * K + i] = L->is_moe ? s->topk_w[i] : 0.0f;
+            }
+        }
+
         if (s->trace)
             tt_copy(s->trace + (li + 1) * c->hidden_size, s->h, c->hidden_size);
     }
 
-    tt_rmsnorm(s->hn, s->h, (const float *)m->norm->data,
-               c->hidden_size, c->rms_norm_eps);
-    if (tt_matmul(s->logits, m->lm_head, s->hn) != 0) return -1;
+    if (want_logits) {
+        tt_rmsnorm(s->hn, s->h, (const float *)m->norm->data,
+                   c->hidden_size, c->rms_norm_eps);
+        if (tt_matmul(s->logits, m->lm_head, s->hn) != 0) return -1;
+    }
 
     s->tokens[pos] = token;
     s->len = pos + 1;
+    s->logits_len = want_logits ? s->len : 0;
     s->tokens_processed++;
     s->seconds_in_forward += tt_now() - t0;
+    return 0;
+}
 
+int tt_forward(tt_state *s, int32_t token, float **logits_out)
+{
+    if (forward_pass(s, token, 1) != 0) return -1;
     if (logits_out) *logits_out = s->logits;
     return 0;
+}
+
+/* The prompt positions whose prediction nobody reads.
+ *
+ * `lm_head` is [154880][2048] in int8 g64: 337 MB read per token, 14% of the
+ * 2.38 GB a decode token moves, to produce a distribution over a token that is
+ * ALREADY KNOWN -- it is the next id of the prompt.  Only the last position of a
+ * prompt predicts something that gets sampled.
+ *
+ * The work followed the size of the vocabulary instead of the size of the
+ * answer.  In an engine whose bottleneck is bytes across the memory bus
+ * (docs/08), the cheapest byte is the one that is never read. */
+int tt_forward_prefill(tt_state *s, int32_t token)
+{
+    return forward_pass(s, token, 0);
+}
+
+int tt_prefill(tt_state *s, const int32_t *ids, int64_t from, int64_t n)
+{
+    for (int64_t i = from; i < n; i++)
+        if (forward_pass(s, ids[i], i + 1 == n) != 0) return -1;
+    return 0;
+}
+
+float *tt_state_logits(const tt_state *s)
+{
+    /* Logits are scratch, not cache: they describe one position and are
+     * overwritten -- or, after a prefill pass, simply not produced.  Whoever
+     * samples from a position that did not run the projection gets the tail of
+     * some other pass, which is how an identical request once came back empty
+     * (see `tt_state_match_prefix`).  NULL makes that a visible error. */
+    return (s->len > 0 && s->logits_len == s->len) ? s->logits : NULL;
 }

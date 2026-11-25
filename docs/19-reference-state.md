@@ -233,6 +233,10 @@ to `--attn int4`; `int8` costs 0.3 GB for nothing.
 | local tools with sandbox and approval | `tools/agent/`, [20](20-agent.md) |
 | BF16 → `.tootega` converter | `tools/convert/` |
 | measurement: ablation, generation, roofline | `Tests/` |
+| prefill without the vocabulary projection (`tt_prefill`) | `src/forward.c`, [13](13-open-decisions.md) D16 |
+| prefix KV on disk, on by default in `serve`, LRU under a byte budget | `src/kvstore.c`, [12](12-persistent-state.md) |
+| routing trace and its variation across contexts | `Tests/route/` |
+| format changes measured before being built | `Tests/analyze/`, [13](13-open-decisions.md) D18–D19 |
 
 ## Not implemented
 
@@ -244,8 +248,10 @@ to `--attn int4`; `int8` costs 0.3 GB for nothing.
   because a granularity of one matmul per call pays 17 µs of protocol each time.
   What is missing is `run_layer` on the device. Master stays pure CPU until that
   exists and shows a measured gain.
-- **Persistent state** ([12](12-persistent-state.md)) and **MTP speculation**
-  (M5).
+- **The rest of persistent state** ([12](12-persistent-state.md)) — the prefix
+  KV is on disk; the tensor index, the plan and the compiled tokenizer are not —
+  and **MTP speculation** (M5).
+- **Batched prefill** ([13](13-open-decisions.md), D16).
 - **Linux build** — the `Makefile` exists and has never been compiled.
 
 ## int8 KV — measured, inconclusive, not adopted

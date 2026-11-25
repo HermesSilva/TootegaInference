@@ -39,7 +39,7 @@ The model it runs is published ready to use:
 | **Terminal** | `agent.exe --tty` — a command-line session, no UI at all |
 | **Measurement** | perplexity, paired ablation, generation quality, roofline |
 
-All of it in **13 `.c` files**, ~420 KB of executable, zero runtime DLLs.
+All of it in **15 `.c` files**, ~460 KB of executable, zero runtime DLLs.
 
 ## State
 
@@ -61,6 +61,17 @@ idle server         0.2% of one core, 0.04 GB
 Said with the same rigour as the rest: decode sits at **59% of the ceiling**. The
 missing milliseconds are in attention and the barriers — not in the matmuls,
 which already run at 90% of bandwidth.
+
+Two things have changed the prefill since that block was measured, and neither
+changes a bit of the output (same logits, same SHA-256, 32/32):
+
+| | what | measured |
+|---|---|---|
+| **no `lm_head` on prompt positions** | a prompt position predicts an id the caller already holds; only the last one runs the 337 MB vocabulary projection | prefill **+9%** (13.5 → 14.8 tok/s, three interleaved pairs, 4–14%) |
+| **the fixed prefix on disk** | the KV of system prompt + tool schemas is written once and read back on the next start — on by default | first request **38.6 s → 3.3 s** with a 587-token prefix; identical reply |
+
+Decode is untouched by both. The block above is the reference state and has not
+been re-measured as a whole.
 
 Container **v4**. Generation quality against the original BF16 weights, twelve
 prompts, greedy, all in one run:
@@ -88,7 +99,11 @@ diverging. The scale search bought a third more of them.
 
 - **Slots and batching** (M3). One request at a time; the second tab waits in the
   TCP backlog, silently.
-- **Persistent state** and **MTP speculation**.
+- **The rest of persistent state** — the prefix KV is on disk
+  ([12](docs/12-persistent-state.md)); the tensor index, the plan and the
+  compiled tokenizer are still rebuilt on every open — and **MTP speculation**.
+- **Batched prefill.** The kernel exists and measures 3–4×; nothing calls it yet
+  ([13](docs/13-open-decisions.md), D16).
 - **A Linux build** — the `Makefile` exists and has never been compiled.
 - **GPU.** It was written, measured, and **did not pay for itself**: it lives on
   the `GPU` branch.
@@ -170,6 +185,29 @@ content of the messages**:
   generation   perplexity 1.84  nll 0.6088  entropy 1.02 bits  confidence 71.9%
   end          tool_calls -- 11 tokens in 0.8 s (13.1 tok/s)
 ```
+
+### The prefix cache
+
+Every session starts with the same tokens — system prompt, tool schemas — and
+recomputing them is the dominant cost of the first turn. `serve` keeps their KV
+on disk, next to the model, and reads it back instead:
+
+```
+<model dir>/.tootega/kv/<hash of the token sequence>.ttkv     108 KB per position
+```
+
+| option | |
+|---|---|
+| *(nothing)* | on, in `<model dir>/.tootega/kv`, up to 8 GB |
+| `--kv-cache <dir>` | somewhere else |
+| `--kv-cache-gb N` | another ceiling; the least recently used prefix is evicted first |
+| `--no-kv-cache` | off |
+
+A file is used only for **exactly** the token sequence that produced it, with the
+same container and the same build of the engine; anything else is ignored with a
+log line saying which of them differed. Rebuilding the engine therefore
+invalidates the cache — the files are rewritten the next time their prefix is
+computed. Deleting the directory is always safe.
 
 ## Decisions worth knowing about
 
@@ -302,7 +340,7 @@ OS     Windows 10 Pro 19045
 ```
 src/         the engine -- ISO C11, zero dependencies, only compat.c has OS ifdefs
 tools/       production tools: convert, agent, finetune, ucd, fixture
-Tests/       measurement tools: ablate, gentest, bench, oracle
+Tests/       measurement tools: ablate, gentest, bench, oracle, mmbatch, route, analyze
 docs/        the specification, with the why and the number behind each decision
 ForDummies/  the project explained for non-specialists, EN and PT
 publish/     the model card and the HuggingFace packaging script

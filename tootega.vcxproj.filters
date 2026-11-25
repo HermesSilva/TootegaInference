@@ -22,6 +22,7 @@
     <ClCompile Include="src\forward.c"><Filter>Source Files</Filter></ClCompile>
     <ClCompile Include="src\json.c"><Filter>Source Files</Filter></ClCompile>
     <ClCompile Include="src\kernels.c"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="src\kvstore.c"><Filter>Source Files</Filter></ClCompile>
     <ClCompile Include="src\main.c"><Filter>Source Files</Filter></ClCompile>
     <ClCompile Include="src\model.c"><Filter>Source Files</Filter></ClCompile>
     <ClCompile Include="src\pool.c"><Filter>Source Files</Filter></ClCompile>
@@ -40,6 +41,7 @@
     <ClInclude Include="src\forward.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="src\json.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="src\kernels.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="src\kvstore.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="src\model.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="src\pool.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="src\retrieve.h"><Filter>Header Files</Filter></ClInclude>

@@ -25,6 +25,7 @@ typedef struct {
 
     int64_t  ctx;              /* capacity in tokens */
     int64_t  len;              /* tokens already in the cache */
+    int64_t  logits_len;       /* value of `len` when `logits` was produced; 0 = stale */
 
     /* EXPANDED mode: full K and V.  ABSORBED mode: `kvc` in place of both,
      * [layer][pos][kv_lora_rank + qk_rope_head_dim]. */
@@ -58,6 +59,14 @@ typedef struct {
      * finding the FIRST layer that diverges, instead of rereading the code. */
     float   *trace;
 
+    /* Routing trace: if not NULL, receives which experts the router picked at
+     * each layer of the last pass and with what weight --
+     * [num_hidden_layers][num_experts_per_tok], ascending expert index, the
+     * order they are accumulated in.  A dense layer writes -1.  The caller owns
+     * both buffers; `Tests/route` is what reads them. */
+    int32_t *route;
+    float   *route_w;
+
     /* report counters */
     uint64_t tokens_processed;
     double   seconds_in_forward;
@@ -78,6 +87,24 @@ uint64_t tt_scratch_bytes(const tt_model *m, int64_t ctx);
 /* Processes `token` at position s->len, advances the cache and returns the
  * logits (a pointer inside the scratch, valid until the next pass). */
 int tt_forward(tt_state *s, int32_t token, float **logits_out);
+
+/* The same pass WITHOUT the vocabulary projection: the cache advances exactly
+ * as in `tt_forward`, and `s->logits` is left stale.  For prompt positions whose
+ * next token is already known -- every one but the last.  `lm_head` is 337 MB of
+ * the 2.38 GB a token reads, and a prompt position pays it to predict an id the
+ * caller is holding in its hand. */
+int tt_forward_prefill(tt_state *s, int32_t token);
+
+/* Runs ids[from..n) and leaves the logits of position n-1 ready to sample: only
+ * the last position pays for `lm_head`.  This is the one entry point a prefill
+ * should use -- it is also where a batched prefill (docs/13, D16) will land,
+ * without any caller changing. */
+int tt_prefill(tt_state *s, const int32_t *ids, int64_t from, int64_t n);
+
+/* The logits of the LAST processed position, or NULL when that position ran
+ * without the projection.  Sampling code should read through this instead of
+ * `s->logits`, so that a stale distribution is an error and not an answer. */
+float *tt_state_logits(const tt_state *s);
 
 /* Matches the longest common prefix with the cache and truncates at the
  * divergence.  Returns how many tokens remain valid -- the prefill only has to

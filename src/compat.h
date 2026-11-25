@@ -51,6 +51,27 @@ double tt_ram_total_gb(void);
 double tt_ram_avail_gb(void);
 double tt_rss_gb(void);            /* this process's resident set */
 
+/* --------------------------------------------------------------- files */
+
+/* What a persisted artefact needs and ISO C does not give (docs/12, "Integrity
+ * rules"): the bytes on the platter before the name changes, and the name
+ * changing in one step.  Without both, a power cut leaves a truncated file under
+ * the final name and the next open reads it.
+ *
+ * `stdio_file` is a `FILE *`, passed as `void *` so that this header does not
+ * drag `<stdio.h>` into every translation unit. */
+int tt_file_commit(void *stdio_file);                   /* flush + fsync */
+int tt_file_replace(const char *from, const char *to);  /* atomic, overwrites */
+int tt_mkdir(const char *path);                         /* 0 if it exists now */
+int tt_rmdir(const char *path);                         /* empty directories only */
+int tt_file_touch(const char *path);                    /* modification time = now */
+
+/* Calls `fn` once per regular file in `dir` (not recursive, no order promised).
+ * `mtime` only has to compare: larger is more recent.  Returns -1 if the
+ * directory cannot be read. */
+typedef void (*tt_dir_fn)(void *arg, const char *name, uint64_t bytes, int64_t mtime);
+int tt_dir_list(const char *dir, tt_dir_fn fn, void *arg);
+
 /* ------------------------------------------------------------- console */
 
 /* Puts the console in UTF-8, once, at start-up.  Everything this program

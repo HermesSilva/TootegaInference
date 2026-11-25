@@ -178,6 +178,7 @@
     <ClCompile Include="src\forward.c" />
     <ClCompile Include="src\json.c" />
     <ClCompile Include="src\kernels.c" />
+    <ClCompile Include="src\kvstore.c" />
     <ClCompile Include="src\main.c" />
     <ClCompile Include="src\model.c" />
     <ClCompile Include="src\pool.c" />
@@ -197,6 +198,7 @@
     <ClInclude Include="src\forward.h" />
     <ClInclude Include="src\json.h" />
     <ClInclude Include="src\kernels.h" />
+    <ClInclude Include="src\kvstore.h" />
     <ClInclude Include="src\model.h" />
     <ClInclude Include="src\pool.h" />
     <ClInclude Include="src\retrieve.h" />

@@ -24,6 +24,9 @@ and the criterion that would settle it.
 | **D15** | **retrieval in `src/`** | **SETTLED** — built and verified; **off by default**, see D17 |
 | **D16** | **batched prefill** | open — the kernel exists and nothing calls it; 3–4× measured |
 | **D17** | **the content belongs in the weights** | open — the prompt goes unmodified; the fine-tune has to carry the doctrine |
+| **D18** | **`lm_head` with a shortlist** | **MEASURED** — exact version buys ~4% of the traffic and is not worth a format; the statistical one stays an option |
+| **D19** | **experts as a base plus a delta** | **REJECTED** — the experts of a layer are unrelated, measured |
+| **D20** | **prefix KV on disk** | **SETTLED** — on by default in `serve`, identical reply; [12](12-persistent-state.md) |
 
 The text below preserves the reasoning behind each decision.
 
@@ -356,6 +359,114 @@ a thousand tokens is the opposite case and was never measured.
 
 **What would settle it:** 32/32 against `ref32.json` with the batched path on,
 and the prefill of a three-passage prompt under 35 s.
+
+**What has landed since, and it is not the batch.** "Both pay a full read of the
+active weights for every single token" is no longer exact. A prompt position
+with more prompt ahead of it predicts an id the caller is already holding, and
+it was running the vocabulary projection to do so — `lm_head`, 337 MB of the
+2.38 GB a token reads. `tt_prefill` now runs the projection on the last position
+only (`tt_forward_prefill` for the others). The logits dump is unchanged, same
+SHA-256, and the generated text is byte-identical on a 22-token and a 641-token
+prompt.
+
+Measured, interleaved, 641-token prompt, same sitting:
+
+| pair | before | after | |
+|---|---|---|---|
+| 1 | 12.6 tok/s | 13.1 | +4% |
+| 2 | 14.7 | 16.7 | +14% |
+| 3 | 13.3 | 14.6 | +10% |
+| mean | 13.5 | 14.8 | **+9%** |
+
+The traffic arithmetic promised up to 14% and three pairs do not say 14%: the
+machine was noisy that day — decode, whose code did not change, moved between
+12.5 and 16.2 tok/s across the same runs. Direction established, magnitude
+between 4% and 14%.
+
+`--verbose` still runs the projection on every prompt position, on purpose: the
+prompt perplexity it prints needs those logits. And `tt_prefill` is now the one
+entry point every prefill goes through — which is where the batch will land
+without any caller changing.
+
+## MEASURED — two ways of reading fewer bytes, tried on the container first
+
+Both would change the container, so neither got engine code before
+`Tests/analyze` said whether the bytes were there. It is the rule of
+[04](04-target-model.md) applied before the fact instead of after.
+
+### D18. `lm_head` with a shortlist
+
+The projection reads 154,880 rows to keep a handful. Split every int8 code into
+its top `b` bits and the rest; a coarse pass over the top bits, plus a bound on
+what the rest can add, rules rows out, and only the survivors are rescored
+exactly — same kernel, same token.
+
+The bound that needs no assumption about the data is
+`c · Σ_g |scale_g| · Σ_{j∈g} |x_j|`. Rows left to rescore, of 154,880, over 24
+real hidden states:
+
+| top bits | rigorous, mean | rigorous, worst | 6-sigma band (not exact) |
+|---|---|---|---|
+| 4 | 154,838 | 154,880 | 114 |
+| 5 | 29,220 | 154,878 | 15 |
+| 6 | 1,126 | 23,623 | 3 |
+
+**The exact version does not pay.** Its best point is 5 bits: 241 MB against
+337, about 4% of the decode traffic, for a new container layout and a second
+kernel. The reason is in the last column of the tool's output: the real error is
+**2% of the rigorous bound**. A guarantee has to allow every low bit to line up
+with the activation, across 2,048 dimensions; in the data they cancel.
+
+The statistical band is where the bytes are — 114 rows at 4 bits, roughly 6–7%
+of the traffic — and it is **not exact**: the token still comes from an exact
+rescoring, but the true argmax can fall outside the list. That is an output
+change by the criterion of [15](15-kernels-and-numerics.md), and adopting it is
+not a decision an optimisation gets to take. It stays measured and unbuilt.
+
+The tool checks itself on every row of every sample: the bound was never
+violated and the true argmax was never outside the rigorous list.
+
+### D19. Experts as a common base plus a small difference
+
+A token reads 4 of 64 experts per layer. Were the experts of a layer close to
+each other, the layer could store their mean once and each expert as a narrow
+delta.
+
+They are not. `residual = Σ_e |W_e − mean|² / Σ_e |W_e|²`, 256 rows per matrix,
+every MoE layer:
+
+| | gate | up | down | 64 unrelated matrices |
+|---|---|---|---|---|
+| residual | 0.9828 | 0.9844 | 0.9844 | 0.9844 |
+
+A delta would need 0.012 fewer bits per weight than the 4 it has, and the base
+would have to be read on top: **+25%** of the routed-expert traffic, not less.
+The only trace of structure is `gate_proj` in the last layers (0.980 at layer
+46), far too little to use.
+
+The comparison is entry by entry, so it is blind to experts that are equal up to
+a permutation of their hidden units. What it rules out is the cheap encoding,
+not the possibility that two experts compute similar things.
+
+### What `Tests/route` adds to that picture
+
+The same token does not take the same path. Ten prompts, each in a fresh
+context, 645 tokens; every occurrence of an id compared with its occurrences in
+the other prompts (1,919 pairs) against pairs of different ids (185,246):
+
+| router of layer | experts in common, same id | different ids | identical set, same id |
+|---|---|---|---|
+| 1 | 2.39 of 4 | 0.35 | 11% |
+| 2 | 2.97 | 0.33 | 19% |
+| 20 | 0.97 | 0.59 | 3% |
+| 45 | 2.38 | 2.07 | 7% |
+
+The id decides the first layers, the context decides the middle, and the last
+layers are concentrated regardless of the token — two arbitrary tokens already
+share two of their four experts there. That last line is the one with a
+consequence: it is where a batched prefill shares the most expert reads. One run,
+ten Portuguese prompts, and the same-id pairs are mostly punctuation and function
+words; it is a first look, not a distribution.
 
 ## SETTLED — a measurement that added a subsystem
 

@@ -35,8 +35,10 @@ Each tool's `build.ps1` only delegates to `tools/shared/build-tool.ps1`, passing
 its own path — which is why the same script serves both trees.
 
 Today: `Tests/` has `ablate` (perplexity and ablation), `gentest` (generation
-quality), `bench` (time, memory, roofline) and `oracle` (the independent
-forward). `tools/` has `convert`, `agent` (the agentic client), `finetune`,
+quality), `bench` (time, memory, roofline), `oracle` (the independent
+forward), `mmbatch` (the batched matmul), `route` (which experts a token goes
+through, and how that varies with context) and `analyze` (whether a format
+change has bytes to save, measured before the format changes). `tools/` has `convert`, `agent` (the agentic client), `finetune`,
 `index` (corpus → `.ttindex`, the retrieval of `docs/13` D15), `ucd` (generates
 `src/unicode_tables.h`) and `fixture` (generates `src/fixture_kernels.h`).
 

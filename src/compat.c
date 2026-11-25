@@ -11,13 +11,16 @@
 #  include <windows.h>
 #  include <psapi.h>
 #  include <intrin.h>
+#  include <io.h>
 #else
 #  define _GNU_SOURCE
 #  include <pthread.h>
 #  include <sched.h>
 #  include <fcntl.h>
+#  include <dirent.h>
 #  include <sys/mman.h>
 #  include <sys/stat.h>
+#  include <sys/time.h>
 #  include <time.h>
 #  include <unistd.h>
 #endif
@@ -111,6 +114,112 @@ void tt_map_touch(const tt_map *m, size_t offset, size_t length)
     for (size_t i = 0; i < length; i += 4096) sink ^= p[i];
     sink ^= p[length - 1];
     (void)sink;
+}
+
+/* --------------------------------------------------------------- files */
+
+int tt_file_commit(void *stdio_file)
+{
+    FILE *f = (FILE *)stdio_file;
+    if (fflush(f) != 0) return -1;
+#if defined(TT_WINDOWS)
+    HANDLE h = (HANDLE)_get_osfhandle(_fileno(f));
+    if (h == INVALID_HANDLE_VALUE) return -1;
+    return FlushFileBuffers(h) ? 0 : -1;
+#else
+    return fsync(fileno(f));
+#endif
+}
+
+int tt_file_replace(const char *from, const char *to)
+{
+#if defined(TT_WINDOWS)
+    return MoveFileExA(from, to, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)
+           ? 0 : -1;
+#else
+    return rename(from, to);
+#endif
+}
+
+int tt_mkdir(const char *path)
+{
+#if defined(TT_WINDOWS)
+    if (CreateDirectoryA(path, NULL)) return 0;
+    return GetLastError() == ERROR_ALREADY_EXISTS ? 0 : -1;
+#else
+    if (mkdir(path, 0755) == 0) return 0;
+    struct stat st;
+    return (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) ? 0 : -1;
+#endif
+}
+
+int tt_rmdir(const char *path)
+{
+#if defined(TT_WINDOWS)
+    return RemoveDirectoryA(path) ? 0 : -1;
+#else
+    return rmdir(path);
+#endif
+}
+
+int tt_file_touch(const char *path)
+{
+#if defined(TT_WINDOWS)
+    HANDLE h = CreateFileA(path, FILE_WRITE_ATTRIBUTES,
+                           FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                           NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (h == INVALID_HANDLE_VALUE) return -1;
+    FILETIME now;
+    GetSystemTimeAsFileTime(&now);
+    const BOOL ok = SetFileTime(h, NULL, NULL, &now);
+    CloseHandle(h);
+    return ok ? 0 : -1;
+#else
+    return utimes(path, NULL);
+#endif
+}
+
+int tt_dir_list(const char *dir, tt_dir_fn fn, void *arg)
+{
+#if defined(TT_WINDOWS)
+    char pattern[1024];
+    if (snprintf(pattern, sizeof(pattern), "%s\\*", dir) >= (int)sizeof(pattern))
+        return -1;
+
+    WIN32_FIND_DATAA fd;
+    HANDLE h = FindFirstFileA(pattern, &fd);
+    if (h == INVALID_HANDLE_VALUE) return -1;
+    do {
+        if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
+        const uint64_t bytes = ((uint64_t)fd.nFileSizeHigh << 32) | fd.nFileSizeLow;
+        const int64_t  mtime = (int64_t)(((uint64_t)fd.ftLastWriteTime.dwHighDateTime << 32)
+                                         | fd.ftLastWriteTime.dwLowDateTime);
+        fn(arg, fd.cFileName, bytes, mtime);
+    } while (FindNextFileA(h, &fd));
+    FindClose(h);
+    return 0;
+#else
+    DIR *d = opendir(dir);
+    if (!d) return -1;
+    struct dirent *e;
+    while ((e = readdir(d)) != NULL) {
+        char full[1024];
+        if (snprintf(full, sizeof(full), "%s/%s", dir, e->d_name) >= (int)sizeof(full))
+            continue;
+        struct stat st;
+        if (stat(full, &st) != 0 || !S_ISREG(st.st_mode)) continue;
+        /* Nanoseconds where the platform has them: two files written in the
+         * same second still have to order. */
+        const int64_t mtime = (int64_t)st.st_mtime * 1000000000LL
+#  if defined(__linux__)
+                            + (int64_t)st.st_mtim.tv_nsec
+#  endif
+                            ;
+        fn(arg, e->d_name, (uint64_t)st.st_size, mtime);
+    }
+    closedir(d);
+    return 0;
+#endif
 }
 
 /* ------------------------------------------------------------- memoria */

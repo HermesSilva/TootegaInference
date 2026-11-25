@@ -280,8 +280,11 @@ int main(int argc, char **argv)
         tt_state_reset(&s);
 
         const double t0 = tt_now();
-        for (int64_t i = 0; i < o->n_prompt; i++)
-            if (tt_forward(&s, ids[i], NULL) != 0) break;
+        /* The same entry point the server and the chat use, so that what is
+         * timed here is the prefill that actually ships. */
+        if (tt_prefill(&s, ids, 0, o->n_prompt) != 0) {
+            fprintf(stderr, "erro: %s\n", tt_error()); return 1;
+        }
         o->prefill_s = tt_now() - t0;
 
         size_t w = 0;
@@ -289,7 +292,9 @@ int main(int argc, char **argv)
         const double t1 = tt_now();
 
         while (o->n_gen < n_new && o->n_prompt + o->n_gen < ctx - 1) {
-            const int32_t next = tt_sample(&sampler, s.logits, tk.n_tokens);
+            float *lg = tt_state_logits(&s);
+            if (!lg) { fprintf(stderr, "erro: logits obsoletos\n"); return 1; }
+            const int32_t next = tt_sample(&sampler, lg, tk.n_tokens);
 
             int done = 0;
             for (int k = 0; k < n_eos; k++) if (next == eos[k]) done = 1;

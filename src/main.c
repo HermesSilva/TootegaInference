@@ -442,7 +442,11 @@ static int cmd_generate(int argc, char **argv)
     for (int64_t i = 0; i < n_prompt + n_new; i++) {
         float *logits = NULL;
         const double t0 = tt_now();
-        if (tt_forward(&s, ids[i], &logits) != 0) { rc = -1; break; }
+        /* A prompt position with more prompt ahead predicts an id we already
+         * hold: it skips the vocabulary projection (see `tt_forward_prefill`). */
+        const int fail = (i + 1 < n_prompt) ? tt_forward_prefill(&s, ids[i])
+                                            : tt_forward(&s, ids[i], &logits);
+        if (fail) { rc = -1; break; }
         const double dt = tt_now() - t0;
         if (i < n_prompt) t_prefill += dt; else t_decode += dt;
 
@@ -630,9 +634,7 @@ static int cmd_chat(int argc, char **argv)
         total_cached += (uint64_t)reused;
 
         const double t0 = tt_now();
-        for (int64_t i = reused; i < n_conv; i++)
-            if (tt_forward(&s, conv[i], NULL) != 0) { rc = -1; break; }
-        if (rc) break;
+        if (tt_prefill(&s, conv, reused, n_conv) != 0) { rc = -1; break; }
         const double t_prefill = tt_now() - t0;
 
         fprintf(stderr, "[prefill %lld de %lld tokens, %lld do cache, %.2f s]\n",
@@ -644,7 +646,9 @@ static int cmd_chat(int argc, char **argv)
         int64_t made = 0;
         const double t1 = tt_now();
         while (made < n_new && n_conv < ctx) {
-            int32_t next = tt_sample(&sampler, s.logits, tk.n_tokens);
+            float *lg = tt_state_logits(&s);
+            if (!lg) { rc = tt_fail("sampling from a position that did not run lm_head"); break; }
+            int32_t next = tt_sample(&sampler, lg, tk.n_tokens);
 
             int done = 0;
             for (int k = 0; k < n_eos; k++) if (next == eos[k]) done = 1;
@@ -802,6 +806,7 @@ int tt_json_selftest(void);
 int tt_kernels_selftest(void);
 int tt_tokenizer_selftest(void);
 int tt_sample_selftest(void);
+int tt_kvstore_selftest(void);
 
 static int cmd_selftest(int argc, char **argv)
 {
@@ -813,6 +818,7 @@ static int cmd_selftest(int argc, char **argv)
         { "pool",      tt_pool_selftest      },
         { "tokenizer", tt_tokenizer_selftest },
         { "sample",    tt_sample_selftest    },
+        { "kvstore",   tt_kvstore_selftest   },
     };
 
     int failed = 0;

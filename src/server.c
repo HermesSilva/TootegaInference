@@ -6,6 +6,7 @@
 #include "forward.h"
 #include "json.h"
 #include "kernels.h"
+#include "kvstore.h"
 #include "model.h"
 #include "pool.h"
 #include "retrieve.h"
@@ -30,6 +31,11 @@
 #define CHAT_USER   "<|user|>"
 #define CHAT_ASSIST "<|assistant|>"
 #define CHAT_THINK  "<think>"
+
+/* The shortest fixed prefix worth a file.  Below it the prefill is a matter of
+ * seconds and the file would only be clutter: 256 positions are 28 MB in f32
+ * and under half a minute to recompute. */
+#define KV_MIN_PREFIX 256
 
 /* The model id in the protocol.  One place only: `/v1/models` and the replies
  * have to agree, or a client that validates the field rejects the answer. */
@@ -158,6 +164,20 @@ typedef struct {
 
     /* What `think` defaults to when the request does not say.  See handle_chat. */
     int       think_default;
+
+    /* The fixed prefix of the conversation just built: the template opening,
+     * the tool schemas and the leading system messages -- everything before the
+     * first turn that is not `system`.  It is what every request of a session
+     * repeats, and so what is worth keeping on disk (docs/12, section 4). */
+    int64_t   n_fixed;
+
+    /* The prefix cache on disk: NULL = off (`--no-kv-cache`, or a directory
+     * that could not be created).  The fingerprint is taken once, at start-up,
+     * and only when the cache is on.  `kv_budget` is the most the directory may
+     * hold; the least recently used prefix goes first. */
+    const char *kv_dir;
+    uint64_t    kv_fingerprint;
+    uint64_t    kv_budget;
 
     const char *key;         /* NULL when loopback only */
     uint64_t    served;
@@ -538,11 +558,21 @@ static int build_conversation(server *s, const tt_json *messages, int think,
     if (tools && tools->type == TT_JSON_ARRAY && tools->count &&
         append_tools(s, tools) != 0) return -1;
 
+    /* The fixed prefix ends where the first non-system message begins.  Until
+     * then `n_fixed` follows the conversation; after that it stays. */
+    int fixed_open = 1;
+    s->n_fixed = s->n_conv;
+
     for (const tt_json *m = messages->child; m; m = m->next) {
         const tt_json *role = tt_json_get(m, "role");
         const tt_json *content = tt_json_get(m, "content");
         size_t clen = 0;
         const char *ctext = tt_json_str(content, &clen);
+
+        if (fixed_open) {
+            if (tt_json_str_eq(role, "system")) { /* still inside it */ }
+            else { s->n_fixed = s->n_conv; fixed_open = 0; }
+        }
 
         /* Resultado de ferramenta: `<|observation|>` uma vez, um
          * `<tool_response>` por resultado.  E o unico papel em que a mensagem
@@ -620,6 +650,9 @@ static int build_conversation(server *s, const tt_json *messages, int think,
         /* Text AND calls in the same turn: the model explains, then calls. */
         if (calls && append_tool_calls(s, calls, dom) != 0) return -1;
     }
+
+    /* A request made only of system messages: the prefix is all of them. */
+    if (fixed_open) s->n_fixed = s->n_conv;
 
     if (append_text(s, CHAT_ASSIST) < 0) return -1;
 
@@ -898,7 +931,33 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
 
     /* Prefix matching: what is already in the KV is not computed again.
      * In a continued conversation only the new tokens enter the prefill. */
-    const int64_t reused = tt_state_match_prefix(s->state, s->conv, s->n_conv);
+    int64_t reused = tt_state_match_prefix(s->state, s->conv, s->n_conv);
+
+    /* The fixed prefix, from disk (docs/12, section 4).
+     *
+     * Only when memory does not already hold it: a continued conversation
+     * matches past it and never gets here.  It is the first request after a
+     * start, or after another session displaced the cache, that would
+     * otherwise recompute the system prompt and the tool schemas token by
+     * token.
+     *
+     * A prefix this engine prefills in a few seconds is not worth a file. */
+    char kv_file[1024];
+    int  kv_write = 0;
+    if (s->kv_dir && s->n_fixed >= KV_MIN_PREFIX && reused < s->n_fixed) {
+        tt_kv_path(kv_file, sizeof(kv_file), s->kv_dir, s->conv, s->n_fixed);
+        const double tk0 = tt_now();
+        if (tt_kv_load(s->state, kv_file, s->kv_fingerprint, s->conv,
+                       s->n_fixed) == s->n_fixed) {
+            tt_log("  kv cache  %lld positions of fixed prefix read from disk in "
+                   "%.2f s", (long long)s->n_fixed, tt_now() - tk0);
+        } else {
+            kv_write = 1;
+        }
+        /* Again in both cases: a load replaces the state, and a load that
+         * failed half way leaves it empty. */
+        reused = tt_state_match_prefix(s->state, s->conv, s->n_conv);
+    }
 
     /* Prompt perplexity, measured only over the RECOMPUTED part.
      *
@@ -909,7 +968,12 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
     pass_stats st_prompt = {0};
     const double t0 = tt_now();
     for (int64_t i = reused; i < s->n_conv; i++) {
-        if (tt_forward(s->state, s->conv[i], NULL) != 0) {
+        /* Only the last position is sampled from.  The others need their
+         * logits for one thing alone -- the prompt perplexity of `--verbose` --
+         * and without it they skip `lm_head`, 14% of the bytes a token reads. */
+        const int want = g_verbose || i + 1 == s->n_conv;
+        if ((want ? tt_forward(s->state, s->conv[i], NULL)
+                  : tt_forward_prefill(s->state, s->conv[i])) != 0) {
             tt_arena_free(&dom);
             send_json_error(c, 500, tt_error());
             return 0;
@@ -920,6 +984,33 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
                      s->conv[i + 1]);
     }
     const double t_prefill = tt_now() - t0;
+
+    /* Written now, before the first generated token, and not at the end of the
+     * request: the prefix is complete, causal attention means nothing that
+     * follows can change it, and a client that disconnects mid-answer does not
+     * cost the next start its cache.  The write is its own size once -- small
+     * next to the prefill that has just been paid. */
+    if (kv_write) {
+        const double tk0 = tt_now();
+        const uint64_t need = tt_kv_file_bytes(s->state, s->n_fixed);
+        int gone = 0;
+        char nb[32], bb[32];
+
+        /* Room first.  A prefix that does not fit even in an empty directory is
+         * not written at all -- it would evict everything and still be over. */
+        if (tt_kv_evict(s->kv_dir, s->kv_budget, need, &gone) != 0)
+            tt_log("  kv cache  not written: this prefix takes %s and the cache "
+                   "is limited to %s (--kv-cache-gb)",
+                   tt_bytes(nb, sizeof(nb), need),
+                   tt_bytes(bb, sizeof(bb), s->kv_budget));
+        else if (tt_kv_save(s->state, kv_file, s->kv_fingerprint, s->n_fixed) == 0)
+            tt_log("  kv cache  %lld positions of fixed prefix written in %.2f s "
+                   "(%s%s)", (long long)s->n_fixed, tt_now() - tk0,
+                   tt_bytes(nb, sizeof(nb), need),
+                   gone ? ", older prefixes evicted to make room" : "");
+        else
+            tt_log("  kv cache  not written: %s", tt_error());
+    }
 
     tt_log("  %lld tokens (%lld do cache) em %.2f s", (long long)s->n_conv,
            (long long)reused, t_prefill);
@@ -958,8 +1049,17 @@ static int handle_chat(server *s, const tt_socket *c, const request *r)
 
     pass_stats st_gen = {0};
     while (made < max_new && s->n_conv < s->ctx) {
-        const int32_t next = tt_sample(&sampler, s->state->logits, s->tok->n_tokens);
-        if (g_verbose) stat_add(&st_gen, s->state->logits, s->tok->n_tokens, next);
+        /* Through the guard, never `state->logits` directly: a position that
+         * ran without the projection -- a prefill pass, a prefix restored from
+         * disk -- has nothing to sample from, and the scratch still holds the
+         * distribution of some other position. */
+        float *lg = tt_state_logits(s->state);
+        if (!lg) {
+            tt_log("  BUG: sampling from a position that did not run lm_head");
+            break;
+        }
+        const int32_t next = tt_sample(&sampler, lg, s->tok->n_tokens);
+        if (g_verbose) stat_add(&st_gen, lg, s->tok->n_tokens, next);
         if (is_eos(s, next)) { hit_eos = 1; break; }
 
         const int64_t w = tt_decode(s->tok, &next, 1, piece, sizeof(piece) - 1);
@@ -1251,11 +1351,12 @@ static void handle(server *s, const tt_socket *c, const char *peer)
 int tt_cmd_serve(int argc, char **argv)
 {
     const char *path = NULL, *tok_path = NULL, *host = NULL, *key = NULL;
-    const char *index_path = NULL;
+    const char *index_path = NULL, *kv_dir = NULL;
     int n_passages = 3, passage_chars = 1400;
     /* -1 = decide from the index; 0 and 1 = the operator said so. */
     int think_default = -1;
-    int port = 8080, threads = 20, no_warm = 0;
+    int port = 8080, threads = 20, no_warm = 0, no_kv_cache = 0;
+    double kv_cache_gb = 8.0;
     int64_t ctx = 8192;
     double ram_gb = 0;
     /* KV precision used to be hard-coded to f32 here: the option existed in
@@ -1275,6 +1376,9 @@ int tt_cmd_serve(int argc, char **argv)
         else if (!strcmp(a, "--ram-gb") && has)    ram_gb = atof(argv[++i]);
         else if (!strcmp(a, "--no-warm"))          no_warm = 1;
         else if (!strcmp(a, "--index") && has)     index_path = argv[++i];
+        else if (!strcmp(a, "--kv-cache") && has)  kv_dir = argv[++i];
+        else if (!strcmp(a, "--no-kv-cache"))      no_kv_cache = 1;
+        else if (!strcmp(a, "--kv-cache-gb") && has) kv_cache_gb = atof(argv[++i]);
         else if (!strcmp(a, "--passages") && has)  n_passages = atoi(argv[++i]);
         else if (!strcmp(a, "--passage-chars") && has) passage_chars = atoi(argv[++i]);
         else if (!strcmp(a, "--think") && has) {
@@ -1295,7 +1399,9 @@ int tt_cmd_serve(int argc, char **argv)
     if (!path || !tok_path)
         return tt_fail("uso: tootega serve <modelo.tootega> --tokenizer "
                        "<tokenizer.json> [--port 8080] [--ctx 8192] "
-                       "[--kv-prec f32|bf16|int8] [--index <file.ttindex>] "
+                       "[--kv-prec f32|bf16|int8] [--kv-cache <dir>] "
+                       "[--kv-cache-gb 8] [--no-kv-cache] "
+                       "[--index <file.ttindex>] "
                        "[--passages 3] [--think on|off] [--verbose] [--no-warm]");
 
     if (n_passages < 1 || n_passages > MAX_PASSAGES)
@@ -1373,6 +1479,41 @@ int tt_cmd_serve(int argc, char **argv)
     s.passage_chars = passage_chars;
     s.think_default = think_default >= 0 ? think_default : (index_path ? 0 : 1);
     s.started = tt_now();
+
+    /* The cache directory is created now, and a directory that cannot be
+     * created turns the cache off with a line saying so -- not at the end of
+     * the first long prefill, when the write would fail. */
+    /* ON by default, next to the model: `<model dir>/.tootega/kv` (docs/12).
+     * It changes no bit of the output and costs nothing until a prefix of
+     * KV_MIN_PREFIX tokens shows up, so there is no reason to make the operator
+     * ask for it -- only to let them say where, how much, or no. */
+    static char kv_default[1024];
+    if (!no_kv_cache && kv_cache_gb > 0) {
+        int ok = 1;
+        if (!kv_dir) {
+            const char *slash = strrchr(path, '/');
+            const char *back  = strrchr(path, '\\');
+            if (back && (!slash || back > slash)) slash = back;
+            const int dlen = slash ? (int)(slash - path) : 1;
+            const char *dbase = slash ? path : ".";
+
+            ok = snprintf(kv_default, sizeof(kv_default), "%.*s/.tootega",
+                          dlen, dbase) < (int)sizeof(kv_default) - 4
+              && tt_mkdir(kv_default) == 0;
+            if (ok) {
+                strcat(kv_default, "/kv");
+                kv_dir = kv_default;
+            }
+        }
+        if (ok && tt_mkdir(kv_dir) == 0) {
+            s.kv_dir = kv_dir;
+            s.kv_budget = (uint64_t)(kv_cache_gb * 1e9);
+            s.kv_fingerprint = tt_model_fingerprint(&model);
+        } else {
+            tt_log("  kv cache  OFF: cannot create or open the directory %s",
+                   kv_dir ? kv_dir : kv_default);
+        }
+    }
     s.conv = (int32_t *)malloc((size_t)ctx * sizeof(int32_t));
 
     const tt_json *ej = tt_json_get(model.c.config, "eos_token_id");
@@ -1410,7 +1551,17 @@ int tt_cmd_serve(int argc, char **argv)
         tt_log("  search   none -- a container tuned for retrieval will answer "
                "from memory (docs/13, D15)");
     tt_log("  reason   %s by default", s.think_default ? "on" : "off");
-    tt_log("  one request at a time; the conversation does not survive the process");
+    if (s.kv_dir) {
+        char kb[32];
+        tt_log("  kv cache %s", s.kv_dir);
+        tt_log("           fixed prefixes of %d tokens or more, %s per position, "
+               "up to %s on disk", KV_MIN_PREFIX,
+               tt_bytes(b, sizeof(b), tt_kv_bytes(&model, 1)),
+               tt_bytes(kb, sizeof(kb), s.kv_budget));
+    } else {
+        tt_log("  kv cache off -- the fixed prefix is recomputed on every start");
+    }
+    tt_log("  one request at a time; only the fixed prefix survives the process");
     tt_log("");
 
     for (;;) {

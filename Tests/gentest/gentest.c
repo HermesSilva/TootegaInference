@@ -209,12 +209,13 @@ static int generate_all(run *r, const char *model_path, const st_file *bf16,
                         temp > 0.0f ? 40 : 0, seed + (uint64_t)p);
 
         tt_state_reset(&s);
-        for (int64_t i = 0; i < n_prompt; i++)
-            if (tt_forward(&s, ids[i], NULL) != 0) break;
+        if (tt_prefill(&s, ids, 0, n_prompt) != 0) { r->len[p] = 0; continue; }
 
         int made = 0, stopped = 0;
         while (made < n_new && n_prompt + made < ctx - 1) {
-            const int32_t next = tt_sample(&sampler, s.logits, tk->n_tokens);
+            float *lg = tt_state_logits(&s);
+            if (!lg) break;
+            const int32_t next = tt_sample(&sampler, lg, tk->n_tokens);
 
             int done = 0;
             for (int k = 0; k < n_eos; k++) if (next == eos[k]) done = 1;

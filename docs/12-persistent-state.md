@@ -87,6 +87,61 @@ A block is only reusable if the hash of the prefix up to it matches exactly.
 There is no partial match: either the block corresponds to that sequence, or it
 is ignored. That makes the class of bug we observed impossible.
 
+### What exists today — the default, and measured
+
+`src/kvstore.c`. `tootega serve` uses it without being asked.
+
+| | |
+|---|---|
+| what is stored | the **fixed prefix** of a request: template opening, tool schemas and the leading `system` messages — everything before the first turn that is not `system` |
+| where | `<model dir>/.tootega/kv/<hash of the token sequence>.ttkv`; `--kv-cache <dir>` puts it elsewhere, `--no-kv-cache` turns it off |
+| when it is written | once, right after the prefill that computed it and before the first generated token; prefixes shorter than 256 positions are not worth a file |
+| when it is read | when memory does not already hold that prefix: the first request after a start, or after another session displaced the cache |
+| refused unless | same token sequence (hash, then the ids themselves), same container fingerprint, same build id, same attention formulation, KV precision and shape — each refusal is one log line naming the field |
+| integrity | checksum over the payload; a file that fails after the cache was written to leaves the state **empty**, never half restored |
+| writing | temporary file, flushed to the device, renamed |
+| size | `--kv-cache-gb`, 8 by default. Before a write the least recently **used** files go until the new one fits — a load refreshes the file's time. A prefix larger than the whole budget is not written. Only `.ttkv` files are ever removed |
+
+Measured on the reference machine, container v4, f32 cache, a 587-token system
+prompt and a different question on each start:
+
+```
+first start, empty cache      599 tokens recomputed          file written in 0.05 s (60.6 MB)
+second start                  587 read from disk in 0.03 s,  12 recomputed   -> request in 3.3 s
+control, --no-kv-cache        599 tokens recomputed                          -> request in 38.6 s
+```
+
+**The reply of the second start is identical, byte for byte, to the control's**
+(temperature 0). That is the criterion, and the reason this could become the
+default: it is not an output change, so the 32/32 rule of
+[15](15-kernels-and-numerics.md) has nothing to authorise.
+
+Two honest limits of that measurement. It is one prefix of 587 tokens; the
+20k case in the table above is still arithmetic. And the read is 0.03 s for
+60 MB that the write had just left in the file cache — a cold read after a
+reboot pays the disk, which the estimate above puts at ~58 ms per GB.
+
+Two departures from the sketch at the top of this section, each deliberate:
+
+- **The file is read, not mapped.** The cache is written by every token that
+  follows; a mapping would dirty the file or be copied by page faults, 4 KB at a
+  time.
+- **The container fingerprint is a sample** — size, the whole index, and 256
+  bytes from the middle of every tensor — not a hash of 19 GB, which would cost
+  more than the prefill it saves on a short prefix.
+
+And one consequence of the integrity rules worth saying out loud: **the build id
+is part of the key, so rebuilding the engine invalidates every file.** They are
+rewritten under the same name the next time their prefix is computed. For a user
+that is invisible; for whoever is editing `src/` it means the first request
+after each build pays the prefill again.
+
+The 52.9 KB per position above assumed fp16; the default cache is f32, **108 KB
+per position**, so a 20k prefix is 2.2 GB on disk and not 1.06.
+
+`tootega selftest` covers the round trip in the three precisions, every refusal
+and the eviction order. Only the f32 cache has been through the server end to
+end; `chat` on the command line does not use the cache yet.
 ## Statistics: honesty about what is worth keeping
 
 The streaming engine persists a heat map — of which experts your workload routes

@@ -1,0 +1,1276 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 942 1566" width="942" height="1566" role="img" aria-labelledby="t d">
+<title id="t">Caminho de 3 tokens pelos blocos MLP do GLM-4.7-Flash</title>
+<desc id="d">Por token: 1 MLP densa, 46 experts compartilhados e 184 experts roteados (4 de 64 por camada). Entre os 3 tokens, 410 experts roteados distintos de 552 leituras.</desc>
+<style>
+  svg { color-scheme: light; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781; --grid:#e1e0d9; --axis:#c3c2b7;
+        --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --q1:#86b6ef; --q2:#2a78d6; --q3:#104281; --empty:#efeee9;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  @media (prefers-color-scheme: dark) {
+    svg { color-scheme: dark; --surface:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --muted:#898781; --grid:#2c2c2a; --axis:#383835;
+          --s1:#3987e5; --s2:#d95926; --s3:#199e70; --q1:#184f95; --q2:#3987e5; --q3:#9ec5f4; --empty:#242422; }
+  }
+  .bg{fill:var(--surface)} .h1{fill:var(--ink);font-size:20px;font-weight:600} .sub{fill:var(--ink2);font-size:13px}
+  .lab{fill:var(--ink);font-size:14px;font-weight:600} .note{fill:var(--ink2);font-size:12px} .tick{fill:var(--muted);font-size:11px}
+  .big{fill:var(--ink);font-size:26px;font-weight:600} .ax{stroke:var(--axis);stroke-width:1} .gl{stroke:var(--grid);stroke-width:1}
+  .e{fill:var(--empty)} .c1{fill:var(--s1)} .c2{fill:var(--s2)} .c3{fill:var(--s3)}
+  .q1{fill:var(--q1)} .q2{fill:var(--q2)} .q3{fill:var(--q3)}
+  rect.m:hover{stroke:var(--ink);stroke-width:1.5}
+</style>
+<rect class="bg" width="942" height="1566"/>
+<text class="h1" x="24" y="36">O caminho de 3 tokens pelos blocos MLP</text>
+<text class="sub" x="24" y="58">GLM-4.7-Flash, container v4, roteamento real do engine. Frase: &quot;A capital do Brasil&quot; — tokens 1 a 3.</text>
+<text class="big" x="24" y="100">1</text>
+<text class="lab" x="24" y="120" style="font-size:12px">MLP densa</text>
+<text class="note" x="24" y="136" style="font-size:11px">camada 0, sem roteador</text>
+<text class="big" x="200" y="100">46</text>
+<text class="lab" x="200" y="120" style="font-size:12px">experts compartilhados</text>
+<text class="note" x="200" y="136" style="font-size:11px">um por camada MoE</text>
+<text class="big" x="400" y="100">184</text>
+<text class="lab" x="400" y="120" style="font-size:12px">experts roteados</text>
+<text class="note" x="400" y="136" style="font-size:11px">4 de 64 por camada MoE</text>
+<text class="big" x="600" y="100">410 de 552</text>
+<text class="lab" x="600" y="120" style="font-size:12px">roteados distintos nos 3 tokens</text>
+<text class="note" x="600" y="136" style="font-size:11px">23 em três tokens, 96 em dois, 291 em um</text>
+<rect class="c1" x="24" y="192" width="12" height="12" rx="3"/>
+<text class="lab" x="44" y="203">&quot; capital&quot;</text>
+<text class="note" x="24" y="224">posição 1 · id 6722</text>
+<text class="note" x="24" y="248">184 experts roteados</text>
+<text class="note" x="24" y="265">122 só deste token</text>
+<text class="note" x="24" y="282">62 divididos com outro</text>
+<rect class="e" x="264" y="206" width="642" height="256" rx="2"/>
+<text class="tick" x="242" y="211" text-anchor="end">0</text>
+<text class="tick" x="242" y="275" text-anchor="end">16</text>
+<text class="tick" x="242" y="339" text-anchor="end">32</text>
+<text class="tick" x="242" y="403" text-anchor="end">48</text>
+<text class="tick" x="242" y="463" text-anchor="end">63</text>
+<text class="tick" x="242" y="198" text-anchor="end">compartilhado</text>
+<text class="tick" transform="translate(206,334) rotate(-90)" text-anchor="middle">expert roteado (0–63)</text>
+<line class="ax" x1="250" x2="908" y1="466.5" y2="466.5"/>
+<text class="tick" x="256" y="481" text-anchor="middle">0</text>
+<text class="tick" x="396" y="481" text-anchor="middle">10</text>
+<text class="tick" x="536" y="481" text-anchor="middle">20</text>
+<text class="tick" x="676" y="481" text-anchor="middle">30</text>
+<text class="tick" x="816" y="481" text-anchor="middle">40</text>
+<text class="tick" x="900" y="481" text-anchor="middle">46</text>
+<rect class="m c1" x="250" y="190" width="12" height="272" rx="3"><title>token &quot; capital&quot; — camada 0: MLP densa (10240 de largura), sem roteador</title></rect>
+<rect class="m c1" x="264" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 1: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="278" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 2: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="292" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 3: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="306" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 4: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="320" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 5: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="334" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 6: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="348" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 7: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="362" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 8: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="376" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 9: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="390" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 10: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="404" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 11: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="418" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 12: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="432" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 13: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="446" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 14: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="460" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 15: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="474" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 16: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="488" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 17: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="502" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 18: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="516" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 19: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="530" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 20: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="544" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 21: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="558" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 22: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="572" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 23: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="586" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 24: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="600" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 25: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="614" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 26: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="628" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 27: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="642" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 28: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="656" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 29: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="670" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 30: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="684" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 31: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="698" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 32: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="712" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 33: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="726" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 34: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="740" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 35: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="754" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 36: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="768" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 37: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="782" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 38: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="796" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 39: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="810" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 40: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="824" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 41: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="838" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 42: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="852" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 43: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="866" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 44: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="880" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 45: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="894" y="190" width="12" height="9" rx="2"><title>token &quot; capital&quot; — camada 46: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c1" x="264" y="222" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 1, expert 4, peso 0.658</title></rect>
+<rect class="m c1" x="264" y="374" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 1, expert 42, peso 0.075</title></rect>
+<rect class="m c1" x="264" y="406" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 1, expert 50, peso 0.074</title></rect>
+<rect class="m c1" x="264" y="442" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 1, expert 59, peso 0.993</title></rect>
+<rect class="m c1" x="278" y="378" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 2, expert 43, peso 0.082</title></rect>
+<rect class="m c1" x="278" y="430" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 2, expert 56, peso 0.176</title></rect>
+<rect class="m c1" x="278" y="438" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 2, expert 58, peso 0.079</title></rect>
+<rect class="m c1" x="278" y="450" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 2, expert 61, peso 1.462</title></rect>
+<rect class="m c1" x="292" y="322" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 3, expert 29, peso 0.141</title></rect>
+<rect class="m c1" x="292" y="326" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 3, expert 30, peso 0.132</title></rect>
+<rect class="m c1" x="292" y="350" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 3, expert 36, peso 0.150</title></rect>
+<rect class="m c1" x="292" y="446" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 3, expert 60, peso 1.378</title></rect>
+<rect class="m c1" x="306" y="322" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 4, expert 29, peso 0.347</title></rect>
+<rect class="m c1" x="306" y="394" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 4, expert 47, peso 0.216</title></rect>
+<rect class="m c1" x="306" y="410" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 4, expert 51, peso 0.391</title></rect>
+<rect class="m c1" x="306" y="458" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 4, expert 63, peso 0.847</title></rect>
+<rect class="m c1" x="320" y="206" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 5, expert 0, peso 0.301</title></rect>
+<rect class="m c1" x="320" y="254" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 5, expert 12, peso 0.309</title></rect>
+<rect class="m c1" x="320" y="338" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 5, expert 33, peso 0.671</title></rect>
+<rect class="m c1" x="320" y="442" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 5, expert 59, peso 0.519</title></rect>
+<rect class="m c1" x="334" y="254" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 6, expert 12, peso 0.266</title></rect>
+<rect class="m c1" x="334" y="310" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 6, expert 26, peso 0.420</title></rect>
+<rect class="m c1" x="334" y="378" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 6, expert 43, peso 0.338</title></rect>
+<rect class="m c1" x="334" y="430" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 6, expert 56, peso 0.776</title></rect>
+<rect class="m c1" x="348" y="410" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 7, expert 51, peso 0.371</title></rect>
+<rect class="m c1" x="348" y="414" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 7, expert 52, peso 0.253</title></rect>
+<rect class="m c1" x="348" y="438" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 7, expert 58, peso 0.274</title></rect>
+<rect class="m c1" x="348" y="450" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 7, expert 61, peso 0.903</title></rect>
+<rect class="m c1" x="362" y="310" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 8, expert 26, peso 0.434</title></rect>
+<rect class="m c1" x="362" y="318" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 8, expert 28, peso 0.406</title></rect>
+<rect class="m c1" x="362" y="334" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 8, expert 32, peso 0.661</title></rect>
+<rect class="m c1" x="362" y="386" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 8, expert 45, peso 0.298</title></rect>
+<rect class="m c1" x="376" y="262" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 9, expert 14, peso 0.688</title></rect>
+<rect class="m c1" x="376" y="286" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 9, expert 20, peso 0.436</title></rect>
+<rect class="m c1" x="376" y="290" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 9, expert 21, peso 0.346</title></rect>
+<rect class="m c1" x="376" y="362" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 9, expert 39, peso 0.330</title></rect>
+<rect class="m c1" x="390" y="302" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 10, expert 24, peso 0.494</title></rect>
+<rect class="m c1" x="390" y="306" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 10, expert 25, peso 0.275</title></rect>
+<rect class="m c1" x="390" y="330" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 10, expert 31, peso 0.297</title></rect>
+<rect class="m c1" x="390" y="358" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 10, expert 38, peso 0.734</title></rect>
+<rect class="m c1" x="404" y="226" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 11, expert 5, peso 0.605</title></rect>
+<rect class="m c1" x="404" y="254" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 11, expert 12, peso 0.468</title></rect>
+<rect class="m c1" x="404" y="402" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 11, expert 49, peso 0.343</title></rect>
+<rect class="m c1" x="404" y="450" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 11, expert 61, peso 0.385</title></rect>
+<rect class="m c1" x="418" y="214" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 12, expert 2, peso 0.198</title></rect>
+<rect class="m c1" x="418" y="418" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 12, expert 53, peso 1.058</title></rect>
+<rect class="m c1" x="418" y="422" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 12, expert 54, peso 0.229</title></rect>
+<rect class="m c1" x="418" y="434" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 12, expert 57, peso 0.315</title></rect>
+<rect class="m c1" x="432" y="234" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 13, expert 7, peso 0.283</title></rect>
+<rect class="m c1" x="432" y="290" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 13, expert 21, peso 0.403</title></rect>
+<rect class="m c1" x="432" y="326" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 13, expert 30, peso 0.495</title></rect>
+<rect class="m c1" x="432" y="442" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 13, expert 59, peso 0.619</title></rect>
+<rect class="m c1" x="446" y="254" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 14, expert 12, peso 0.152</title></rect>
+<rect class="m c1" x="446" y="346" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 14, expert 35, peso 0.527</title></rect>
+<rect class="m c1" x="446" y="358" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 14, expert 38, peso 0.143</title></rect>
+<rect class="m c1" x="446" y="366" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 14, expert 40, peso 0.978</title></rect>
+<rect class="m c1" x="460" y="286" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 15, expert 20, peso 0.901</title></rect>
+<rect class="m c1" x="460" y="322" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 15, expert 29, peso 0.326</title></rect>
+<rect class="m c1" x="460" y="330" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 15, expert 31, peso 0.273</title></rect>
+<rect class="m c1" x="460" y="414" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 15, expert 52, peso 0.300</title></rect>
+<rect class="m c1" x="474" y="222" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 16, expert 4, peso 0.570</title></rect>
+<rect class="m c1" x="474" y="338" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 16, expert 33, peso 0.507</title></rect>
+<rect class="m c1" x="474" y="342" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 16, expert 34, peso 0.348</title></rect>
+<rect class="m c1" x="474" y="362" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 16, expert 39, peso 0.375</title></rect>
+<rect class="m c1" x="488" y="346" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 17, expert 35, peso 0.318</title></rect>
+<rect class="m c1" x="488" y="358" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 17, expert 38, peso 0.281</title></rect>
+<rect class="m c1" x="488" y="370" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 17, expert 41, peso 0.616</title></rect>
+<rect class="m c1" x="488" y="418" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 17, expert 53, peso 0.585</title></rect>
+<rect class="m c1" x="502" y="254" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 18, expert 12, peso 0.314</title></rect>
+<rect class="m c1" x="502" y="282" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 18, expert 19, peso 0.407</title></rect>
+<rect class="m c1" x="502" y="366" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 18, expert 40, peso 0.456</title></rect>
+<rect class="m c1" x="502" y="454" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 18, expert 62, peso 0.623</title></rect>
+<rect class="m c1" x="516" y="338" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 19, expert 33, peso 0.324</title></rect>
+<rect class="m c1" x="516" y="342" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 19, expert 34, peso 0.353</title></rect>
+<rect class="m c1" x="516" y="374" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 19, expert 42, peso 0.406</title></rect>
+<rect class="m c1" x="516" y="398" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 19, expert 48, peso 0.717</title></rect>
+<rect class="m c1" x="530" y="318" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 20, expert 28, peso 0.278</title></rect>
+<rect class="m c1" x="530" y="406" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 20, expert 50, peso 0.928</title></rect>
+<rect class="m c1" x="530" y="410" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 20, expert 51, peso 0.170</title></rect>
+<rect class="m c1" x="530" y="426" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 20, expert 55, peso 0.425</title></rect>
+<rect class="m c1" x="544" y="274" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 21, expert 17, peso 0.329</title></rect>
+<rect class="m c1" x="544" y="286" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 21, expert 20, peso 0.775</title></rect>
+<rect class="m c1" x="544" y="326" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 21, expert 30, peso 0.336</title></rect>
+<rect class="m c1" x="544" y="438" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 21, expert 58, peso 0.360</title></rect>
+<rect class="m c1" x="558" y="234" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 22, expert 7, peso 0.493</title></rect>
+<rect class="m c1" x="558" y="278" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 22, expert 18, peso 0.265</title></rect>
+<rect class="m c1" x="558" y="302" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 22, expert 24, peso 0.542</title></rect>
+<rect class="m c1" x="558" y="374" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 22, expert 42, peso 0.500</title></rect>
+<rect class="m c1" x="572" y="282" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 23, expert 19, peso 0.458</title></rect>
+<rect class="m c1" x="572" y="350" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 23, expert 36, peso 0.364</title></rect>
+<rect class="m c1" x="572" y="406" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 23, expert 50, peso 0.406</title></rect>
+<rect class="m c1" x="572" y="454" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 23, expert 62, peso 0.572</title></rect>
+<rect class="m c1" x="586" y="254" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 24, expert 12, peso 0.353</title></rect>
+<rect class="m c1" x="586" y="286" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 24, expert 20, peso 0.525</title></rect>
+<rect class="m c1" x="586" y="326" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 24, expert 30, peso 0.567</title></rect>
+<rect class="m c1" x="586" y="402" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 24, expert 49, peso 0.356</title></rect>
+<rect class="m c1" x="600" y="294" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 25, expert 22, peso 0.320</title></rect>
+<rect class="m c1" x="600" y="410" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 25, expert 51, peso 0.322</title></rect>
+<rect class="m c1" x="600" y="418" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 25, expert 53, peso 0.872</title></rect>
+<rect class="m c1" x="600" y="454" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 25, expert 62, peso 0.286</title></rect>
+<rect class="m c1" x="614" y="250" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 26, expert 11, peso 0.361</title></rect>
+<rect class="m c1" x="614" y="254" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 26, expert 12, peso 0.552</title></rect>
+<rect class="m c1" x="614" y="374" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 26, expert 42, peso 0.641</title></rect>
+<rect class="m c1" x="614" y="394" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 26, expert 47, peso 0.246</title></rect>
+<rect class="m c1" x="628" y="214" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 27, expert 2, peso 0.563</title></rect>
+<rect class="m c1" x="628" y="254" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 27, expert 12, peso 0.605</title></rect>
+<rect class="m c1" x="628" y="310" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 27, expert 26, peso 0.347</title></rect>
+<rect class="m c1" x="628" y="390" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 27, expert 46, peso 0.285</title></rect>
+<rect class="m c1" x="642" y="234" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 28, expert 7, peso 0.644</title></rect>
+<rect class="m c1" x="642" y="350" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 28, expert 36, peso 0.410</title></rect>
+<rect class="m c1" x="642" y="422" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 28, expert 54, peso 0.348</title></rect>
+<rect class="m c1" x="642" y="450" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 28, expert 61, peso 0.398</title></rect>
+<rect class="m c1" x="656" y="246" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 29, expert 10, peso 0.990</title></rect>
+<rect class="m c1" x="656" y="306" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 29, expert 25, peso 0.211</title></rect>
+<rect class="m c1" x="656" y="322" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 29, expert 29, peso 0.299</title></rect>
+<rect class="m c1" x="656" y="398" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 29, expert 48, peso 0.300</title></rect>
+<rect class="m c1" x="670" y="222" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 30, expert 4, peso 0.248</title></rect>
+<rect class="m c1" x="670" y="246" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 30, expert 10, peso 0.863</title></rect>
+<rect class="m c1" x="670" y="430" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 30, expert 56, peso 0.224</title></rect>
+<rect class="m c1" x="670" y="438" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 30, expert 58, peso 0.465</title></rect>
+<rect class="m c1" x="684" y="242" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 31, expert 9, peso 0.382</title></rect>
+<rect class="m c1" x="684" y="250" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 31, expert 11, peso 0.516</title></rect>
+<rect class="m c1" x="684" y="322" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 31, expert 29, peso 0.510</title></rect>
+<rect class="m c1" x="684" y="454" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 31, expert 62, peso 0.393</title></rect>
+<rect class="m c1" x="698" y="222" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 32, expert 4, peso 0.482</title></rect>
+<rect class="m c1" x="698" y="306" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 32, expert 25, peso 0.770</title></rect>
+<rect class="m c1" x="698" y="310" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 32, expert 26, peso 0.266</title></rect>
+<rect class="m c1" x="698" y="430" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 32, expert 56, peso 0.282</title></rect>
+<rect class="m c1" x="712" y="214" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 33, expert 2, peso 0.378</title></rect>
+<rect class="m c1" x="712" y="250" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 33, expert 11, peso 0.229</title></rect>
+<rect class="m c1" x="712" y="314" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 33, expert 27, peso 0.957</title></rect>
+<rect class="m c1" x="712" y="350" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 33, expert 36, peso 0.236</title></rect>
+<rect class="m c1" x="726" y="282" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 34, expert 19, peso 0.570</title></rect>
+<rect class="m c1" x="726" y="338" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 34, expert 33, peso 0.210</title></rect>
+<rect class="m c1" x="726" y="358" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 34, expert 38, peso 0.596</title></rect>
+<rect class="m c1" x="726" y="406" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 34, expert 50, peso 0.424</title></rect>
+<rect class="m c1" x="740" y="282" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 35, expert 19, peso 0.412</title></rect>
+<rect class="m c1" x="740" y="286" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 35, expert 20, peso 0.471</title></rect>
+<rect class="m c1" x="740" y="442" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 35, expert 59, peso 0.340</title></rect>
+<rect class="m c1" x="740" y="446" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 35, expert 60, peso 0.577</title></rect>
+<rect class="m c1" x="754" y="294" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 36, expert 22, peso 0.540</title></rect>
+<rect class="m c1" x="754" y="338" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 36, expert 33, peso 0.202</title></rect>
+<rect class="m c1" x="754" y="366" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 36, expert 40, peso 0.265</title></rect>
+<rect class="m c1" x="754" y="406" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 36, expert 50, peso 0.793</title></rect>
+<rect class="m c1" x="768" y="238" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 37, expert 8, peso 0.435</title></rect>
+<rect class="m c1" x="768" y="334" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 37, expert 32, peso 0.416</title></rect>
+<rect class="m c1" x="768" y="362" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 37, expert 39, peso 0.671</title></rect>
+<rect class="m c1" x="768" y="454" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 37, expert 62, peso 0.277</title></rect>
+<rect class="m c1" x="782" y="262" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 38, expert 14, peso 0.784</title></rect>
+<rect class="m c1" x="782" y="374" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 38, expert 42, peso 0.545</title></rect>
+<rect class="m c1" x="782" y="382" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 38, expert 44, peso 0.254</title></rect>
+<rect class="m c1" x="782" y="442" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 38, expert 59, peso 0.216</title></rect>
+<rect class="m c1" x="796" y="214" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 39, expert 2, peso 0.371</title></rect>
+<rect class="m c1" x="796" y="242" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 39, expert 9, peso 0.180</title></rect>
+<rect class="m c1" x="796" y="318" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 39, expert 28, peso 0.305</title></rect>
+<rect class="m c1" x="796" y="442" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 39, expert 59, peso 0.945</title></rect>
+<rect class="m c1" x="810" y="278" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 40, expert 18, peso 0.377</title></rect>
+<rect class="m c1" x="810" y="326" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 40, expert 30, peso 0.944</title></rect>
+<rect class="m c1" x="810" y="386" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 40, expert 45, peso 0.213</title></rect>
+<rect class="m c1" x="810" y="430" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 40, expert 56, peso 0.266</title></rect>
+<rect class="m c1" x="824" y="278" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 41, expert 18, peso 0.547</title></rect>
+<rect class="m c1" x="824" y="318" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 41, expert 28, peso 0.399</title></rect>
+<rect class="m c1" x="824" y="362" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 41, expert 39, peso 0.454</title></rect>
+<rect class="m c1" x="824" y="426" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 41, expert 55, peso 0.401</title></rect>
+<rect class="m c1" x="838" y="218" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 42, expert 3, peso 0.160</title></rect>
+<rect class="m c1" x="838" y="230" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 42, expert 6, peso 0.180</title></rect>
+<rect class="m c1" x="838" y="330" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 42, expert 31, peso 0.894</title></rect>
+<rect class="m c1" x="838" y="438" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 42, expert 58, peso 0.566</title></rect>
+<rect class="m c1" x="852" y="290" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 43, expert 21, peso 0.302</title></rect>
+<rect class="m c1" x="852" y="370" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 43, expert 41, peso 0.405</title></rect>
+<rect class="m c1" x="852" y="398" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 43, expert 48, peso 0.489</title></rect>
+<rect class="m c1" x="852" y="402" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 43, expert 49, peso 0.605</title></rect>
+<rect class="m c1" x="866" y="214" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 44, expert 2, peso 0.249</title></rect>
+<rect class="m c1" x="866" y="246" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 44, expert 10, peso 0.413</title></rect>
+<rect class="m c1" x="866" y="330" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 44, expert 31, peso 0.542</title></rect>
+<rect class="m c1" x="866" y="426" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 44, expert 55, peso 0.596</title></rect>
+<rect class="m c1" x="880" y="286" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 45, expert 20, peso 0.573</title></rect>
+<rect class="m c1" x="880" y="362" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 45, expert 39, peso 0.392</title></rect>
+<rect class="m c1" x="880" y="410" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 45, expert 51, peso 0.371</title></rect>
+<rect class="m c1" x="880" y="454" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 45, expert 62, peso 0.465</title></rect>
+<rect class="m c1" x="894" y="218" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 46, expert 3, peso 0.574</title></rect>
+<rect class="m c1" x="894" y="270" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 46, expert 16, peso 0.662</title></rect>
+<rect class="m c1" x="894" y="306" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 46, expert 25, peso 0.235</title></rect>
+<rect class="m c1" x="894" y="326" width="12" height="3.2" rx="1.2"><title>token &quot; capital&quot; — camada 46, expert 30, peso 0.330</title></rect>
+<rect class="c2" x="24" y="526" width="12" height="12" rx="3"/>
+<text class="lab" x="44" y="537">&quot; do&quot;</text>
+<text class="note" x="24" y="558">posição 2 · id 653</text>
+<text class="note" x="24" y="582">184 experts roteados</text>
+<text class="note" x="24" y="599">86 só deste token</text>
+<text class="note" x="24" y="616">98 divididos com outro</text>
+<rect class="e" x="264" y="540" width="642" height="256" rx="2"/>
+<text class="tick" x="242" y="545" text-anchor="end">0</text>
+<text class="tick" x="242" y="609" text-anchor="end">16</text>
+<text class="tick" x="242" y="673" text-anchor="end">32</text>
+<text class="tick" x="242" y="737" text-anchor="end">48</text>
+<text class="tick" x="242" y="797" text-anchor="end">63</text>
+<text class="tick" x="242" y="532" text-anchor="end">compartilhado</text>
+<text class="tick" transform="translate(206,668) rotate(-90)" text-anchor="middle">expert roteado (0–63)</text>
+<line class="ax" x1="250" x2="908" y1="800.5" y2="800.5"/>
+<text class="tick" x="256" y="815" text-anchor="middle">0</text>
+<text class="tick" x="396" y="815" text-anchor="middle">10</text>
+<text class="tick" x="536" y="815" text-anchor="middle">20</text>
+<text class="tick" x="676" y="815" text-anchor="middle">30</text>
+<text class="tick" x="816" y="815" text-anchor="middle">40</text>
+<text class="tick" x="900" y="815" text-anchor="middle">46</text>
+<rect class="m c2" x="250" y="524" width="12" height="272" rx="3"><title>token &quot; do&quot; — camada 0: MLP densa (10240 de largura), sem roteador</title></rect>
+<rect class="m c2" x="264" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 1: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="278" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 2: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="292" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 3: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="306" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 4: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="320" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 5: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="334" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 6: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="348" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 7: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="362" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 8: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="376" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 9: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="390" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 10: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="404" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 11: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="418" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 12: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="432" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 13: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="446" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 14: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="460" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 15: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="474" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 16: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="488" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 17: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="502" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 18: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="516" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 19: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="530" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 20: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="544" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 21: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="558" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 22: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="572" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 23: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="586" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 24: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="600" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 25: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="614" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 26: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="628" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 27: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="642" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 28: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="656" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 29: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="670" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 30: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="684" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 31: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="698" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 32: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="712" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 33: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="726" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 34: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="740" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 35: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="754" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 36: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="768" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 37: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="782" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 38: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="796" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 39: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="810" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 40: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="824" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 41: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="838" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 42: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="852" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 43: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="866" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 44: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="880" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 45: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="894" y="524" width="12" height="9" rx="2"><title>token &quot; do&quot; — camada 46: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c2" x="264" y="564" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 1, expert 6, peso 0.328</title></rect>
+<rect class="m c2" x="264" y="704" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 1, expert 41, peso 0.887</title></rect>
+<rect class="m c2" x="264" y="712" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 1, expert 43, peso 0.303</title></rect>
+<rect class="m c2" x="264" y="776" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 1, expert 59, peso 0.283</title></rect>
+<rect class="m c2" x="278" y="548" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 2, expert 2, peso 0.481</title></rect>
+<rect class="m c2" x="278" y="692" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 2, expert 38, peso 0.460</title></rect>
+<rect class="m c2" x="278" y="788" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 2, expert 62, peso 0.528</title></rect>
+<rect class="m c2" x="278" y="792" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 2, expert 63, peso 0.331</title></rect>
+<rect class="m c2" x="292" y="564" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 3, expert 6, peso 0.205</title></rect>
+<rect class="m c2" x="292" y="580" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 3, expert 10, peso 0.728</title></rect>
+<rect class="m c2" x="292" y="696" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 3, expert 39, peso 0.611</title></rect>
+<rect class="m c2" x="292" y="720" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 3, expert 45, peso 0.256</title></rect>
+<rect class="m c2" x="306" y="572" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 4, expert 8, peso 0.737</title></rect>
+<rect class="m c2" x="306" y="632" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 4, expert 23, peso 0.376</title></rect>
+<rect class="m c2" x="306" y="668" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 4, expert 32, peso 0.326</title></rect>
+<rect class="m c2" x="306" y="740" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 4, expert 50, peso 0.362</title></rect>
+<rect class="m c2" x="320" y="588" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 5, expert 12, peso 0.678</title></rect>
+<rect class="m c2" x="320" y="604" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 5, expert 16, peso 0.363</title></rect>
+<rect class="m c2" x="320" y="628" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 5, expert 22, peso 0.486</title></rect>
+<rect class="m c2" x="320" y="672" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 5, expert 33, peso 0.273</title></rect>
+<rect class="m c2" x="334" y="600" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 6, expert 15, peso 0.787</title></rect>
+<rect class="m c2" x="334" y="652" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 6, expert 28, peso 0.294</title></rect>
+<rect class="m c2" x="334" y="684" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 6, expert 36, peso 0.327</title></rect>
+<rect class="m c2" x="334" y="744" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 6, expert 51, peso 0.392</title></rect>
+<rect class="m c2" x="348" y="552" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 7, expert 3, peso 1.121</title></rect>
+<rect class="m c2" x="348" y="716" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 7, expert 44, peso 0.237</title></rect>
+<rect class="m c2" x="348" y="720" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 7, expert 45, peso 0.214</title></rect>
+<rect class="m c2" x="348" y="756" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 7, expert 54, peso 0.227</title></rect>
+<rect class="m c2" x="362" y="544" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 8, expert 1, peso 0.342</title></rect>
+<rect class="m c2" x="362" y="548" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 8, expert 2, peso 0.882</title></rect>
+<rect class="m c2" x="362" y="644" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 8, expert 26, peso 0.294</title></rect>
+<rect class="m c2" x="362" y="652" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 8, expert 28, peso 0.281</title></rect>
+<rect class="m c2" x="376" y="572" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 9, expert 8, peso 0.580</title></rect>
+<rect class="m c2" x="376" y="584" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 9, expert 11, peso 0.273</title></rect>
+<rect class="m c2" x="376" y="628" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 9, expert 22, peso 0.297</title></rect>
+<rect class="m c2" x="376" y="636" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 9, expert 24, peso 0.650</title></rect>
+<rect class="m c2" x="390" y="620" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 10, expert 20, peso 0.258</title></rect>
+<rect class="m c2" x="390" y="656" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 10, expert 29, peso 0.349</title></rect>
+<rect class="m c2" x="390" y="692" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 10, expert 38, peso 0.450</title></rect>
+<rect class="m c2" x="390" y="780" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 10, expert 60, peso 0.743</title></rect>
+<rect class="m c2" x="404" y="624" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 11, expert 21, peso 0.334</title></rect>
+<rect class="m c2" x="404" y="684" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 11, expert 36, peso 0.612</title></rect>
+<rect class="m c2" x="404" y="720" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 11, expert 45, peso 0.174</title></rect>
+<rect class="m c2" x="404" y="764" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 11, expert 56, peso 0.680</title></rect>
+<rect class="m c2" x="418" y="736" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 12, expert 49, peso 0.556</title></rect>
+<rect class="m c2" x="418" y="752" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 12, expert 53, peso 0.592</title></rect>
+<rect class="m c2" x="418" y="768" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 12, expert 57, peso 0.546</title></rect>
+<rect class="m c2" x="418" y="792" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 12, expert 63, peso 0.105</title></rect>
+<rect class="m c2" x="432" y="596" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 13, expert 14, peso 0.236</title></rect>
+<rect class="m c2" x="432" y="616" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 13, expert 19, peso 0.186</title></rect>
+<rect class="m c2" x="432" y="664" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 13, expert 31, peso 1.118</title></rect>
+<rect class="m c2" x="432" y="776" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 13, expert 59, peso 0.260</title></rect>
+<rect class="m c2" x="446" y="548" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 14, expert 2, peso 0.339</title></rect>
+<rect class="m c2" x="446" y="664" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 14, expert 31, peso 0.535</title></rect>
+<rect class="m c2" x="446" y="680" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 14, expert 35, peso 0.493</title></rect>
+<rect class="m c2" x="446" y="700" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 14, expert 40, peso 0.433</title></rect>
+<rect class="m c2" x="460" y="552" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 15, expert 3, peso 0.271</title></rect>
+<rect class="m c2" x="460" y="652" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 15, expert 28, peso 0.603</title></rect>
+<rect class="m c2" x="460" y="672" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 15, expert 33, peso 0.635</title></rect>
+<rect class="m c2" x="460" y="764" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 15, expert 56, peso 0.291</title></rect>
+<rect class="m c2" x="474" y="556" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 16, expert 4, peso 0.682</title></rect>
+<rect class="m c2" x="474" y="648" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 16, expert 27, peso 0.293</title></rect>
+<rect class="m c2" x="474" y="676" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 16, expert 34, peso 0.260</title></rect>
+<rect class="m c2" x="474" y="788" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 16, expert 62, peso 0.565</title></rect>
+<rect class="m c2" x="488" y="584" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 17, expert 11, peso 0.328</title></rect>
+<rect class="m c2" x="488" y="648" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 17, expert 27, peso 0.352</title></rect>
+<rect class="m c2" x="488" y="680" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 17, expert 35, peso 0.656</title></rect>
+<rect class="m c2" x="488" y="752" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 17, expert 53, peso 0.464</title></rect>
+<rect class="m c2" x="502" y="616" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 18, expert 19, peso 0.491</title></rect>
+<rect class="m c2" x="502" y="652" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 18, expert 28, peso 0.446</title></rect>
+<rect class="m c2" x="502" y="700" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 18, expert 40, peso 0.501</title></rect>
+<rect class="m c2" x="502" y="788" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 18, expert 62, peso 0.362</title></rect>
+<rect class="m c2" x="516" y="564" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 19, expert 6, peso 0.342</title></rect>
+<rect class="m c2" x="516" y="708" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 19, expert 42, peso 0.687</title></rect>
+<rect class="m c2" x="516" y="756" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 19, expert 54, peso 0.340</title></rect>
+<rect class="m c2" x="516" y="780" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 19, expert 60, peso 0.431</title></rect>
+<rect class="m c2" x="530" y="568" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 20, expert 7, peso 0.446</title></rect>
+<rect class="m c2" x="530" y="740" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 20, expert 50, peso 0.132</title></rect>
+<rect class="m c2" x="530" y="744" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 20, expert 51, peso 0.457</title></rect>
+<rect class="m c2" x="530" y="784" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 20, expert 61, peso 0.764</title></rect>
+<rect class="m c2" x="544" y="608" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 21, expert 17, peso 0.590</title></rect>
+<rect class="m c2" x="544" y="616" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 21, expert 19, peso 0.796</title></rect>
+<rect class="m c2" x="544" y="620" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 21, expert 20, peso 0.219</title></rect>
+<rect class="m c2" x="544" y="660" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 21, expert 30, peso 0.196</title></rect>
+<rect class="m c2" x="558" y="568" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 22, expert 7, peso 0.376</title></rect>
+<rect class="m c2" x="558" y="572" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 22, expert 8, peso 0.391</title></rect>
+<rect class="m c2" x="558" y="612" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 22, expert 18, peso 0.526</title></rect>
+<rect class="m c2" x="558" y="708" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 22, expert 42, peso 0.507</title></rect>
+<rect class="m c2" x="572" y="548" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 23, expert 2, peso 0.358</title></rect>
+<rect class="m c2" x="572" y="576" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 23, expert 9, peso 0.338</title></rect>
+<rect class="m c2" x="572" y="740" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 23, expert 50, peso 0.761</title></rect>
+<rect class="m c2" x="572" y="788" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 23, expert 62, peso 0.342</title></rect>
+<rect class="m c2" x="586" y="620" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 24, expert 20, peso 0.372</title></rect>
+<rect class="m c2" x="586" y="648" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 24, expert 27, peso 0.365</title></rect>
+<rect class="m c2" x="586" y="660" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 24, expert 30, peso 0.703</title></rect>
+<rect class="m c2" x="586" y="716" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 24, expert 44, peso 0.359</title></rect>
+<rect class="m c2" x="600" y="568" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 25, expert 7, peso 0.908</title></rect>
+<rect class="m c2" x="600" y="656" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 25, expert 29, peso 0.262</title></rect>
+<rect class="m c2" x="600" y="684" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 25, expert 36, peso 0.286</title></rect>
+<rect class="m c2" x="600" y="756" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 25, expert 54, peso 0.344</title></rect>
+<rect class="m c2" x="614" y="588" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 26, expert 12, peso 0.798</title></rect>
+<rect class="m c2" x="614" y="604" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 26, expert 16, peso 0.178</title></rect>
+<rect class="m c2" x="614" y="648" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 26, expert 27, peso 0.603</title></rect>
+<rect class="m c2" x="614" y="700" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 26, expert 40, peso 0.221</title></rect>
+<rect class="m c2" x="628" y="672" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 27, expert 33, peso 0.364</title></rect>
+<rect class="m c2" x="628" y="724" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 27, expert 46, peso 0.791</title></rect>
+<rect class="m c2" x="628" y="752" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 27, expert 53, peso 0.288</title></rect>
+<rect class="m c2" x="628" y="776" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 27, expert 59, peso 0.357</title></rect>
+<rect class="m c2" x="642" y="568" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 28, expert 7, peso 0.467</title></rect>
+<rect class="m c2" x="642" y="644" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 28, expert 26, peso 0.158</title></rect>
+<rect class="m c2" x="642" y="732" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 28, expert 48, peso 0.688</title></rect>
+<rect class="m c2" x="642" y="784" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 28, expert 61, peso 0.487</title></rect>
+<rect class="m c2" x="656" y="588" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 29, expert 12, peso 0.512</title></rect>
+<rect class="m c2" x="656" y="680" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 29, expert 35, peso 0.682</title></rect>
+<rect class="m c2" x="656" y="732" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 29, expert 48, peso 0.455</title></rect>
+<rect class="m c2" x="656" y="776" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 29, expert 59, peso 0.151</title></rect>
+<rect class="m c2" x="670" y="544" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 30, expert 1, peso 0.422</title></rect>
+<rect class="m c2" x="670" y="592" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 30, expert 13, peso 0.241</title></rect>
+<rect class="m c2" x="670" y="752" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 30, expert 53, peso 0.945</title></rect>
+<rect class="m c2" x="670" y="756" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 30, expert 54, peso 0.192</title></rect>
+<rect class="m c2" x="684" y="580" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 31, expert 10, peso 0.463</title></rect>
+<rect class="m c2" x="684" y="588" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 31, expert 12, peso 0.254</title></rect>
+<rect class="m c2" x="684" y="712" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 31, expert 43, peso 0.654</title></rect>
+<rect class="m c2" x="684" y="788" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 31, expert 62, peso 0.428</title></rect>
+<rect class="m c2" x="698" y="564" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 32, expert 6, peso 0.526</title></rect>
+<rect class="m c2" x="698" y="648" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 32, expert 27, peso 0.428</title></rect>
+<rect class="m c2" x="698" y="736" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 32, expert 49, peso 0.458</title></rect>
+<rect class="m c2" x="698" y="784" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 32, expert 61, peso 0.387</title></rect>
+<rect class="m c2" x="712" y="672" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 33, expert 33, peso 0.234</title></rect>
+<rect class="m c2" x="712" y="676" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 33, expert 34, peso 0.688</title></rect>
+<rect class="m c2" x="712" y="692" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 33, expert 38, peso 0.266</title></rect>
+<rect class="m c2" x="712" y="696" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 33, expert 39, peso 0.612</title></rect>
+<rect class="m c2" x="726" y="552" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 34, expert 3, peso 0.297</title></rect>
+<rect class="m c2" x="726" y="588" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 34, expert 12, peso 0.651</title></rect>
+<rect class="m c2" x="726" y="652" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 34, expert 28, peso 0.535</title></rect>
+<rect class="m c2" x="726" y="764" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 34, expert 56, peso 0.317</title></rect>
+<rect class="m c2" x="740" y="544" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 35, expert 1, peso 0.706</title></rect>
+<rect class="m c2" x="740" y="684" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 35, expert 36, peso 0.229</title></rect>
+<rect class="m c2" x="740" y="700" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 35, expert 40, peso 0.254</title></rect>
+<rect class="m c2" x="740" y="712" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 35, expert 43, peso 0.611</title></rect>
+<rect class="m c2" x="754" y="540" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 36, expert 0, peso 0.643</title></rect>
+<rect class="m c2" x="754" y="560" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 36, expert 5, peso 0.404</title></rect>
+<rect class="m c2" x="754" y="624" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 36, expert 21, peso 0.359</title></rect>
+<rect class="m c2" x="754" y="780" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 36, expert 60, peso 0.394</title></rect>
+<rect class="m c2" x="768" y="612" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 37, expert 18, peso 0.400</title></rect>
+<rect class="m c2" x="768" y="740" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 37, expert 50, peso 0.799</title></rect>
+<rect class="m c2" x="768" y="772" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 37, expert 58, peso 0.367</title></rect>
+<rect class="m c2" x="768" y="784" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 37, expert 61, peso 0.234</title></rect>
+<rect class="m c2" x="782" y="616" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 38, expert 19, peso 0.817</title></rect>
+<rect class="m c2" x="782" y="700" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 38, expert 40, peso 0.304</title></rect>
+<rect class="m c2" x="782" y="720" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 38, expert 45, peso 0.425</title></rect>
+<rect class="m c2" x="782" y="728" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 38, expert 47, peso 0.253</title></rect>
+<rect class="m c2" x="796" y="568" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 39, expert 7, peso 0.261</title></rect>
+<rect class="m c2" x="796" y="616" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 39, expert 19, peso 1.027</title></rect>
+<rect class="m c2" x="796" y="652" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 39, expert 28, peso 0.263</title></rect>
+<rect class="m c2" x="796" y="660" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 39, expert 30, peso 0.249</title></rect>
+<rect class="m c2" x="810" y="608" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 40, expert 17, peso 0.814</title></rect>
+<rect class="m c2" x="810" y="616" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 40, expert 19, peso 0.486</title></rect>
+<rect class="m c2" x="810" y="652" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 40, expert 28, peso 0.255</title></rect>
+<rect class="m c2" x="810" y="692" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 40, expert 38, peso 0.245</title></rect>
+<rect class="m c2" x="824" y="560" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 41, expert 5, peso 0.615</title></rect>
+<rect class="m c2" x="824" y="652" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 41, expert 28, peso 0.163</title></rect>
+<rect class="m c2" x="824" y="752" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 41, expert 53, peso 0.474</title></rect>
+<rect class="m c2" x="824" y="788" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 41, expert 62, peso 0.548</title></rect>
+<rect class="m c2" x="838" y="572" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 42, expert 8, peso 0.609</title></rect>
+<rect class="m c2" x="838" y="664" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 42, expert 31, peso 0.164</title></rect>
+<rect class="m c2" x="838" y="752" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 42, expert 53, peso 0.526</title></rect>
+<rect class="m c2" x="838" y="756" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 42, expert 54, peso 0.501</title></rect>
+<rect class="m c2" x="852" y="548" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 43, expert 2, peso 0.764</title></rect>
+<rect class="m c2" x="852" y="624" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 43, expert 21, peso 0.524</title></rect>
+<rect class="m c2" x="852" y="688" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 43, expert 37, peso 0.285</title></rect>
+<rect class="m c2" x="852" y="764" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 43, expert 56, peso 0.227</title></rect>
+<rect class="m c2" x="866" y="604" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 44, expert 16, peso 0.317</title></rect>
+<rect class="m c2" x="866" y="632" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 44, expert 23, peso 0.210</title></rect>
+<rect class="m c2" x="866" y="660" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 44, expert 30, peso 0.677</title></rect>
+<rect class="m c2" x="866" y="692" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 44, expert 38, peso 0.597</title></rect>
+<rect class="m c2" x="880" y="556" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 45, expert 4, peso 0.480</title></rect>
+<rect class="m c2" x="880" y="616" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 45, expert 19, peso 0.512</title></rect>
+<rect class="m c2" x="880" y="732" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 45, expert 48, peso 0.160</title></rect>
+<rect class="m c2" x="880" y="784" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 45, expert 61, peso 0.649</title></rect>
+<rect class="m c2" x="894" y="568" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 46, expert 7, peso 0.408</title></rect>
+<rect class="m c2" x="894" y="728" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 46, expert 47, peso 0.305</title></rect>
+<rect class="m c2" x="894" y="752" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 46, expert 53, peso 0.521</title></rect>
+<rect class="m c2" x="894" y="756" width="12" height="3.2" rx="1.2"><title>token &quot; do&quot; — camada 46, expert 54, peso 0.567</title></rect>
+<rect class="c3" x="24" y="860" width="12" height="12" rx="3"/>
+<text class="lab" x="44" y="871">&quot; Brasil&quot;</text>
+<text class="note" x="24" y="892">posição 3 · id 41689</text>
+<text class="note" x="24" y="916">184 experts roteados</text>
+<text class="note" x="24" y="933">83 só deste token</text>
+<text class="note" x="24" y="950">101 divididos com outro</text>
+<rect class="e" x="264" y="874" width="642" height="256" rx="2"/>
+<text class="tick" x="242" y="879" text-anchor="end">0</text>
+<text class="tick" x="242" y="943" text-anchor="end">16</text>
+<text class="tick" x="242" y="1007" text-anchor="end">32</text>
+<text class="tick" x="242" y="1071" text-anchor="end">48</text>
+<text class="tick" x="242" y="1131" text-anchor="end">63</text>
+<text class="tick" x="242" y="866" text-anchor="end">compartilhado</text>
+<text class="tick" transform="translate(206,1002) rotate(-90)" text-anchor="middle">expert roteado (0–63)</text>
+<line class="ax" x1="250" x2="908" y1="1134.5" y2="1134.5"/>
+<text class="tick" x="256" y="1149" text-anchor="middle">0</text>
+<text class="tick" x="396" y="1149" text-anchor="middle">10</text>
+<text class="tick" x="536" y="1149" text-anchor="middle">20</text>
+<text class="tick" x="676" y="1149" text-anchor="middle">30</text>
+<text class="tick" x="816" y="1149" text-anchor="middle">40</text>
+<text class="tick" x="900" y="1149" text-anchor="middle">46</text>
+<rect class="m c3" x="250" y="858" width="12" height="272" rx="3"><title>token &quot; Brasil&quot; — camada 0: MLP densa (10240 de largura), sem roteador</title></rect>
+<rect class="m c3" x="264" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 1: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="278" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 2: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="292" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 3: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="306" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 4: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="320" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 5: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="334" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 6: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="348" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 7: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="362" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 8: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="376" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 9: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="390" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 10: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="404" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 11: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="418" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 12: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="432" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 13: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="446" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 14: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="460" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 15: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="474" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 16: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="488" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 17: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="502" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 18: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="516" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 19: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="530" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 20: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="544" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 21: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="558" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 22: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="572" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 23: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="586" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 24: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="600" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 25: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="614" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 26: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="628" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 27: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="642" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 28: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="656" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 29: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="670" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 30: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="684" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 31: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="698" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 32: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="712" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 33: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="726" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 34: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="740" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 35: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="754" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 36: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="768" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 37: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="782" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 38: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="796" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 39: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="810" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 40: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="824" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 41: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="838" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 42: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="852" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 43: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="866" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 44: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="880" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 45: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="894" y="858" width="12" height="9" rx="2"><title>token &quot; Brasil&quot; — camada 46: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m c3" x="264" y="902" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 1, expert 7, peso 0.684</title></rect>
+<rect class="m c3" x="264" y="950" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 1, expert 19, peso 0.563</title></rect>
+<rect class="m c3" x="264" y="1026" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 1, expert 38, peso 0.191</title></rect>
+<rect class="m c3" x="264" y="1082" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 1, expert 52, peso 0.362</title></rect>
+<rect class="m c3" x="278" y="934" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 2, expert 15, peso 0.291</title></rect>
+<rect class="m c3" x="278" y="946" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 2, expert 18, peso 0.525</title></rect>
+<rect class="m c3" x="278" y="1030" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 2, expert 39, peso 0.802</title></rect>
+<rect class="m c3" x="278" y="1106" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 2, expert 58, peso 0.182</title></rect>
+<rect class="m c3" x="292" y="994" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 3, expert 30, peso 0.329</title></rect>
+<rect class="m c3" x="292" y="1034" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 3, expert 40, peso 0.173</title></rect>
+<rect class="m c3" x="292" y="1062" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 3, expert 47, peso 0.726</title></rect>
+<rect class="m c3" x="292" y="1094" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 3, expert 55, peso 0.572</title></rect>
+<rect class="m c3" x="306" y="946" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 4, expert 18, peso 0.264</title></rect>
+<rect class="m c3" x="306" y="990" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 4, expert 29, peso 1.250</title></rect>
+<rect class="m c3" x="306" y="1066" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 4, expert 48, peso 0.138</title></rect>
+<rect class="m c3" x="306" y="1114" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 4, expert 60, peso 0.147</title></rect>
+<rect class="m c3" x="320" y="882" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 5, expert 2, peso 0.225</title></rect>
+<rect class="m c3" x="320" y="922" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 5, expert 12, peso 0.934</title></rect>
+<rect class="m c3" x="320" y="938" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 5, expert 16, peso 0.248</title></rect>
+<rect class="m c3" x="320" y="1110" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 5, expert 59, peso 0.393</title></rect>
+<rect class="m c3" x="334" y="934" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 6, expert 15, peso 0.399</title></rect>
+<rect class="m c3" x="334" y="1018" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 6, expert 36, peso 0.397</title></rect>
+<rect class="m c3" x="334" y="1094" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 6, expert 55, peso 0.166</title></rect>
+<rect class="m c3" x="334" y="1098" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 6, expert 56, peso 0.838</title></rect>
+<rect class="m c3" x="348" y="886" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 7, expert 3, peso 0.870</title></rect>
+<rect class="m c3" x="348" y="930" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 7, expert 14, peso 0.141</title></rect>
+<rect class="m c3" x="348" y="1030" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 7, expert 39, peso 0.500</title></rect>
+<rect class="m c3" x="348" y="1098" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 7, expert 56, peso 0.289</title></rect>
+<rect class="m c3" x="362" y="878" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 8, expert 1, peso 0.145</title></rect>
+<rect class="m c3" x="362" y="978" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 8, expert 26, peso 0.251</title></rect>
+<rect class="m c3" x="362" y="986" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 8, expert 28, peso 0.770</title></rect>
+<rect class="m c3" x="362" y="1018" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 8, expert 36, peso 0.634</title></rect>
+<rect class="m c3" x="376" y="906" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 9, expert 8, peso 0.636</title></rect>
+<rect class="m c3" x="376" y="918" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 9, expert 11, peso 0.168</title></rect>
+<rect class="m c3" x="376" y="930" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 9, expert 14, peso 0.753</title></rect>
+<rect class="m c3" x="376" y="1118" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 9, expert 61, peso 0.243</title></rect>
+<rect class="m c3" x="390" y="970" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 10, expert 24, peso 0.360</title></rect>
+<rect class="m c3" x="390" y="1026" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 10, expert 38, peso 0.607</title></rect>
+<rect class="m c3" x="390" y="1118" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 10, expert 61, peso 0.668</title></rect>
+<rect class="m c3" x="390" y="1122" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 10, expert 62, peso 0.165</title></rect>
+<rect class="m c3" x="404" y="958" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 11, expert 21, peso 0.919</title></rect>
+<rect class="m c3" x="404" y="966" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 11, expert 23, peso 0.374</title></rect>
+<rect class="m c3" x="404" y="1026" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 11, expert 38, peso 0.298</title></rect>
+<rect class="m c3" x="404" y="1122" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 11, expert 62, peso 0.209</title></rect>
+<rect class="m c3" x="418" y="934" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 12, expert 15, peso 0.055</title></rect>
+<rect class="m c3" x="418" y="1078" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 12, expert 51, peso 0.052</title></rect>
+<rect class="m c3" x="418" y="1090" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 12, expert 54, peso 0.054</title></rect>
+<rect class="m c3" x="418" y="1102" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 12, expert 57, peso 1.638</title></rect>
+<rect class="m c3" x="432" y="874" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 13, expert 0, peso 0.170</title></rect>
+<rect class="m c3" x="432" y="958" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 13, expert 21, peso 0.239</title></rect>
+<rect class="m c3" x="432" y="1082" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 13, expert 52, peso 0.159</title></rect>
+<rect class="m c3" x="432" y="1110" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 13, expert 59, peso 1.232</title></rect>
+<rect class="m c3" x="446" y="918" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 14, expert 11, peso 1.238</title></rect>
+<rect class="m c3" x="446" y="1014" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 14, expert 35, peso 0.293</title></rect>
+<rect class="m c3" x="446" y="1034" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 14, expert 40, peso 0.123</title></rect>
+<rect class="m c3" x="446" y="1106" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 14, expert 58, peso 0.146</title></rect>
+<rect class="m c3" x="460" y="882" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 15, expert 2, peso 0.353</title></rect>
+<rect class="m c3" x="460" y="954" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 15, expert 20, peso 0.681</title></rect>
+<rect class="m c3" x="460" y="994" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 15, expert 30, peso 0.404</title></rect>
+<rect class="m c3" x="460" y="998" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 15, expert 31, peso 0.362</title></rect>
+<rect class="m c3" x="474" y="890" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 16, expert 4, peso 0.248</title></rect>
+<rect class="m c3" x="474" y="922" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 16, expert 12, peso 0.461</title></rect>
+<rect class="m c3" x="474" y="926" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 16, expert 13, peso 0.638</title></rect>
+<rect class="m c3" x="474" y="1082" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 16, expert 52, peso 0.453</title></rect>
+<rect class="m c3" x="488" y="1014" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 17, expert 35, peso 0.585</title></rect>
+<rect class="m c3" x="488" y="1026" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 17, expert 38, peso 0.211</title></rect>
+<rect class="m c3" x="488" y="1038" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 17, expert 41, peso 0.245</title></rect>
+<rect class="m c3" x="488" y="1106" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 17, expert 58, peso 0.759</title></rect>
+<rect class="m c3" x="502" y="918" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 18, expert 11, peso 0.338</title></rect>
+<rect class="m c3" x="502" y="942" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 18, expert 17, peso 0.859</title></rect>
+<rect class="m c3" x="502" y="954" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 18, expert 20, peso 0.402</title></rect>
+<rect class="m c3" x="502" y="1094" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 18, expert 55, peso 0.201</title></rect>
+<rect class="m c3" x="516" y="958" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 19, expert 21, peso 0.232</title></rect>
+<rect class="m c3" x="516" y="1034" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 19, expert 40, peso 0.285</title></rect>
+<rect class="m c3" x="516" y="1042" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 19, expert 42, peso 0.502</title></rect>
+<rect class="m c3" x="516" y="1114" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 19, expert 60, peso 0.780</title></rect>
+<rect class="m c3" x="530" y="902" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 20, expert 7, peso 0.638</title></rect>
+<rect class="m c3" x="530" y="914" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 20, expert 10, peso 0.334</title></rect>
+<rect class="m c3" x="530" y="974" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 20, expert 25, peso 0.281</title></rect>
+<rect class="m c3" x="530" y="1118" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 20, expert 61, peso 0.547</title></rect>
+<rect class="m c3" x="544" y="942" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 21, expert 17, peso 0.746</title></rect>
+<rect class="m c3" x="544" y="950" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 21, expert 19, peso 0.424</title></rect>
+<rect class="m c3" x="544" y="994" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 21, expert 30, peso 0.234</title></rect>
+<rect class="m c3" x="544" y="1110" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 21, expert 59, peso 0.396</title></rect>
+<rect class="m c3" x="558" y="906" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 22, expert 8, peso 0.418</title></rect>
+<rect class="m c3" x="558" y="946" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 22, expert 18, peso 0.301</title></rect>
+<rect class="m c3" x="558" y="974" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 22, expert 25, peso 0.319</title></rect>
+<rect class="m c3" x="558" y="1098" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 22, expert 56, peso 0.763</title></rect>
+<rect class="m c3" x="572" y="958" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 23, expert 21, peso 0.454</title></rect>
+<rect class="m c3" x="572" y="986" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 23, expert 28, peso 0.278</title></rect>
+<rect class="m c3" x="572" y="1098" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 23, expert 56, peso 0.660</title></rect>
+<rect class="m c3" x="572" y="1122" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 23, expert 62, peso 0.408</title></rect>
+<rect class="m c3" x="586" y="874" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 24, expert 0, peso 0.209</title></rect>
+<rect class="m c3" x="586" y="982" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 24, expert 27, peso 0.306</title></rect>
+<rect class="m c3" x="586" y="994" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 24, expert 30, peso 0.801</title></rect>
+<rect class="m c3" x="586" y="1050" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 24, expert 44, peso 0.483</title></rect>
+<rect class="m c3" x="600" y="898" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 25, expert 6, peso 0.541</title></rect>
+<rect class="m c3" x="600" y="902" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 25, expert 7, peso 0.376</title></rect>
+<rect class="m c3" x="600" y="1018" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 25, expert 36, peso 0.797</title></rect>
+<rect class="m c3" x="600" y="1030" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 25, expert 39, peso 0.086</title></rect>
+<rect class="m c3" x="614" y="978" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 26, expert 26, peso 0.134</title></rect>
+<rect class="m c3" x="614" y="982" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 26, expert 27, peso 0.444</title></rect>
+<rect class="m c3" x="614" y="1026" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 26, expert 38, peso 0.787</title></rect>
+<rect class="m c3" x="614" y="1090" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 26, expert 54, peso 0.434</title></rect>
+<rect class="m c3" x="628" y="930" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 27, expert 14, peso 0.487</title></rect>
+<rect class="m c3" x="628" y="946" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 27, expert 18, peso 0.634</title></rect>
+<rect class="m c3" x="628" y="1058" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 27, expert 46, peso 0.359</title></rect>
+<rect class="m c3" x="628" y="1110" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 27, expert 59, peso 0.320</title></rect>
+<rect class="m c3" x="642" y="902" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 28, expert 7, peso 0.245</title></rect>
+<rect class="m c3" x="642" y="1018" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 28, expert 36, peso 0.697</title></rect>
+<rect class="m c3" x="642" y="1066" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 28, expert 48, peso 0.457</title></rect>
+<rect class="m c3" x="642" y="1118" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 28, expert 61, peso 0.401</title></rect>
+<rect class="m c3" x="656" y="882" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 29, expert 2, peso 0.450</title></rect>
+<rect class="m c3" x="656" y="922" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 29, expert 12, peso 0.484</title></rect>
+<rect class="m c3" x="656" y="1030" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 29, expert 39, peso 0.331</title></rect>
+<rect class="m c3" x="656" y="1066" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 29, expert 48, peso 0.535</title></rect>
+<rect class="m c3" x="670" y="878" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 30, expert 1, peso 0.372</title></rect>
+<rect class="m c3" x="670" y="1006" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 30, expert 33, peso 0.610</title></rect>
+<rect class="m c3" x="670" y="1086" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 30, expert 53, peso 0.688</title></rect>
+<rect class="m c3" x="670" y="1106" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 30, expert 58, peso 0.130</title></rect>
+<rect class="m c3" x="684" y="974" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 31, expert 25, peso 0.267</title></rect>
+<rect class="m c3" x="684" y="1018" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 31, expert 36, peso 0.234</title></rect>
+<rect class="m c3" x="684" y="1026" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 31, expert 38, peso 0.786</title></rect>
+<rect class="m c3" x="684" y="1046" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 31, expert 43, peso 0.513</title></rect>
+<rect class="m c3" x="698" y="938" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 32, expert 16, peso 0.376</title></rect>
+<rect class="m c3" x="698" y="1066" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 32, expert 48, peso 0.457</title></rect>
+<rect class="m c3" x="698" y="1070" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 32, expert 49, peso 0.573</title></rect>
+<rect class="m c3" x="698" y="1118" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 32, expert 61, peso 0.394</title></rect>
+<rect class="m c3" x="712" y="882" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 33, expert 2, peso 0.648</title></rect>
+<rect class="m c3" x="712" y="1006" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 33, expert 33, peso 0.193</title></rect>
+<rect class="m c3" x="712" y="1010" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 33, expert 34, peso 0.675</title></rect>
+<rect class="m c3" x="712" y="1126" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 33, expert 63, peso 0.283</title></rect>
+<rect class="m c3" x="726" y="922" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 34, expert 12, peso 0.443</title></rect>
+<rect class="m c3" x="726" y="986" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 34, expert 28, peso 0.290</title></rect>
+<rect class="m c3" x="726" y="1002" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 34, expert 32, peso 0.430</title></rect>
+<rect class="m c3" x="726" y="1070" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 34, expert 49, peso 0.637</title></rect>
+<rect class="m c3" x="740" y="1018" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 35, expert 36, peso 0.445</title></rect>
+<rect class="m c3" x="740" y="1034" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 35, expert 40, peso 0.221</title></rect>
+<rect class="m c3" x="740" y="1046" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 35, expert 43, peso 0.481</title></rect>
+<rect class="m c3" x="740" y="1110" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 35, expert 59, peso 0.652</title></rect>
+<rect class="m c3" x="754" y="882" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 36, expert 2, peso 0.584</title></rect>
+<rect class="m c3" x="754" y="894" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 36, expert 5, peso 0.389</title></rect>
+<rect class="m c3" x="754" y="930" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 36, expert 14, peso 0.475</title></rect>
+<rect class="m c3" x="754" y="958" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 36, expert 21, peso 0.351</title></rect>
+<rect class="m c3" x="768" y="1074" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 37, expert 50, peso 0.698</title></rect>
+<rect class="m c3" x="768" y="1086" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 37, expert 53, peso 0.327</title></rect>
+<rect class="m c3" x="768" y="1106" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 37, expert 58, peso 0.545</title></rect>
+<rect class="m c3" x="768" y="1122" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 37, expert 62, peso 0.230</title></rect>
+<rect class="m c3" x="782" y="906" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 38, expert 8, peso 0.264</title></rect>
+<rect class="m c3" x="782" y="950" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 38, expert 19, peso 0.623</title></rect>
+<rect class="m c3" x="782" y="1046" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 38, expert 43, peso 0.275</title></rect>
+<rect class="m c3" x="782" y="1062" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 38, expert 47, peso 0.638</title></rect>
+<rect class="m c3" x="796" y="950" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 39, expert 19, peso 0.977</title></rect>
+<rect class="m c3" x="796" y="986" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 39, expert 28, peso 0.287</title></rect>
+<rect class="m c3" x="796" y="1062" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 39, expert 47, peso 0.225</title></rect>
+<rect class="m c3" x="796" y="1110" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 39, expert 59, peso 0.312</title></rect>
+<rect class="m c3" x="810" y="942" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 40, expert 17, peso 0.741</title></rect>
+<rect class="m c3" x="810" y="946" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 40, expert 18, peso 0.289</title></rect>
+<rect class="m c3" x="810" y="1026" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 40, expert 38, peso 0.216</title></rect>
+<rect class="m c3" x="810" y="1050" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 40, expert 44, peso 0.553</title></rect>
+<rect class="m c3" x="824" y="894" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 41, expert 5, peso 0.658</title></rect>
+<rect class="m c3" x="824" y="954" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 41, expert 20, peso 0.283</title></rect>
+<rect class="m c3" x="824" y="986" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 41, expert 28, peso 0.328</title></rect>
+<rect class="m c3" x="824" y="1122" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 41, expert 62, peso 0.531</title></rect>
+<rect class="m c3" x="838" y="874" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 42, expert 0, peso 0.236</title></rect>
+<rect class="m c3" x="838" y="894" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 42, expert 5, peso 0.220</title></rect>
+<rect class="m c3" x="838" y="1086" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 42, expert 53, peso 0.716</title></rect>
+<rect class="m c3" x="838" y="1090" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 42, expert 54, peso 0.628</title></rect>
+<rect class="m c3" x="852" y="882" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 43, expert 2, peso 0.828</title></rect>
+<rect class="m c3" x="852" y="958" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 43, expert 21, peso 0.392</title></rect>
+<rect class="m c3" x="852" y="1030" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 43, expert 39, peso 0.239</title></rect>
+<rect class="m c3" x="852" y="1098" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 43, expert 56, peso 0.340</title></rect>
+<rect class="m c3" x="866" y="938" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 44, expert 16, peso 0.301</title></rect>
+<rect class="m c3" x="866" y="994" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 44, expert 30, peso 0.561</title></rect>
+<rect class="m c3" x="866" y="998" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 44, expert 31, peso 0.352</title></rect>
+<rect class="m c3" x="866" y="1026" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 44, expert 38, peso 0.586</title></rect>
+<rect class="m c3" x="880" y="890" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 45, expert 4, peso 0.382</title></rect>
+<rect class="m c3" x="880" y="950" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 45, expert 19, peso 0.636</title></rect>
+<rect class="m c3" x="880" y="1066" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 45, expert 48, peso 0.415</title></rect>
+<rect class="m c3" x="880" y="1086" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 45, expert 53, peso 0.366</title></rect>
+<rect class="m c3" x="894" y="902" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 46, expert 7, peso 0.646</title></rect>
+<rect class="m c3" x="894" y="1050" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 46, expert 44, peso 0.185</title></rect>
+<rect class="m c3" x="894" y="1062" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 46, expert 47, peso 0.690</title></rect>
+<rect class="m c3" x="894" y="1090" width="12" height="3.2" rx="1.2"><title>token &quot; Brasil&quot; — camada 46, expert 54, peso 0.279</title></rect>
+<text class="note" x="250" y="176">linha de cima: expert compartilhado · coluna 0: MLP densa · campo: os 4 experts que o roteador escolheu em cada camada</text>
+<text class="lab" x="24" y="1205">Os três juntos</text>
+<text class="note" x="24" y="1226">quantos tokens passam</text>
+<text class="note" x="24" y="1242">pelo mesmo expert</text>
+<rect class="q1" x="24" y="1254" width="12" height="12" rx="3"/>
+<text class="note" x="44" y="1264">1 token — 291 experts</text>
+<rect class="q2" x="24" y="1274" width="12" height="12" rx="3"/>
+<text class="note" x="44" y="1284">2 tokens — 96 experts</text>
+<rect class="q3" x="24" y="1294" width="12" height="12" rx="3"/>
+<text class="note" x="44" y="1304">3 tokens — 23 experts</text>
+<text class="note" x="24" y="1334">densa e compartilhados:</text>
+<text class="note" x="24" y="1350">sempre os três</text>
+<rect class="e" x="264" y="1208" width="642" height="256" rx="2"/>
+<text class="tick" x="242" y="1213" text-anchor="end">0</text>
+<text class="tick" x="242" y="1277" text-anchor="end">16</text>
+<text class="tick" x="242" y="1341" text-anchor="end">32</text>
+<text class="tick" x="242" y="1405" text-anchor="end">48</text>
+<text class="tick" x="242" y="1465" text-anchor="end">63</text>
+<text class="tick" x="242" y="1200" text-anchor="end">compartilhado</text>
+<text class="tick" transform="translate(206,1336) rotate(-90)" text-anchor="middle">expert roteado (0–63)</text>
+<line class="ax" x1="250" x2="908" y1="1468.5" y2="1468.5"/>
+<text class="tick" x="256" y="1483" text-anchor="middle">0</text>
+<text class="tick" x="396" y="1483" text-anchor="middle">10</text>
+<text class="tick" x="536" y="1483" text-anchor="middle">20</text>
+<text class="tick" x="676" y="1483" text-anchor="middle">30</text>
+<text class="tick" x="816" y="1483" text-anchor="middle">40</text>
+<text class="tick" x="900" y="1483" text-anchor="middle">46</text>
+<text class="tick" x="579" y="1500" text-anchor="middle">camada</text>
+<rect class="m q3" x="250" y="1192" width="12" height="272" rx="3"><title>os três tokens — camada 0: MLP densa (10240 de largura), sem roteador</title></rect>
+<rect class="m q3" x="264" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 1: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="278" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 2: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="292" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 3: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="306" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 4: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="320" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 5: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="334" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 6: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="348" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 7: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="362" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 8: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="376" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 9: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="390" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 10: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="404" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 11: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="418" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 12: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="432" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 13: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="446" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 14: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="460" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 15: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="474" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 16: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="488" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 17: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="502" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 18: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="516" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 19: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="530" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 20: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="544" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 21: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="558" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 22: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="572" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 23: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="586" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 24: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="600" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 25: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="614" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 26: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="628" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 27: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="642" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 28: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="656" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 29: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="670" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 30: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="684" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 31: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="698" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 32: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="712" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 33: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="726" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 34: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="740" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 35: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="754" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 36: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="768" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 37: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="782" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 38: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="796" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 39: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="810" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 40: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="824" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 41: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="838" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 42: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="852" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 43: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="866" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 44: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="880" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 45: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q3" x="894" y="1192" width="12" height="9" rx="2"><title>os três tokens — camada 46: expert compartilhado (sempre ativo)</title></rect>
+<rect class="m q1" x="264" y="1224" width="12" height="3.2" rx="1.2"><title>camada 1, expert 4 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="264" y="1376" width="12" height="3.2" rx="1.2"><title>camada 1, expert 42 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="264" y="1408" width="12" height="3.2" rx="1.2"><title>camada 1, expert 50 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="264" y="1444" width="12" height="3.2" rx="1.2"><title>camada 1, expert 59 — 2 tokens: &quot; capital&quot;, &quot; do&quot;</title></rect>
+<rect class="m q1" x="278" y="1380" width="12" height="3.2" rx="1.2"><title>camada 2, expert 43 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="278" y="1432" width="12" height="3.2" rx="1.2"><title>camada 2, expert 56 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="278" y="1440" width="12" height="3.2" rx="1.2"><title>camada 2, expert 58 — 2 tokens: &quot; capital&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="278" y="1452" width="12" height="3.2" rx="1.2"><title>camada 2, expert 61 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="292" y="1324" width="12" height="3.2" rx="1.2"><title>camada 3, expert 29 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="292" y="1328" width="12" height="3.2" rx="1.2"><title>camada 3, expert 30 — 2 tokens: &quot; capital&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="292" y="1352" width="12" height="3.2" rx="1.2"><title>camada 3, expert 36 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="292" y="1448" width="12" height="3.2" rx="1.2"><title>camada 3, expert 60 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="306" y="1324" width="12" height="3.2" rx="1.2"><title>camada 4, expert 29 — 2 tokens: &quot; capital&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="306" y="1396" width="12" height="3.2" rx="1.2"><title>camada 4, expert 47 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="306" y="1412" width="12" height="3.2" rx="1.2"><title>camada 4, expert 51 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="306" y="1460" width="12" height="3.2" rx="1.2"><title>camada 4, expert 63 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="320" y="1208" width="12" height="3.2" rx="1.2"><title>camada 5, expert 0 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q3" x="320" y="1256" width="12" height="3.2" rx="1.2"><title>camada 5, expert 12 — 3 tokens: &quot; capital&quot;, &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="320" y="1340" width="12" height="3.2" rx="1.2"><title>camada 5, expert 33 — 2 tokens: &quot; capital&quot;, &quot; do&quot;</title></rect>
+<rect class="m q2" x="320" y="1444" width="12" height="3.2" rx="1.2"><title>camada 5, expert 59 — 2 tokens: &quot; capital&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="334" y="1256" width="12" height="3.2" rx="1.2"><title>camada 6, expert 12 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="334" y="1312" width="12" height="3.2" rx="1.2"><title>camada 6, expert 26 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="334" y="1380" width="12" height="3.2" rx="1.2"><title>camada 6, expert 43 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="334" y="1432" width="12" height="3.2" rx="1.2"><title>camada 6, expert 56 — 2 tokens: &quot; capital&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="348" y="1412" width="12" height="3.2" rx="1.2"><title>camada 7, expert 51 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="348" y="1416" width="12" height="3.2" rx="1.2"><title>camada 7, expert 52 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="348" y="1440" width="12" height="3.2" rx="1.2"><title>camada 7, expert 58 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="348" y="1452" width="12" height="3.2" rx="1.2"><title>camada 7, expert 61 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q3" x="362" y="1312" width="12" height="3.2" rx="1.2"><title>camada 8, expert 26 — 3 tokens: &quot; capital&quot;, &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q3" x="362" y="1320" width="12" height="3.2" rx="1.2"><title>camada 8, expert 28 — 3 tokens: &quot; capital&quot;, &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="362" y="1336" width="12" height="3.2" rx="1.2"><title>camada 8, expert 32 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="362" y="1388" width="12" height="3.2" rx="1.2"><title>camada 8, expert 45 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="376" y="1264" width="12" height="3.2" rx="1.2"><title>camada 9, expert 14 — 2 tokens: &quot; capital&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="376" y="1288" width="12" height="3.2" rx="1.2"><title>camada 9, expert 20 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="376" y="1292" width="12" height="3.2" rx="1.2"><title>camada 9, expert 21 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="376" y="1364" width="12" height="3.2" rx="1.2"><title>camada 9, expert 39 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="390" y="1304" width="12" height="3.2" rx="1.2"><title>camada 10, expert 24 — 2 tokens: &quot; capital&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="390" y="1308" width="12" height="3.2" rx="1.2"><title>camada 10, expert 25 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="390" y="1332" width="12" height="3.2" rx="1.2"><title>camada 10, expert 31 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q3" x="390" y="1360" width="12" height="3.2" rx="1.2"><title>camada 10, expert 38 — 3 tokens: &quot; capital&quot;, &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="404" y="1228" width="12" height="3.2" rx="1.2"><title>camada 11, expert 5 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="404" y="1256" width="12" height="3.2" rx="1.2"><title>camada 11, expert 12 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="404" y="1404" width="12" height="3.2" rx="1.2"><title>camada 11, expert 49 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="404" y="1452" width="12" height="3.2" rx="1.2"><title>camada 11, expert 61 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="418" y="1216" width="12" height="3.2" rx="1.2"><title>camada 12, expert 2 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="418" y="1420" width="12" height="3.2" rx="1.2"><title>camada 12, expert 53 — 2 tokens: &quot; capital&quot;, &quot; do&quot;</title></rect>
+<rect class="m q2" x="418" y="1424" width="12" height="3.2" rx="1.2"><title>camada 12, expert 54 — 2 tokens: &quot; capital&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q3" x="418" y="1436" width="12" height="3.2" rx="1.2"><title>camada 12, expert 57 — 3 tokens: &quot; capital&quot;, &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="432" y="1236" width="12" height="3.2" rx="1.2"><title>camada 13, expert 7 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="432" y="1292" width="12" height="3.2" rx="1.2"><title>camada 13, expert 21 — 2 tokens: &quot; capital&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="432" y="1328" width="12" height="3.2" rx="1.2"><title>camada 13, expert 30 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q3" x="432" y="1444" width="12" height="3.2" rx="1.2"><title>camada 13, expert 59 — 3 tokens: &quot; capital&quot;, &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="446" y="1256" width="12" height="3.2" rx="1.2"><title>camada 14, expert 12 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q3" x="446" y="1348" width="12" height="3.2" rx="1.2"><title>camada 14, expert 35 — 3 tokens: &quot; capital&quot;, &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="446" y="1360" width="12" height="3.2" rx="1.2"><title>camada 14, expert 38 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q3" x="446" y="1368" width="12" height="3.2" rx="1.2"><title>camada 14, expert 40 — 3 tokens: &quot; capital&quot;, &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="460" y="1288" width="12" height="3.2" rx="1.2"><title>camada 15, expert 20 — 2 tokens: &quot; capital&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="460" y="1324" width="12" height="3.2" rx="1.2"><title>camada 15, expert 29 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="460" y="1332" width="12" height="3.2" rx="1.2"><title>camada 15, expert 31 — 2 tokens: &quot; capital&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="460" y="1416" width="12" height="3.2" rx="1.2"><title>camada 15, expert 52 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q3" x="474" y="1224" width="12" height="3.2" rx="1.2"><title>camada 16, expert 4 — 3 tokens: &quot; capital&quot;, &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="474" y="1340" width="12" height="3.2" rx="1.2"><title>camada 16, expert 33 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="474" y="1344" width="12" height="3.2" rx="1.2"><title>camada 16, expert 34 — 2 tokens: &quot; capital&quot;, &quot; do&quot;</title></rect>
+<rect class="m q1" x="474" y="1364" width="12" height="3.2" rx="1.2"><title>camada 16, expert 39 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q3" x="488" y="1348" width="12" height="3.2" rx="1.2"><title>camada 17, expert 35 — 3 tokens: &quot; capital&quot;, &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="488" y="1360" width="12" height="3.2" rx="1.2"><title>camada 17, expert 38 — 2 tokens: &quot; capital&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="488" y="1372" width="12" height="3.2" rx="1.2"><title>camada 17, expert 41 — 2 tokens: &quot; capital&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="488" y="1420" width="12" height="3.2" rx="1.2"><title>camada 17, expert 53 — 2 tokens: &quot; capital&quot;, &quot; do&quot;</title></rect>
+<rect class="m q1" x="502" y="1256" width="12" height="3.2" rx="1.2"><title>camada 18, expert 12 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="502" y="1284" width="12" height="3.2" rx="1.2"><title>camada 18, expert 19 — 2 tokens: &quot; capital&quot;, &quot; do&quot;</title></rect>
+<rect class="m q2" x="502" y="1368" width="12" height="3.2" rx="1.2"><title>camada 18, expert 40 — 2 tokens: &quot; capital&quot;, &quot; do&quot;</title></rect>
+<rect class="m q2" x="502" y="1456" width="12" height="3.2" rx="1.2"><title>camada 18, expert 62 — 2 tokens: &quot; capital&quot;, &quot; do&quot;</title></rect>
+<rect class="m q1" x="516" y="1340" width="12" height="3.2" rx="1.2"><title>camada 19, expert 33 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="516" y="1344" width="12" height="3.2" rx="1.2"><title>camada 19, expert 34 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q3" x="516" y="1376" width="12" height="3.2" rx="1.2"><title>camada 19, expert 42 — 3 tokens: &quot; capital&quot;, &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="516" y="1400" width="12" height="3.2" rx="1.2"><title>camada 19, expert 48 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="530" y="1320" width="12" height="3.2" rx="1.2"><title>camada 20, expert 28 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="530" y="1408" width="12" height="3.2" rx="1.2"><title>camada 20, expert 50 — 2 tokens: &quot; capital&quot;, &quot; do&quot;</title></rect>
+<rect class="m q2" x="530" y="1412" width="12" height="3.2" rx="1.2"><title>camada 20, expert 51 — 2 tokens: &quot; capital&quot;, &quot; do&quot;</title></rect>
+<rect class="m q1" x="530" y="1428" width="12" height="3.2" rx="1.2"><title>camada 20, expert 55 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q3" x="544" y="1276" width="12" height="3.2" rx="1.2"><title>camada 21, expert 17 — 3 tokens: &quot; capital&quot;, &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="544" y="1288" width="12" height="3.2" rx="1.2"><title>camada 21, expert 20 — 2 tokens: &quot; capital&quot;, &quot; do&quot;</title></rect>
+<rect class="m q3" x="544" y="1328" width="12" height="3.2" rx="1.2"><title>camada 21, expert 30 — 3 tokens: &quot; capital&quot;, &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="544" y="1440" width="12" height="3.2" rx="1.2"><title>camada 21, expert 58 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="558" y="1236" width="12" height="3.2" rx="1.2"><title>camada 22, expert 7 — 2 tokens: &quot; capital&quot;, &quot; do&quot;</title></rect>
+<rect class="m q3" x="558" y="1280" width="12" height="3.2" rx="1.2"><title>camada 22, expert 18 — 3 tokens: &quot; capital&quot;, &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="558" y="1304" width="12" height="3.2" rx="1.2"><title>camada 22, expert 24 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="558" y="1376" width="12" height="3.2" rx="1.2"><title>camada 22, expert 42 — 2 tokens: &quot; capital&quot;, &quot; do&quot;</title></rect>
+<rect class="m q1" x="572" y="1284" width="12" height="3.2" rx="1.2"><title>camada 23, expert 19 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="572" y="1352" width="12" height="3.2" rx="1.2"><title>camada 23, expert 36 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="572" y="1408" width="12" height="3.2" rx="1.2"><title>camada 23, expert 50 — 2 tokens: &quot; capital&quot;, &quot; do&quot;</title></rect>
+<rect class="m q3" x="572" y="1456" width="12" height="3.2" rx="1.2"><title>camada 23, expert 62 — 3 tokens: &quot; capital&quot;, &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="586" y="1256" width="12" height="3.2" rx="1.2"><title>camada 24, expert 12 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="586" y="1288" width="12" height="3.2" rx="1.2"><title>camada 24, expert 20 — 2 tokens: &quot; capital&quot;, &quot; do&quot;</title></rect>
+<rect class="m q3" x="586" y="1328" width="12" height="3.2" rx="1.2"><title>camada 24, expert 30 — 3 tokens: &quot; capital&quot;, &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="586" y="1404" width="12" height="3.2" rx="1.2"><title>camada 24, expert 49 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="600" y="1296" width="12" height="3.2" rx="1.2"><title>camada 25, expert 22 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="600" y="1412" width="12" height="3.2" rx="1.2"><title>camada 25, expert 51 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="600" y="1420" width="12" height="3.2" rx="1.2"><title>camada 25, expert 53 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="600" y="1456" width="12" height="3.2" rx="1.2"><title>camada 25, expert 62 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="614" y="1252" width="12" height="3.2" rx="1.2"><title>camada 26, expert 11 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="614" y="1256" width="12" height="3.2" rx="1.2"><title>camada 26, expert 12 — 2 tokens: &quot; capital&quot;, &quot; do&quot;</title></rect>
+<rect class="m q1" x="614" y="1376" width="12" height="3.2" rx="1.2"><title>camada 26, expert 42 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="614" y="1396" width="12" height="3.2" rx="1.2"><title>camada 26, expert 47 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="628" y="1216" width="12" height="3.2" rx="1.2"><title>camada 27, expert 2 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="628" y="1256" width="12" height="3.2" rx="1.2"><title>camada 27, expert 12 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="628" y="1312" width="12" height="3.2" rx="1.2"><title>camada 27, expert 26 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q3" x="628" y="1392" width="12" height="3.2" rx="1.2"><title>camada 27, expert 46 — 3 tokens: &quot; capital&quot;, &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q3" x="642" y="1236" width="12" height="3.2" rx="1.2"><title>camada 28, expert 7 — 3 tokens: &quot; capital&quot;, &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="642" y="1352" width="12" height="3.2" rx="1.2"><title>camada 28, expert 36 — 2 tokens: &quot; capital&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="642" y="1424" width="12" height="3.2" rx="1.2"><title>camada 28, expert 54 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q3" x="642" y="1452" width="12" height="3.2" rx="1.2"><title>camada 28, expert 61 — 3 tokens: &quot; capital&quot;, &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="656" y="1248" width="12" height="3.2" rx="1.2"><title>camada 29, expert 10 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="656" y="1308" width="12" height="3.2" rx="1.2"><title>camada 29, expert 25 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="656" y="1324" width="12" height="3.2" rx="1.2"><title>camada 29, expert 29 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q3" x="656" y="1400" width="12" height="3.2" rx="1.2"><title>camada 29, expert 48 — 3 tokens: &quot; capital&quot;, &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="670" y="1224" width="12" height="3.2" rx="1.2"><title>camada 30, expert 4 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="670" y="1248" width="12" height="3.2" rx="1.2"><title>camada 30, expert 10 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="670" y="1432" width="12" height="3.2" rx="1.2"><title>camada 30, expert 56 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="670" y="1440" width="12" height="3.2" rx="1.2"><title>camada 30, expert 58 — 2 tokens: &quot; capital&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="684" y="1244" width="12" height="3.2" rx="1.2"><title>camada 31, expert 9 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="684" y="1252" width="12" height="3.2" rx="1.2"><title>camada 31, expert 11 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="684" y="1324" width="12" height="3.2" rx="1.2"><title>camada 31, expert 29 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="684" y="1456" width="12" height="3.2" rx="1.2"><title>camada 31, expert 62 — 2 tokens: &quot; capital&quot;, &quot; do&quot;</title></rect>
+<rect class="m q1" x="698" y="1224" width="12" height="3.2" rx="1.2"><title>camada 32, expert 4 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="698" y="1308" width="12" height="3.2" rx="1.2"><title>camada 32, expert 25 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="698" y="1312" width="12" height="3.2" rx="1.2"><title>camada 32, expert 26 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="698" y="1432" width="12" height="3.2" rx="1.2"><title>camada 32, expert 56 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="712" y="1216" width="12" height="3.2" rx="1.2"><title>camada 33, expert 2 — 2 tokens: &quot; capital&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="712" y="1252" width="12" height="3.2" rx="1.2"><title>camada 33, expert 11 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="712" y="1316" width="12" height="3.2" rx="1.2"><title>camada 33, expert 27 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="712" y="1352" width="12" height="3.2" rx="1.2"><title>camada 33, expert 36 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="726" y="1284" width="12" height="3.2" rx="1.2"><title>camada 34, expert 19 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="726" y="1340" width="12" height="3.2" rx="1.2"><title>camada 34, expert 33 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="726" y="1360" width="12" height="3.2" rx="1.2"><title>camada 34, expert 38 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="726" y="1408" width="12" height="3.2" rx="1.2"><title>camada 34, expert 50 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="740" y="1284" width="12" height="3.2" rx="1.2"><title>camada 35, expert 19 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="740" y="1288" width="12" height="3.2" rx="1.2"><title>camada 35, expert 20 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="740" y="1444" width="12" height="3.2" rx="1.2"><title>camada 35, expert 59 — 2 tokens: &quot; capital&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="740" y="1448" width="12" height="3.2" rx="1.2"><title>camada 35, expert 60 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="754" y="1296" width="12" height="3.2" rx="1.2"><title>camada 36, expert 22 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="754" y="1340" width="12" height="3.2" rx="1.2"><title>camada 36, expert 33 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="754" y="1368" width="12" height="3.2" rx="1.2"><title>camada 36, expert 40 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="754" y="1408" width="12" height="3.2" rx="1.2"><title>camada 36, expert 50 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="768" y="1240" width="12" height="3.2" rx="1.2"><title>camada 37, expert 8 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="768" y="1336" width="12" height="3.2" rx="1.2"><title>camada 37, expert 32 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="768" y="1364" width="12" height="3.2" rx="1.2"><title>camada 37, expert 39 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="768" y="1456" width="12" height="3.2" rx="1.2"><title>camada 37, expert 62 — 2 tokens: &quot; capital&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="782" y="1264" width="12" height="3.2" rx="1.2"><title>camada 38, expert 14 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="782" y="1376" width="12" height="3.2" rx="1.2"><title>camada 38, expert 42 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="782" y="1384" width="12" height="3.2" rx="1.2"><title>camada 38, expert 44 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="782" y="1444" width="12" height="3.2" rx="1.2"><title>camada 38, expert 59 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="796" y="1216" width="12" height="3.2" rx="1.2"><title>camada 39, expert 2 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="796" y="1244" width="12" height="3.2" rx="1.2"><title>camada 39, expert 9 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q3" x="796" y="1320" width="12" height="3.2" rx="1.2"><title>camada 39, expert 28 — 3 tokens: &quot; capital&quot;, &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="796" y="1444" width="12" height="3.2" rx="1.2"><title>camada 39, expert 59 — 2 tokens: &quot; capital&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="810" y="1280" width="12" height="3.2" rx="1.2"><title>camada 40, expert 18 — 2 tokens: &quot; capital&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="810" y="1328" width="12" height="3.2" rx="1.2"><title>camada 40, expert 30 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="810" y="1388" width="12" height="3.2" rx="1.2"><title>camada 40, expert 45 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="810" y="1432" width="12" height="3.2" rx="1.2"><title>camada 40, expert 56 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="824" y="1280" width="12" height="3.2" rx="1.2"><title>camada 41, expert 18 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q3" x="824" y="1320" width="12" height="3.2" rx="1.2"><title>camada 41, expert 28 — 3 tokens: &quot; capital&quot;, &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="824" y="1364" width="12" height="3.2" rx="1.2"><title>camada 41, expert 39 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="824" y="1428" width="12" height="3.2" rx="1.2"><title>camada 41, expert 55 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="838" y="1220" width="12" height="3.2" rx="1.2"><title>camada 42, expert 3 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="838" y="1232" width="12" height="3.2" rx="1.2"><title>camada 42, expert 6 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="838" y="1332" width="12" height="3.2" rx="1.2"><title>camada 42, expert 31 — 2 tokens: &quot; capital&quot;, &quot; do&quot;</title></rect>
+<rect class="m q1" x="838" y="1440" width="12" height="3.2" rx="1.2"><title>camada 42, expert 58 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q3" x="852" y="1292" width="12" height="3.2" rx="1.2"><title>camada 43, expert 21 — 3 tokens: &quot; capital&quot;, &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="852" y="1372" width="12" height="3.2" rx="1.2"><title>camada 43, expert 41 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="852" y="1400" width="12" height="3.2" rx="1.2"><title>camada 43, expert 48 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="852" y="1404" width="12" height="3.2" rx="1.2"><title>camada 43, expert 49 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="866" y="1216" width="12" height="3.2" rx="1.2"><title>camada 44, expert 2 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="866" y="1248" width="12" height="3.2" rx="1.2"><title>camada 44, expert 10 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q2" x="866" y="1332" width="12" height="3.2" rx="1.2"><title>camada 44, expert 31 — 2 tokens: &quot; capital&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="866" y="1428" width="12" height="3.2" rx="1.2"><title>camada 44, expert 55 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="880" y="1288" width="12" height="3.2" rx="1.2"><title>camada 45, expert 20 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="880" y="1364" width="12" height="3.2" rx="1.2"><title>camada 45, expert 39 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="880" y="1412" width="12" height="3.2" rx="1.2"><title>camada 45, expert 51 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="880" y="1456" width="12" height="3.2" rx="1.2"><title>camada 45, expert 62 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="894" y="1220" width="12" height="3.2" rx="1.2"><title>camada 46, expert 3 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="894" y="1272" width="12" height="3.2" rx="1.2"><title>camada 46, expert 16 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="894" y="1308" width="12" height="3.2" rx="1.2"><title>camada 46, expert 25 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="894" y="1328" width="12" height="3.2" rx="1.2"><title>camada 46, expert 30 — 1 token: &quot; capital&quot;</title></rect>
+<rect class="m q1" x="264" y="1232" width="12" height="3.2" rx="1.2"><title>camada 1, expert 6 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="264" y="1372" width="12" height="3.2" rx="1.2"><title>camada 1, expert 41 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="264" y="1380" width="12" height="3.2" rx="1.2"><title>camada 1, expert 43 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="278" y="1216" width="12" height="3.2" rx="1.2"><title>camada 2, expert 2 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="278" y="1360" width="12" height="3.2" rx="1.2"><title>camada 2, expert 38 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="278" y="1456" width="12" height="3.2" rx="1.2"><title>camada 2, expert 62 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="278" y="1460" width="12" height="3.2" rx="1.2"><title>camada 2, expert 63 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="292" y="1232" width="12" height="3.2" rx="1.2"><title>camada 3, expert 6 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="292" y="1248" width="12" height="3.2" rx="1.2"><title>camada 3, expert 10 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="292" y="1364" width="12" height="3.2" rx="1.2"><title>camada 3, expert 39 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="292" y="1388" width="12" height="3.2" rx="1.2"><title>camada 3, expert 45 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="306" y="1240" width="12" height="3.2" rx="1.2"><title>camada 4, expert 8 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="306" y="1300" width="12" height="3.2" rx="1.2"><title>camada 4, expert 23 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="306" y="1336" width="12" height="3.2" rx="1.2"><title>camada 4, expert 32 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="306" y="1408" width="12" height="3.2" rx="1.2"><title>camada 4, expert 50 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="320" y="1272" width="12" height="3.2" rx="1.2"><title>camada 5, expert 16 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="320" y="1296" width="12" height="3.2" rx="1.2"><title>camada 5, expert 22 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="334" y="1268" width="12" height="3.2" rx="1.2"><title>camada 6, expert 15 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="334" y="1320" width="12" height="3.2" rx="1.2"><title>camada 6, expert 28 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="334" y="1352" width="12" height="3.2" rx="1.2"><title>camada 6, expert 36 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="334" y="1412" width="12" height="3.2" rx="1.2"><title>camada 6, expert 51 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="348" y="1220" width="12" height="3.2" rx="1.2"><title>camada 7, expert 3 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="348" y="1384" width="12" height="3.2" rx="1.2"><title>camada 7, expert 44 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="348" y="1388" width="12" height="3.2" rx="1.2"><title>camada 7, expert 45 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="348" y="1424" width="12" height="3.2" rx="1.2"><title>camada 7, expert 54 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="362" y="1212" width="12" height="3.2" rx="1.2"><title>camada 8, expert 1 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="362" y="1216" width="12" height="3.2" rx="1.2"><title>camada 8, expert 2 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="376" y="1240" width="12" height="3.2" rx="1.2"><title>camada 9, expert 8 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="376" y="1252" width="12" height="3.2" rx="1.2"><title>camada 9, expert 11 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="376" y="1296" width="12" height="3.2" rx="1.2"><title>camada 9, expert 22 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="376" y="1304" width="12" height="3.2" rx="1.2"><title>camada 9, expert 24 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="390" y="1288" width="12" height="3.2" rx="1.2"><title>camada 10, expert 20 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="390" y="1324" width="12" height="3.2" rx="1.2"><title>camada 10, expert 29 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="390" y="1448" width="12" height="3.2" rx="1.2"><title>camada 10, expert 60 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="404" y="1292" width="12" height="3.2" rx="1.2"><title>camada 11, expert 21 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="404" y="1352" width="12" height="3.2" rx="1.2"><title>camada 11, expert 36 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="404" y="1388" width="12" height="3.2" rx="1.2"><title>camada 11, expert 45 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="404" y="1432" width="12" height="3.2" rx="1.2"><title>camada 11, expert 56 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="418" y="1404" width="12" height="3.2" rx="1.2"><title>camada 12, expert 49 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="418" y="1460" width="12" height="3.2" rx="1.2"><title>camada 12, expert 63 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="432" y="1264" width="12" height="3.2" rx="1.2"><title>camada 13, expert 14 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="432" y="1284" width="12" height="3.2" rx="1.2"><title>camada 13, expert 19 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="432" y="1332" width="12" height="3.2" rx="1.2"><title>camada 13, expert 31 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="446" y="1216" width="12" height="3.2" rx="1.2"><title>camada 14, expert 2 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="446" y="1332" width="12" height="3.2" rx="1.2"><title>camada 14, expert 31 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="460" y="1220" width="12" height="3.2" rx="1.2"><title>camada 15, expert 3 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="460" y="1320" width="12" height="3.2" rx="1.2"><title>camada 15, expert 28 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="460" y="1340" width="12" height="3.2" rx="1.2"><title>camada 15, expert 33 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="460" y="1432" width="12" height="3.2" rx="1.2"><title>camada 15, expert 56 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="474" y="1316" width="12" height="3.2" rx="1.2"><title>camada 16, expert 27 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="474" y="1456" width="12" height="3.2" rx="1.2"><title>camada 16, expert 62 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="488" y="1252" width="12" height="3.2" rx="1.2"><title>camada 17, expert 11 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="488" y="1316" width="12" height="3.2" rx="1.2"><title>camada 17, expert 27 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="502" y="1320" width="12" height="3.2" rx="1.2"><title>camada 18, expert 28 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="516" y="1232" width="12" height="3.2" rx="1.2"><title>camada 19, expert 6 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="516" y="1424" width="12" height="3.2" rx="1.2"><title>camada 19, expert 54 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="516" y="1448" width="12" height="3.2" rx="1.2"><title>camada 19, expert 60 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="530" y="1236" width="12" height="3.2" rx="1.2"><title>camada 20, expert 7 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="530" y="1452" width="12" height="3.2" rx="1.2"><title>camada 20, expert 61 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="544" y="1284" width="12" height="3.2" rx="1.2"><title>camada 21, expert 19 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="558" y="1240" width="12" height="3.2" rx="1.2"><title>camada 22, expert 8 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="572" y="1216" width="12" height="3.2" rx="1.2"><title>camada 23, expert 2 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="572" y="1244" width="12" height="3.2" rx="1.2"><title>camada 23, expert 9 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="586" y="1316" width="12" height="3.2" rx="1.2"><title>camada 24, expert 27 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="586" y="1384" width="12" height="3.2" rx="1.2"><title>camada 24, expert 44 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="600" y="1236" width="12" height="3.2" rx="1.2"><title>camada 25, expert 7 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="600" y="1324" width="12" height="3.2" rx="1.2"><title>camada 25, expert 29 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="600" y="1352" width="12" height="3.2" rx="1.2"><title>camada 25, expert 36 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="600" y="1424" width="12" height="3.2" rx="1.2"><title>camada 25, expert 54 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="614" y="1272" width="12" height="3.2" rx="1.2"><title>camada 26, expert 16 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="614" y="1316" width="12" height="3.2" rx="1.2"><title>camada 26, expert 27 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="614" y="1368" width="12" height="3.2" rx="1.2"><title>camada 26, expert 40 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="628" y="1340" width="12" height="3.2" rx="1.2"><title>camada 27, expert 33 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="628" y="1420" width="12" height="3.2" rx="1.2"><title>camada 27, expert 53 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="628" y="1444" width="12" height="3.2" rx="1.2"><title>camada 27, expert 59 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="642" y="1312" width="12" height="3.2" rx="1.2"><title>camada 28, expert 26 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="642" y="1400" width="12" height="3.2" rx="1.2"><title>camada 28, expert 48 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="656" y="1256" width="12" height="3.2" rx="1.2"><title>camada 29, expert 12 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="656" y="1348" width="12" height="3.2" rx="1.2"><title>camada 29, expert 35 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="656" y="1444" width="12" height="3.2" rx="1.2"><title>camada 29, expert 59 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="670" y="1212" width="12" height="3.2" rx="1.2"><title>camada 30, expert 1 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="670" y="1260" width="12" height="3.2" rx="1.2"><title>camada 30, expert 13 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="670" y="1420" width="12" height="3.2" rx="1.2"><title>camada 30, expert 53 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="670" y="1424" width="12" height="3.2" rx="1.2"><title>camada 30, expert 54 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="684" y="1248" width="12" height="3.2" rx="1.2"><title>camada 31, expert 10 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="684" y="1256" width="12" height="3.2" rx="1.2"><title>camada 31, expert 12 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="684" y="1380" width="12" height="3.2" rx="1.2"><title>camada 31, expert 43 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="698" y="1232" width="12" height="3.2" rx="1.2"><title>camada 32, expert 6 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="698" y="1316" width="12" height="3.2" rx="1.2"><title>camada 32, expert 27 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="698" y="1404" width="12" height="3.2" rx="1.2"><title>camada 32, expert 49 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="698" y="1452" width="12" height="3.2" rx="1.2"><title>camada 32, expert 61 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="712" y="1340" width="12" height="3.2" rx="1.2"><title>camada 33, expert 33 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="712" y="1344" width="12" height="3.2" rx="1.2"><title>camada 33, expert 34 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="712" y="1360" width="12" height="3.2" rx="1.2"><title>camada 33, expert 38 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="712" y="1364" width="12" height="3.2" rx="1.2"><title>camada 33, expert 39 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="726" y="1220" width="12" height="3.2" rx="1.2"><title>camada 34, expert 3 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="726" y="1256" width="12" height="3.2" rx="1.2"><title>camada 34, expert 12 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="726" y="1320" width="12" height="3.2" rx="1.2"><title>camada 34, expert 28 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="726" y="1432" width="12" height="3.2" rx="1.2"><title>camada 34, expert 56 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="740" y="1212" width="12" height="3.2" rx="1.2"><title>camada 35, expert 1 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="740" y="1352" width="12" height="3.2" rx="1.2"><title>camada 35, expert 36 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="740" y="1368" width="12" height="3.2" rx="1.2"><title>camada 35, expert 40 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="740" y="1380" width="12" height="3.2" rx="1.2"><title>camada 35, expert 43 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="754" y="1208" width="12" height="3.2" rx="1.2"><title>camada 36, expert 0 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="754" y="1228" width="12" height="3.2" rx="1.2"><title>camada 36, expert 5 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="754" y="1292" width="12" height="3.2" rx="1.2"><title>camada 36, expert 21 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="754" y="1448" width="12" height="3.2" rx="1.2"><title>camada 36, expert 60 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="768" y="1280" width="12" height="3.2" rx="1.2"><title>camada 37, expert 18 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="768" y="1408" width="12" height="3.2" rx="1.2"><title>camada 37, expert 50 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="768" y="1440" width="12" height="3.2" rx="1.2"><title>camada 37, expert 58 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="768" y="1452" width="12" height="3.2" rx="1.2"><title>camada 37, expert 61 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="782" y="1284" width="12" height="3.2" rx="1.2"><title>camada 38, expert 19 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="782" y="1368" width="12" height="3.2" rx="1.2"><title>camada 38, expert 40 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="782" y="1388" width="12" height="3.2" rx="1.2"><title>camada 38, expert 45 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="782" y="1396" width="12" height="3.2" rx="1.2"><title>camada 38, expert 47 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="796" y="1236" width="12" height="3.2" rx="1.2"><title>camada 39, expert 7 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="796" y="1284" width="12" height="3.2" rx="1.2"><title>camada 39, expert 19 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="796" y="1328" width="12" height="3.2" rx="1.2"><title>camada 39, expert 30 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="810" y="1276" width="12" height="3.2" rx="1.2"><title>camada 40, expert 17 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="810" y="1284" width="12" height="3.2" rx="1.2"><title>camada 40, expert 19 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q1" x="810" y="1320" width="12" height="3.2" rx="1.2"><title>camada 40, expert 28 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="810" y="1360" width="12" height="3.2" rx="1.2"><title>camada 40, expert 38 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="824" y="1228" width="12" height="3.2" rx="1.2"><title>camada 41, expert 5 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="824" y="1420" width="12" height="3.2" rx="1.2"><title>camada 41, expert 53 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="824" y="1456" width="12" height="3.2" rx="1.2"><title>camada 41, expert 62 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="838" y="1240" width="12" height="3.2" rx="1.2"><title>camada 42, expert 8 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="838" y="1420" width="12" height="3.2" rx="1.2"><title>camada 42, expert 53 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="838" y="1424" width="12" height="3.2" rx="1.2"><title>camada 42, expert 54 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="852" y="1216" width="12" height="3.2" rx="1.2"><title>camada 43, expert 2 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="852" y="1356" width="12" height="3.2" rx="1.2"><title>camada 43, expert 37 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="852" y="1432" width="12" height="3.2" rx="1.2"><title>camada 43, expert 56 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="866" y="1272" width="12" height="3.2" rx="1.2"><title>camada 44, expert 16 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="866" y="1300" width="12" height="3.2" rx="1.2"><title>camada 44, expert 23 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="866" y="1328" width="12" height="3.2" rx="1.2"><title>camada 44, expert 30 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="866" y="1360" width="12" height="3.2" rx="1.2"><title>camada 44, expert 38 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="880" y="1224" width="12" height="3.2" rx="1.2"><title>camada 45, expert 4 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="880" y="1284" width="12" height="3.2" rx="1.2"><title>camada 45, expert 19 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="880" y="1400" width="12" height="3.2" rx="1.2"><title>camada 45, expert 48 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="880" y="1452" width="12" height="3.2" rx="1.2"><title>camada 45, expert 61 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="894" y="1236" width="12" height="3.2" rx="1.2"><title>camada 46, expert 7 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q2" x="894" y="1396" width="12" height="3.2" rx="1.2"><title>camada 46, expert 47 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="894" y="1420" width="12" height="3.2" rx="1.2"><title>camada 46, expert 53 — 1 token: &quot; do&quot;</title></rect>
+<rect class="m q2" x="894" y="1424" width="12" height="3.2" rx="1.2"><title>camada 46, expert 54 — 2 tokens: &quot; do&quot;, &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="264" y="1236" width="12" height="3.2" rx="1.2"><title>camada 1, expert 7 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="264" y="1284" width="12" height="3.2" rx="1.2"><title>camada 1, expert 19 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="264" y="1360" width="12" height="3.2" rx="1.2"><title>camada 1, expert 38 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="264" y="1416" width="12" height="3.2" rx="1.2"><title>camada 1, expert 52 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="278" y="1268" width="12" height="3.2" rx="1.2"><title>camada 2, expert 15 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="278" y="1280" width="12" height="3.2" rx="1.2"><title>camada 2, expert 18 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="278" y="1364" width="12" height="3.2" rx="1.2"><title>camada 2, expert 39 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="292" y="1368" width="12" height="3.2" rx="1.2"><title>camada 3, expert 40 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="292" y="1396" width="12" height="3.2" rx="1.2"><title>camada 3, expert 47 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="292" y="1428" width="12" height="3.2" rx="1.2"><title>camada 3, expert 55 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="306" y="1280" width="12" height="3.2" rx="1.2"><title>camada 4, expert 18 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="306" y="1400" width="12" height="3.2" rx="1.2"><title>camada 4, expert 48 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="306" y="1448" width="12" height="3.2" rx="1.2"><title>camada 4, expert 60 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="320" y="1216" width="12" height="3.2" rx="1.2"><title>camada 5, expert 2 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="334" y="1428" width="12" height="3.2" rx="1.2"><title>camada 6, expert 55 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="348" y="1264" width="12" height="3.2" rx="1.2"><title>camada 7, expert 14 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="348" y="1364" width="12" height="3.2" rx="1.2"><title>camada 7, expert 39 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="348" y="1432" width="12" height="3.2" rx="1.2"><title>camada 7, expert 56 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="362" y="1352" width="12" height="3.2" rx="1.2"><title>camada 8, expert 36 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="376" y="1452" width="12" height="3.2" rx="1.2"><title>camada 9, expert 61 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="390" y="1452" width="12" height="3.2" rx="1.2"><title>camada 10, expert 61 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="390" y="1456" width="12" height="3.2" rx="1.2"><title>camada 10, expert 62 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="404" y="1300" width="12" height="3.2" rx="1.2"><title>camada 11, expert 23 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="404" y="1360" width="12" height="3.2" rx="1.2"><title>camada 11, expert 38 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="404" y="1456" width="12" height="3.2" rx="1.2"><title>camada 11, expert 62 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="418" y="1268" width="12" height="3.2" rx="1.2"><title>camada 12, expert 15 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="418" y="1412" width="12" height="3.2" rx="1.2"><title>camada 12, expert 51 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="432" y="1208" width="12" height="3.2" rx="1.2"><title>camada 13, expert 0 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="432" y="1416" width="12" height="3.2" rx="1.2"><title>camada 13, expert 52 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="446" y="1252" width="12" height="3.2" rx="1.2"><title>camada 14, expert 11 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="446" y="1440" width="12" height="3.2" rx="1.2"><title>camada 14, expert 58 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="460" y="1216" width="12" height="3.2" rx="1.2"><title>camada 15, expert 2 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="460" y="1328" width="12" height="3.2" rx="1.2"><title>camada 15, expert 30 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="474" y="1256" width="12" height="3.2" rx="1.2"><title>camada 16, expert 12 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="474" y="1260" width="12" height="3.2" rx="1.2"><title>camada 16, expert 13 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="474" y="1416" width="12" height="3.2" rx="1.2"><title>camada 16, expert 52 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="488" y="1440" width="12" height="3.2" rx="1.2"><title>camada 17, expert 58 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="502" y="1252" width="12" height="3.2" rx="1.2"><title>camada 18, expert 11 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="502" y="1276" width="12" height="3.2" rx="1.2"><title>camada 18, expert 17 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="502" y="1288" width="12" height="3.2" rx="1.2"><title>camada 18, expert 20 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="502" y="1428" width="12" height="3.2" rx="1.2"><title>camada 18, expert 55 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="516" y="1292" width="12" height="3.2" rx="1.2"><title>camada 19, expert 21 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="516" y="1368" width="12" height="3.2" rx="1.2"><title>camada 19, expert 40 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="530" y="1248" width="12" height="3.2" rx="1.2"><title>camada 20, expert 10 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="530" y="1308" width="12" height="3.2" rx="1.2"><title>camada 20, expert 25 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="544" y="1444" width="12" height="3.2" rx="1.2"><title>camada 21, expert 59 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="558" y="1308" width="12" height="3.2" rx="1.2"><title>camada 22, expert 25 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="558" y="1432" width="12" height="3.2" rx="1.2"><title>camada 22, expert 56 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="572" y="1292" width="12" height="3.2" rx="1.2"><title>camada 23, expert 21 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="572" y="1320" width="12" height="3.2" rx="1.2"><title>camada 23, expert 28 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="572" y="1432" width="12" height="3.2" rx="1.2"><title>camada 23, expert 56 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="586" y="1208" width="12" height="3.2" rx="1.2"><title>camada 24, expert 0 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="600" y="1232" width="12" height="3.2" rx="1.2"><title>camada 25, expert 6 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="600" y="1364" width="12" height="3.2" rx="1.2"><title>camada 25, expert 39 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="614" y="1312" width="12" height="3.2" rx="1.2"><title>camada 26, expert 26 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="614" y="1360" width="12" height="3.2" rx="1.2"><title>camada 26, expert 38 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="614" y="1424" width="12" height="3.2" rx="1.2"><title>camada 26, expert 54 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="628" y="1264" width="12" height="3.2" rx="1.2"><title>camada 27, expert 14 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="628" y="1280" width="12" height="3.2" rx="1.2"><title>camada 27, expert 18 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="656" y="1216" width="12" height="3.2" rx="1.2"><title>camada 29, expert 2 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="656" y="1364" width="12" height="3.2" rx="1.2"><title>camada 29, expert 39 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="670" y="1340" width="12" height="3.2" rx="1.2"><title>camada 30, expert 33 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="684" y="1308" width="12" height="3.2" rx="1.2"><title>camada 31, expert 25 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="684" y="1352" width="12" height="3.2" rx="1.2"><title>camada 31, expert 36 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="684" y="1360" width="12" height="3.2" rx="1.2"><title>camada 31, expert 38 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="698" y="1272" width="12" height="3.2" rx="1.2"><title>camada 32, expert 16 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="698" y="1400" width="12" height="3.2" rx="1.2"><title>camada 32, expert 48 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="712" y="1460" width="12" height="3.2" rx="1.2"><title>camada 33, expert 63 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="726" y="1336" width="12" height="3.2" rx="1.2"><title>camada 34, expert 32 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="726" y="1404" width="12" height="3.2" rx="1.2"><title>camada 34, expert 49 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="754" y="1216" width="12" height="3.2" rx="1.2"><title>camada 36, expert 2 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="754" y="1264" width="12" height="3.2" rx="1.2"><title>camada 36, expert 14 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="768" y="1420" width="12" height="3.2" rx="1.2"><title>camada 37, expert 53 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="782" y="1240" width="12" height="3.2" rx="1.2"><title>camada 38, expert 8 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="782" y="1380" width="12" height="3.2" rx="1.2"><title>camada 38, expert 43 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="796" y="1396" width="12" height="3.2" rx="1.2"><title>camada 39, expert 47 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="810" y="1384" width="12" height="3.2" rx="1.2"><title>camada 40, expert 44 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="824" y="1288" width="12" height="3.2" rx="1.2"><title>camada 41, expert 20 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="838" y="1208" width="12" height="3.2" rx="1.2"><title>camada 42, expert 0 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="838" y="1228" width="12" height="3.2" rx="1.2"><title>camada 42, expert 5 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="852" y="1364" width="12" height="3.2" rx="1.2"><title>camada 43, expert 39 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="880" y="1420" width="12" height="3.2" rx="1.2"><title>camada 45, expert 53 — 1 token: &quot; Brasil&quot;</title></rect>
+<rect class="m q1" x="894" y="1384" width="12" height="3.2" rx="1.2"><title>camada 46, expert 44 — 1 token: &quot; Brasil&quot;</title></rect>
+<text class="tick" x="24" y="1552">Fonte: Tests\route.exe, build ea256e08e3cd. Cada marca é um bloco MLP (gate, up e down) lido por inteiro para aquele token.</text>
+</svg>
